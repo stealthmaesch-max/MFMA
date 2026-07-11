@@ -1,8 +1,8 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js?v=38";
-import { personnel, vehicles } from "./personnel.js?v=38";
-import { signals } from "./signals.js?v=38";
+import { firebaseConfig } from "./firebase-config.js?v=40";
+import { personnel, vehicles } from "./personnel.js?v=40";
+import { signals } from "./signals.js?v=40";
 
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);

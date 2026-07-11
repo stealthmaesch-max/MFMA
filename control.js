@@ -1,14 +1,121 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, set, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
-import { firebaseConfig } from "./firebase-config.js?v=38";
-import { personnel, vehicles } from "./personnel.js?v=38";
-import { signals } from "./signals.js?v=38";
+import {
+  getAuth,
+  GithubAuthProvider,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence
+} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
+import { firebaseConfig } from "./firebase-config.js?v=40";
+import { personnel, vehicles } from "./personnel.js?v=40";
+import { signals } from "./signals.js?v=40";
 
-const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
+const app=initializeApp(firebaseConfig);
+const auth=getAuth(app);
+const githubProvider=new GithubAuthProvider();
+const googleProvider=new GoogleAuthProvider();
+const db=getDatabase(app);
+const stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);
-let state=null,sessionType="vehicle-vehicle",roleIndex=0;
+let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null;
 
 const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),live:$("live-panel"),provisional:$("provisional-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
+
+
+const authPanel=$("auth-panel");
+const securedControl=$("secured-control");
+const authStatus=$("auth-status");
+const authError=$("auth-error");
+const accountName=$("account-name");
+
+function providerLabel(user){
+ const provider=user?.providerData?.[0]?.providerId||"firebase";
+ if(provider==="github.com")return "GitHub";
+ if(provider==="google.com")return "Google";
+ return "Firebase";
+}
+
+function displayUserName(user){
+ return user?.displayName||user?.email||"Authorized user";
+}
+
+function setAuthError(message=""){
+ authError.textContent=message;
+}
+
+async function beginProviderSignIn(provider,label){
+ setAuthError("");
+ authStatus.textContent=`Opening ${label} sign-in…`;
+ try{
+  await signInWithPopup(auth,provider);
+ }catch(error){
+  console.error(`${label} sign-in failed`,error);
+  const messages={
+   "auth/popup-closed-by-user":"Sign-in was canceled.",
+   "auth/popup-blocked":"The browser blocked the sign-in window. Allow pop-ups for this site and try again.",
+   "auth/unauthorized-domain":"Add stealthmaesch-max.github.io to Firebase Authentication authorized domains.",
+   "auth/account-exists-with-different-credential":"That email is already connected to another provider. Sign in with that provider first.",
+   "auth/operation-not-allowed":`${label} sign-in is not enabled in Firebase Authentication.`
+  };
+  setAuthError(messages[error.code]||`Sign-in failed: ${error.message}`);
+  authStatus.textContent="Not signed in";
+ }
+}
+
+$("github-sign-in").onclick=()=>beginProviderSignIn(githubProvider,"GitHub");
+$("google-sign-in").onclick=()=>beginProviderSignIn(googleProvider,"Google");
+
+$("sign-out").onclick=async()=>{
+ try{
+  await signOut(auth);
+ }catch(error){
+  console.error("Sign-out failed",error);
+  setAuthError(`Sign-out failed: ${error.message}`);
+ }
+};
+
+$("copy-uid").onclick=async()=>{
+ if(!currentUser)return;
+ try{
+  await navigator.clipboard.writeText(currentUser.uid);
+  $("copy-uid").textContent="UID Copied";
+  setTimeout(()=>$("copy-uid").textContent="Copy UID",1500);
+ }catch(error){
+  prompt("Copy this Firebase UID:",currentUser.uid);
+ }
+};
+
+setPersistence(auth,browserLocalPersistence).catch(error=>{
+ console.warn("Could not set local authentication persistence",error);
+});
+
+onAuthStateChanged(auth,user=>{
+ currentUser=user||null;
+ const signedIn=Boolean(user);
+ authPanel.classList.toggle("hidden",signedIn);
+ securedControl.classList.toggle("hidden",!signedIn);
+
+ if(signedIn){
+  authStatus.textContent="Signed in";
+  accountName.textContent=`${displayUserName(user)} • ${providerLabel(user)}`;
+  setAuthError("");
+ }else{
+  authStatus.textContent="Choose a sign-in method";
+  accountName.textContent="Signed out";
+ }
+});
+
+function requireAuthenticatedWrite(){
+ if(currentUser)return true;
+ setAuthError("Race Control requires sign-in before making changes.");
+ authPanel.classList.remove("hidden");
+ securedControl.classList.add("hidden");
+ return false;
+}
 
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
 function setConn(kind,text){E.connection.className=`pill ${kind||""}`;E.connection.querySelector("span:last-child").textContent=text}
@@ -72,11 +179,13 @@ function validate(){
 }
 
 async function createEvent(){
+ if(!requireAuthenticatedWrite())return;
  await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:$("new-event-name").value||"MFMA Event",scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:true,status:"pending"},safetyCarOvertake:null},session:null,updatedAt:serverTimestamp()});
  $("event-dialog").close();
 }
 
 async function startSession(){
+ if(!requireAuthenticatedWrite())return;
  if(state.event?.courseLap?.required&&state.event.courseLap.status!=="complete"){alert("Complete the Safety Car familiarization lap before Session 1.");return}
  const v=validate();if(!v.ok)return;
  const r=v.setup.role,now=Date.now();let hide=Number(E.hide.value)*1000,find=Number(E.find.value)*1000;
@@ -91,9 +200,11 @@ async function startSession(){
  await update(stateRef,{systemState:"session-live",activeFlag:"green",session,"event/scores":scores,"event/teamNames":v.setup.teamNames,"event/circuit/format":sessionType,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
 }
 
-async function automaticCheckered(winner,reason){await update(stateRef,{systemState:"provisional",activeFlag:"checkered","session/running":false,"session/provisionalWinner":winner,"session/provisionalReason":reason,updatedAt:serverTimestamp()})}
+async function automaticCheckered(winner,reason){
+ if(!requireAuthenticatedWrite())return;await update(stateRef,{systemState:"provisional",activeFlag:"checkered","session/running":false,"session/provisionalWinner":winner,"session/provisionalReason":reason,updatedAt:serverTimestamp()})}
 
 async function issueFlag(flag){
+ if(!requireAuthenticatedWrite())return;
  if(!state?.session)return;
  if(flag==="yellow"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"yellow","session/flag":"yellow","session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
  if(flag==="green"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
@@ -104,6 +215,7 @@ async function issueFlag(flag){
 }
 
 async function confirmSpot(id){
+ if(!requireAuthenticatedWrite())return;
  const status={...(state.session.spotStatus||{}),[id]:true};await update(stateRef,{"session/spotStatus":status,updatedAt:serverTimestamp()});
  if(state.session.pursuitVehicleIds.every(v=>v===id||status[v]))await automaticCheckered(state.session.pursuitTeam,"All required pursuit vehicles confirmed valid radio spots");
 }
@@ -182,6 +294,7 @@ function openWhiteDialog(){
 }
 
 async function resolveWhiteForm(){
+ if(!requireAuthenticatedWrite())return;
  const dq=$("dq-team").value;
  const responsible=$("responsible-party").value;
  const reason=$("dq-reason").value;
@@ -251,6 +364,7 @@ async function resolveWhiteForm(){
 }
 
 async function finalizeResult(){
+ if(!requireAuthenticatedWrite())return;
  const winner=state.session.provisionalWinner;
  const scores={...(state.event.scores||{})};
  if(winner)scores[winner]=(scores[winner]||0)+1;
@@ -271,6 +385,7 @@ async function finalizeResult(){
 }
 
 async function advanceNextSession(){
+ if(!requireAuthenticatedWrite())return;
  roleIndex=(state.event.circuit.roleIndex||0)+1;
  await update(stateRef,{
   systemState:"standby",
@@ -283,6 +398,7 @@ async function advanceNextSession(){
 }
 
 async function startCourseLap(){
+ if(!requireAuthenticatedWrite())return;
  await update(stateRef,{
   systemState:"course-lap",
   activeFlag:"safety-car",
@@ -292,6 +408,7 @@ async function startCourseLap(){
  });
 }
 async function completeCourseLap(){
+ if(!requireAuthenticatedWrite())return;
  await update(stateRef,{
   systemState:"standby",
   activeFlag:"clear",
@@ -306,15 +423,19 @@ function openOvertakeDialog(){
  overlay.classList.remove("hidden");overlay.style.display="grid";document.body.classList.add("modal-open");
 }
 async function authorizeOvertake(){
+ if(!requireAuthenticatedWrite())return;
  const reason=$("overtake-reason").value||"Race Director authorization";
  await update(stateRef,{"event/safetyCarOvertake":{active:true,reason,authorizedAt:Date.now()},updatedAt:serverTimestamp()});
  $("overtake-overlay").classList.add("hidden");$("overtake-overlay").style.display="";document.body.classList.remove("modal-open");
 }
-async function cancelOvertake(){await update(stateRef,{"event/safetyCarOvertake":null,updatedAt:serverTimestamp()});}
+async function cancelOvertake(){
+ if(!requireAuthenticatedWrite())return;await update(stateRef,{"event/safetyCarOvertake":null,updatedAt:serverTimestamp()});}
 async function returnFromTermination(){
+ if(!requireAuthenticatedWrite())return;
  await update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});
 }
 async function restartTerminatedSession(){
+ if(!requireAuthenticatedWrite())return;
  if(!state.session)return;
  const s=state.session,now=Date.now();
  await update(stateRef,{
@@ -376,7 +497,7 @@ document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.quer
 $("vv-team-1").onchange=()=>{renderVVAssignments();updateRoleSummary()};$("vv-team-2").onchange=()=>{renderVVAssignments();updateRoleSummary()};
 $("vf-team-a").oninput=updateRoleSummary;$("vf-team-b").oninput=updateRoleSummary;$("vf-vehicle").onchange=renderVF;$("swap-teams").onclick=()=>{roleIndex=roleIndex%2===0?1:0;updateRoleSummary()};
 $("create-event").onclick=()=>$("event-dialog").showModal();$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};
-$("end-event").onclick=async()=>{if(confirm("End the event?"))await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,updatedAt:serverTimestamp()})};
+$("end-event").onclick=async()=>{if(!requireAuthenticatedWrite())return;if(confirm("End the event?"))await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,updatedAt:serverTimestamp()})};
 $("standby-button").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("start-session").onclick=startSession;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("post-white").onclick=openWhiteDialog;$("close-white").onclick=()=>{$("white-review-overlay").classList.add("hidden");document.body.classList.remove("modal-open")};$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};

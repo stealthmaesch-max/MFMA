@@ -1,18 +1,11 @@
-# MFMAFLAG v3.8 — Flashing Fix
+# MFMAFLAG v4.0 Authentication Build
 
-This version corrects the actual CSS selector.
-
-Only these primary commands flash:
-- CAUTION
-- STOP
-- SAFETY CAR
-- OVERTAKE SAFETY CAR
-- DISQUALIFIED
-
-These remain static:
-- instructions
-- team names
-- timer
-- session information
-- background
-- Checkered display
+Adds:
+- GitHub authentication
+- Google authentication
+- Persistent sign-in
+- Sign-out button
+- Firebase UID copy button
+- Race Control hidden until sign-in succeeds
+- Public Driver Display and Fan Watch
+- Secure Realtime Database rules template
