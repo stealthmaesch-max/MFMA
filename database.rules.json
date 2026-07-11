@@ -1,0 +1,8 @@
+{
+  "rules": {
+    "mfma": {
+      ".read": true,
+      ".write": true
+    }
+  }
+}

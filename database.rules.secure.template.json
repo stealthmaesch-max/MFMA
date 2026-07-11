@@ -1,0 +1,12 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+    "mfma": {
+      "state": {
+        ".read": true,
+        ".write": "auth != null && (auth.uid === 'GITHUB_FIREBASE_UID' || auth.uid === 'GOOGLE_FIREBASE_UID')"
+      }
+    }
+  }
+}
