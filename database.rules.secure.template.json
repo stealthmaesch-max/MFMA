@@ -1,12 +1,13 @@
-{
+#{
   "rules": {
     ".read": false,
     ".write": false,
+
     "mfma": {
       "state": {
         ".read": true,
-        ".write": "auth != null && (auth.uid === 'GITHUB_FIREBASE_UID' || auth.uid === 'GOOGLE_FIREBASE_UID')"
+        ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')"
       }
     }
-  }
+  }##BACKUP ONLY - MODIFY RULES ON FIREBASE CONSOLE##
 }
