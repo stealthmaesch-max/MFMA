@@ -16,7 +16,7 @@ const activeIntervals=new Set();
 const listeners=new Set();
 
 function readNumber(key,fallback){
- try{const value=Number(localStorage.getItem(key));return Number.isFinite(value)?Math.min(1,Math.max(0,value)):fallback}catch{return fallback}
+ try{const stored=localStorage.getItem(key);if(stored===null)return fallback;const value=Number(stored);return Number.isFinite(value)?Math.min(1,Math.max(0,value)):fallback}catch{return fallback}
 }
 
 function wasEnabled(){try{return localStorage.getItem(ENABLED_KEY)==="true"}catch{return false}}
@@ -155,9 +155,13 @@ export function soundForStateTransition(previous,current){
  return null;
 }
 
-export function playStateTransition(previous,current){
+export async function playStateTransition(previous,current){
  const sound=soundForStateTransition(previous,current);
- if(!sound||!context||context.state!=="running")return null;
+ if(!sound||!context)return null;
+ if(context.state!=="running"){
+  try{await context.resume()}catch{return null}
+  if(context.state!=="running")return null;
+ }
  playSound(sound);return sound;
 }
 

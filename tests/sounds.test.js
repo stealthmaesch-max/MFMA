@@ -61,9 +61,43 @@ test("urgent definitions expose the required repeat counts",async()=>{
  global.window={AudioContext:FakeAudioContext};
  const source=fs.readFileSync("sounds.js","utf8");
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// definitions").toString("base64")}`);
+ assert.equal(sounds.getVolume(),.65,"missing volume storage uses the audible default");
  assert.equal(sounds.soundDefinitions.yellow.repetitions,3);
  assert.equal(sounds.soundDefinitions.red.repetitions,4);
  assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);
+});
+
+test("production flag transitions play once and resume an enabled context",async()=>{
+ global.localStorage={getItem:()=>null,setItem:()=>{}};
+ global.window={AudioContext:FakeAudioContext};
+ const source=fs.readFileSync("sounds.js","utf8");
+ const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
+ await sounds.enableSounds();
+ const base={systemState:"standby",activeFlag:"clear"};
+ const cases=[["green",2],["yellow",6],["red",8],["safety-car",10],["white",2],["checkered",4]];
+ for(const [flag,oscillators] of cases){
+  const current={systemState:"standby",activeFlag:flag};
+  FakeAudioContext.latest.state="suspended";
+  assert.equal(await sounds.playStateTransition(base,current),flag==="safety-car"?"safetyCar":flag);
+  assert.equal(FakeAudioContext.latest.state,"running","the enabled AudioContext resumes before playback");
+  assert.equal(sounds.getActiveSoundState().oscillators,oscillators,`${flag} schedules exactly one complete sequence`);
+  assert.equal(await sounds.playStateTransition(current,{...current}),null,"an unchanged Firebase snapshot stays silent");
+  assert.equal(sounds.getActiveSoundState().oscillators,oscillators,"an unchanged snapshot does not replay or replace audio");
+  sounds.stopSounds();
+ }
+});
+
+test("production listeners retain state history and restart changed flash signals",()=>{
+ const control=fs.readFileSync("control.js","utf8");
+ const display=fs.readFileSync("display.js","utf8");
+ const css=fs.readFileSync("styles.css","utf8");
+ for(const source of [control,display]){
+  assert.match(source,/const previous=state;state=s\.val\(\)\|\|/,"Firebase snapshots preserve the previous immutable value");
+  assert.match(source,/playStateTransition\(previous,state\)/,"each production listener evaluates the authoritative transition");
+ }
+ assert.match(display,/signal!==visualSignal&&display\.classList\.contains\("flash"\)/,"changed flashing signals restart their animation instance");
+ assert.match(display,/void display\.offsetWidth/,"the old animation style is flushed before flash is reapplied");
+ assert.match(css,/animation:\s*signalFlash \.5s steps\(1,end\) infinite/,"signal flashing remains infinite");
 });
 
 test("Firebase state transitions resolve to authoritative signals",async()=>{
