@@ -499,6 +499,16 @@ select {
   grid-template-columns: repeat(2, minmax(0,1fr));
   gap: 14px;
 }
+.sprint-status,
+.sprint-terminate {
+  border-color: #7c5cff;
+  box-shadow: inset 4px 0 0 #7c5cff;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.sprint-timer-panel { border-color: #7c5cff; }
 
 .flag {
   min-height: 145px;

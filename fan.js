@@ -22,6 +22,12 @@ function liveRemaining(){
  const factor=s.flag==="yellow"?0.5:1;
  return Math.max(0,s.remainingMs-(Date.now()-(s.lastTickAt||Date.now()))*factor);
 }
+function sprintTime(){
+ const s=state?.sprint;
+ if(!s||s.timerMode==="none")return 0;
+ const delta=s.running?Math.max(0,Date.now()-(s.lastTickAt||Date.now())):0;
+ return s.timerMode==="count-up"?Math.max(0,(s.elapsedMs||0)+delta):Math.max(0,(s.remainingMs||0)-delta);
+}
 
 function render(){
  const connection=$("fan-connection");
@@ -47,8 +53,13 @@ function render(){
  const names=s?.teamNames||event.teamNames||{};
  $("fan-event").textContent=event.name;
  $("fan-state").textContent=state.systemState.replaceAll("-"," ").toUpperCase();
- const standbyFlag=state.systemState==="standby"?(state.activeFlag||"clear"):null;
- $("fan-flag").textContent=(standbyFlag==="clear"?"STANDBY":standbyFlag?standbyFlag.replaceAll("-"," "):(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY")).toUpperCase();
+ const operationalFlag=["standby","sprint-live"].includes(state.systemState)?(state.activeFlag||"clear"):null;
+ $("fan-flag").textContent=(operationalFlag==="clear"?(state.systemState==="sprint-live"?"CLEAR":"STANDBY"):operationalFlag?operationalFlag.replaceAll("-"," "):(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY")).toUpperCase();
+
+ if(state.systemState==="sprint-live"){
+  $("fan-state").textContent="MFMA SPRINT";$("fan-phase").textContent="MFMA SPRINT";$("fan-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());$("fan-session").textContent="";$("fan-roles").textContent="";
+  $("fan-scoreboard").innerHTML="<p>Sprint does not affect event scores.</p>";$("fan-circuit").innerHTML="<p>Sprint has no circuit role progress.</p>";$("fan-assignments").innerHTML="<p>No Sprint teams or pursuit/evading roles.</p>";return;
+ }
 
  $("fan-phase").textContent=s?(s.phase==="awaiting-finding-start"?"HIDING COMPLETE • AWAITING RACE DIRECTOR":s.phase.toUpperCase()):"STANDBY";
  $("fan-timer").textContent=s?fmt(liveRemaining()):"--:--";
@@ -91,5 +102,6 @@ onValue(stateRef,snapshot=>{
 });
 
 setInterval(()=>{
+ if(state?.systemState==="sprint-live")$("fan-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());
  if(state?.session&&state.systemState==="session-live")$("fan-timer").textContent=fmt(liveRemaining());
 },250);

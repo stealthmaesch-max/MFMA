@@ -23,7 +23,7 @@ const stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);
 let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null;
 
-const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),live:$("live-panel"),provisional:$("provisional-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
+const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),live:$("live-panel"),provisional:$("provisional-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
 
 
 const authPanel=$("auth-panel");
@@ -118,6 +118,15 @@ function requireAuthenticatedWrite(){
 }
 
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
+function sprintTime(s=state?.sprint,now=Date.now()){
+ if(!s||s.timerMode==="none")return 0;
+ const delta=s.running?Math.max(0,now-(s.lastTickAt||now)):0;
+ return s.timerMode==="count-up"?Math.max(0,(s.elapsedMs||0)+delta):Math.max(0,(s.remainingMs||0)-delta);
+}
+function sprintTimerPatch(s=state?.sprint,now=Date.now()){
+ const value=sprintTime(s,now);
+ return s.timerMode==="count-up"?{"sprint/elapsedMs":value,"sprint/lastTickAt":s.running?now:null}:{"sprint/remainingMs":value,"sprint/lastTickAt":s.running?now:null};
+}
 function setConn(kind,text){E.connection.className=`pill ${kind||""}`;E.connection.querySelector("span:last-child").textContent=text}
 function availableVehicles(){return ["ranger","shelly","gator"].filter(v=>$(`available-${v}`).checked)}
 function driverOptions(v){return Object.entries(personnel).filter(([,p])=>p.canDrive&&p.vehicles.includes(v)).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join("")}
@@ -180,12 +189,13 @@ function validate(){
 
 async function createEvent(){
  if(!requireAuthenticatedWrite())return;
- await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:$("new-event-name").value||"MFMA Event",scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:true,status:"pending"},safetyCarOvertake:null},session:null,updatedAt:serverTimestamp()});
+ await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:$("new-event-name").value||"MFMA Event",scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:true,status:"pending"},safetyCarOvertake:null},session:null,sprint:null,updatedAt:serverTimestamp()});
  $("event-dialog").close();
 }
 
 async function startSession(){
  if(!requireAuthenticatedWrite())return;
+ if(state?.systemState!=="standby"||state?.sprint?.active)return;
  if(state.event?.courseLap?.required&&state.event.courseLap.status!=="complete"){alert("Complete the Safety Car familiarization lap before Session 1.");return}
  const v=validate();if(!v.ok)return;
  const r=v.setup.role,now=Date.now();let hide=Number(E.hide.value)*1000,find=Number(E.find.value)*1000;
@@ -200,11 +210,73 @@ async function startSession(){
  await update(stateRef,{systemState:"session-live",activeFlag:"green",session,"event/scores":scores,"event/teamNames":v.setup.teamNames,"event/circuit/format":sessionType,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
 }
 
+async function startSprint(){
+ if(!requireAuthenticatedWrite())return;
+ if(state?.systemState!=="standby"||state?.sprint?.active)return;
+ await update(stateRef,{systemState:"sprint-live",activeFlag:"clear",sprint:{active:true,timerMode:"none",running:false,remainingMs:0,elapsedMs:0,configuredMs:0,lastTickAt:null},updatedAt:serverTimestamp()});
+}
+
+async function terminateSprint(){
+ if(!requireAuthenticatedWrite())return;
+ if(state?.systemState!=="sprint-live"||!state?.sprint?.active)return;
+ await update(stateRef,{systemState:"standby",activeFlag:"clear",sprint:null,updatedAt:serverTimestamp()});
+}
+
+async function setSprintTimerMode(){
+ if(!requireAuthenticatedWrite()||state?.systemState!=="sprint-live")return;
+ const timerMode=$("sprint-timer-mode").value,configuredMs=Math.max(0,Number($("sprint-duration").value)||0)*1000;
+ const patch={"sprint/timerMode":timerMode,"sprint/running":false,"sprint/lastTickAt":null,updatedAt:serverTimestamp()};
+ if(timerMode==="count-up")patch["sprint/elapsedMs"]=0;
+ if(timerMode==="count-down"){patch["sprint/configuredMs"]=configuredMs;patch["sprint/remainingMs"]=configuredMs}
+ await update(stateRef,patch);
+}
+
+async function configureSprintDuration(){
+ if(!requireAuthenticatedWrite()||state?.systemState!=="sprint-live")return;
+ const configuredMs=Math.max(0,Number($("sprint-duration").value)||0)*1000;
+ await update(stateRef,{"sprint/configuredMs":configuredMs,updatedAt:serverTimestamp()});
+}
+
+async function startSprintTimer(){
+ if(!requireAuthenticatedWrite()||state?.systemState!=="sprint-live"||state.sprint?.timerMode==="none")return;
+ await update(stateRef,{...sprintTimerPatch(),"sprint/running":true,"sprint/lastTickAt":Date.now(),updatedAt:serverTimestamp()});
+}
+
+async function pauseSprintTimer(){
+ if(!requireAuthenticatedWrite()||state?.systemState!=="sprint-live"||!state.sprint?.running)return;
+ await update(stateRef,{...sprintTimerPatch(),"sprint/running":false,"sprint/lastTickAt":null,updatedAt:serverTimestamp()});
+}
+
+async function resetSprintTimer(){
+ if(!requireAuthenticatedWrite()||state?.systemState!=="sprint-live")return;
+ const s=state.sprint,patch={"sprint/running":false,"sprint/lastTickAt":null,updatedAt:serverTimestamp()};
+ if(s.timerMode==="count-up")patch["sprint/elapsedMs"]=0;
+ if(s.timerMode==="count-down")patch["sprint/remainingMs"]=Math.max(0,s.configuredMs||0);
+ await update(stateRef,patch);
+}
+
+async function adjustSprintTimer(deltaMs){
+ if(!requireAuthenticatedWrite()||state?.systemState!=="sprint-live"||state.sprint?.timerMode==="none")return;
+ const s=state.sprint,now=Date.now(),value=Math.max(0,sprintTime(s,now)+deltaMs),field=s.timerMode==="count-up"?"sprint/elapsedMs":"sprint/remainingMs";
+ await update(stateRef,{[field]:value,"sprint/lastTickAt":s.running?now:null,updatedAt:serverTimestamp()});
+}
+
+async function setSprintTimer(){
+ const value=Math.max(0,Number($("sprint-direct-time").value)||0)*1000;
+ await adjustSprintTimer(value-sprintTime());
+}
+
 async function automaticCheckered(winner,reason){
  if(!requireAuthenticatedWrite())return;await update(stateRef,{systemState:"provisional",activeFlag:"checkered","session/running":false,"session/provisionalWinner":winner,"session/provisionalReason":reason,updatedAt:serverTimestamp()})}
 
 async function issueFlag(flag){
  if(!requireAuthenticatedWrite())return;
+ if(state?.systemState==="sprint-live"){
+  const sprintFlags=new Set(["green","yellow","red","safety-car","white","checkered","clear"]);
+  if(!state?.sprint?.active||!sprintFlags.has(flag))return;
+  await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
+  return;
+ }
  if(state?.systemState==="standby"){
   const standbyFlags=new Set(["yellow","red","safety-car","white","checkered","clear"]);
   if(!standbyFlags.has(flag))return;
@@ -243,6 +315,15 @@ function tick(){
   if(s.phase==="hiding")update(stateRef,{"session/phase":"awaiting-finding-start","session/remainingMs":s.findDurationMs,"session/running":false,updatedAt:serverTimestamp()});
   else automaticCheckered(s.evadingTeam,"Finding period expired");
  }else if(elapsed>=900)update(stateRef,{"session/remainingMs":remaining,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});
+}
+
+function sprintTick(){
+ if(state?.systemState!=="sprint-live"||!state?.sprint?.active)return;
+ const s=state.sprint,value=sprintTime(s);
+ $("sprint-timer").textContent=s.timerMode==="none"?"NO TIMER":fmt(value);
+ if(!s.running)return;
+ if(s.timerMode==="count-down"&&value<=0){update(stateRef,{"sprint/remainingMs":0,"sprint/running":false,"sprint/lastTickAt":null,updatedAt:serverTimestamp()});return}
+ if(Date.now()-(s.lastTickAt||Date.now())>=900)update(stateRef,{...sprintTimerPatch(),updatedAt:serverTimestamp()});
 }
 
 function populateWhite(){
@@ -413,6 +494,7 @@ async function advanceNextSession(){
 
 async function startCourseLap(){
  if(!requireAuthenticatedWrite())return;
+ if(state?.systemState!=="standby"||state?.sprint?.active)return;
  await update(stateRef,{
   systemState:"course-lap",
   activeFlag:"safety-car",
@@ -479,8 +561,8 @@ function renderCircuit(id){
 function render(){
  const has=!!state?.event&&state.systemState!=="no-event";E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
  E.eventName.textContent=state.event.name;E.eventMeta.textContent=state.event.circuit?.format?state.event.circuit.format.replace("-","–"):"Awaiting first session";
- const standby=state.systemState==="standby",course=state.systemState==="course-lap",live=state.systemState==="session-live",prov=state.systemState==="provisional",complete=state.systemState==="session-complete",safetyTerm=state.systemState==="safety-car-termination",whiteTerm=state.systemState==="white-termination";
- E.standby.classList.toggle("hidden",!standby);E.setup.classList.toggle("hidden",!standby);E.courseLap.classList.toggle("hidden",!(standby||course));E.live.classList.toggle("hidden",!live);E.provisional.classList.toggle("hidden",!(prov||complete));E.termination.classList.toggle("hidden",!(safetyTerm||whiteTerm));renderScore("scoreboard");
+ const standby=state.systemState==="standby",course=state.systemState==="course-lap",sprintLive=state.systemState==="sprint-live",live=state.systemState==="session-live",prov=state.systemState==="provisional",complete=state.systemState==="session-complete",safetyTerm=state.systemState==="safety-car-termination",whiteTerm=state.systemState==="white-termination";
+ E.standby.classList.toggle("hidden",!standby);E.setup.classList.toggle("hidden",!standby);E.sprint.classList.toggle("hidden",!sprintLive);E.courseLap.classList.toggle("hidden",!(standby||course));E.live.classList.toggle("hidden",!live);E.provisional.classList.toggle("hidden",!(prov||complete));E.termination.classList.toggle("hidden",!(safetyTerm||whiteTerm));$("event-score-panel").classList.toggle("hidden",sprintLive);$("standby-button").classList.toggle("hidden",sprintLive);$("end-event").classList.toggle("hidden",sprintLive);renderScore("scoreboard");
  if(standby||course){
   const lap=state.event?.courseLap||{},overtake=state.event?.safetyCarOvertake||null;
   $("start-course-lap").classList.toggle("hidden",lap.status==="active"||lap.status==="complete");
@@ -494,6 +576,15 @@ function render(){
   $("termination-cancel-overtake").classList.toggle("hidden",!(safetyTerm&&state.event?.safetyCarOvertake?.active));
   E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":"White Flag Termination";
   E.terminationDetail.textContent=state.session?.terminationDetail||state.session?.provisionalReason||"Session terminated.";
+ }
+ if(sprintLive){
+  const s=state.sprint||{},flag=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
+  $("sprint-timer-mode").value=s.timerMode||"none";
+  $("sprint-timer-mode-label").textContent=(s.timerMode||"none").replaceAll("-"," ").toUpperCase();
+  $("sprint-timer").textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));
+  $("sprint-timer-status").textContent=s.timerMode==="none"?"NO TIMER":s.running?"RUNNING":"PAUSED";
+  $("sprint-active-flag").textContent=`FLAG: ${flag}`;
+  $("sprint-duration").value=Math.max(0,(s.configuredMs||0)/1000);
  }
  if(live){const s=state.session,awaiting=s.phase==="awaiting-finding-start",spotsEnabled=s.phase==="finding";E.phase.textContent=s.phase==="hiding"?"HIDING":awaiting?"HIDING COMPLETE":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=awaiting?"AWAITING RACE DIRECTOR":s.running?"SESSION LIVE":"SESSION PAUSED";E.findingStart.classList.toggle("hidden",!awaiting);E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]||!spotsEnabled?"disabled":""}><span>${vehicles[v].name}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":spotsEnabled?"CONFIRM VALID RADIO SPOT":"FINDING NOT STARTED"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
  if(prov||complete){
@@ -511,8 +602,12 @@ document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.quer
 $("vv-team-1").onchange=()=>{renderVVAssignments();updateRoleSummary()};$("vv-team-2").onchange=()=>{renderVVAssignments();updateRoleSummary()};
 $("vf-team-a").oninput=updateRoleSummary;$("vf-team-b").oninput=updateRoleSummary;$("vf-vehicle").onchange=renderVF;$("swap-teams").onclick=()=>{roleIndex=roleIndex%2===0?1:0;updateRoleSummary()};
 $("create-event").onclick=()=>$("event-dialog").showModal();$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};
-$("end-event").onclick=async()=>{if(!requireAuthenticatedWrite())return;if(confirm("End the event?"))await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,updatedAt:serverTimestamp()})};
-$("standby-button").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("start-session").onclick=startSession;
+$("end-event").onclick=async()=>{if(!requireAuthenticatedWrite()||state?.systemState==="sprint-live")return;if(confirm("End the event?"))await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null,updatedAt:serverTimestamp()})};
+$("standby-button").onclick=()=>{if(state?.systemState!=="sprint-live")update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()})};$("start-session").onclick=startSession;
+$("start-sprint").onclick=startSprint;$("terminate-sprint").onclick=()=>{if(confirm("Terminate MFMA Sprint and return to Standby?"))terminateSprint()};
+$("sprint-timer-mode").onchange=setSprintTimerMode;$("sprint-duration").onchange=configureSprintDuration;$("sprint-start-timer").onclick=startSprintTimer;$("sprint-pause-timer").onclick=pauseSprintTimer;$("sprint-reset-timer").onclick=resetSprintTimer;
+$("sprint-add-time").onclick=()=>adjustSprintTimer(Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-subtract-time").onclick=()=>adjustSprintTimer(-Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-set-time").onclick=setSprintTimer;
+document.querySelectorAll("[data-sprint-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.sprintFlag));
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("post-white").onclick=openWhiteDialog;$("close-white").onclick=()=>{$("white-review-overlay").classList.add("hidden");document.body.classList.remove("modal-open")};$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};
@@ -536,4 +631,4 @@ $("white-review-overlay").onclick=e=>{
 };
 
 onValue(stateRef,s=>{state=s.val()||{systemState:"no-event"};setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;render()},e=>{setConn("error","Connection error");console.error(e)});
-renderVVSelectors();renderVF();setInterval(tick,250);
+renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick()},250);

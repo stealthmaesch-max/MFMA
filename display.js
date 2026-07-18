@@ -6,6 +6,7 @@ const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfm
 const $=id=>document.getElementById(id);let state=null,wake=null;
 const display=$("display"),status=$("display-status"),statusText=status.querySelector("span:last-child"),statusView=$("status-view"),liveView=$("live-view"),title=$("status-title"),detail=$("status-detail"),kicker=$("status-kicker"),sessionLine=$("display-session"),timer=$("display-timer"),label=$("label"),instruction=$("instruction"),theme=document.querySelector('meta[name="theme-color"]'),standbyLeaderboard=$("standby-leaderboard");
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
+function sprintTime(s=state?.sprint){if(!s||s.timerMode==="none")return 0;const delta=s.running?Math.max(0,Date.now()-(s.lastTickAt||Date.now())):0;return s.timerMode==="count-up"?Math.max(0,(s.elapsedMs||0)+delta):Math.max(0,(s.remainingMs||0)-delta)}
 async function awake(){try{if("wakeLock"in navigator)wake=await navigator.wakeLock.request("screen")}catch(_){}}
 function showStatus(t,d,k="MFMA DIGITAL FLAG NETWORK"){
  statusView.classList.remove("hidden");liveView.classList.add("hidden");
@@ -34,7 +35,13 @@ function showStandbyFlag(){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");display.className=`display ${sig.className}${sig.flash?" flash":""}`;
  label.textContent=copy[0];instruction.textContent=copy[1];sessionLine.textContent=`${state.event.name} • STANDBY`;timer.textContent="--:--";theme.content=sig.theme;
 }
-function render(){if(!state?.event||state.systemState==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(state.systemState==="standby"){showStandbyFlag();return}if(state.systemState==="course-lap"){
+function showSprint(){
+ const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear,s=state.sprint||{};
+ const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW",red:"RED","safety-car":"SAFETY CAR",white:"WHITE",checkered:"CHECKERED"};
+ statusView.classList.add("hidden");liveView.classList.remove("hidden");display.className=`display ${sig.className}${sig.flash?" flash":""}`;
+ label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent="MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
+}
+function render(){if(!state?.event||state.systemState==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(state.systemState==="standby"){showStandbyFlag();return}if(state.systemState==="sprint-live"){showSprint();return}if(state.systemState==="course-lap"){
  const overtake=state.event?.safetyCarOvertake;
  if(overtake?.active){
   showStatus("OVERTAKE SAFETY CAR","AUTHORIZED BY RACE DIRECTOR • PROCEED WITH CAUTION",state.event.name);display.classList.add("overtake-flash");
@@ -71,6 +78,6 @@ if(state.systemState==="provisional"||state.systemState==="session-complete"){
  sessionLine.textContent=`SESSION ${s?.number||""} • PURSUIT: ${s?.teamNames?.[s.pursuitTeam]||"—"} • EVADING: ${s?.teamNames?.[s.evadingTeam]||"—"}`;
  timer.textContent="ENDED";theme.content=sig.theme;return
 }}
-function tick(){if(!state?.session||state.systemState!=="session-live")return;if(!state.session.running){timer.textContent=fmt(state.session.remainingMs);return}const factor=state.session.flag==="yellow"?0.5:1;timer.textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}
+function tick(){if(state?.systemState==="sprint-live"){timer.textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());return}if(!state?.session||state.systemState!=="session-live")return;if(!state.session.running){timer.textContent=fmt(state.session.remainingMs);return}const factor=state.session.flag==="yellow"?0.5:1;timer.textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}
 onValue(stateRef,s=>{state=s.val()||{systemState:"no-event"};status.className="display-status live";statusText.textContent="LIVE";render()},e=>{status.className="display-status error";statusText.textContent="ERROR";showStatus("CONNECTION ERROR","Unable to reach Race Control.")});
 awake();setInterval(tick,250);

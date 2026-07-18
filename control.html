@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=41">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=43">
 </head><body class="control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -46,6 +46,7 @@
 
 <section id="standby-panel" class="panel">
 <p class="eyebrow">Event Status</p><h2>Standby</h2><p>Event active. No session is live.</p>
+<button id="start-sprint" class="action primary-btn wide">Start MFMA Sprint</button>
 <div class="section-head compact"><div><p class="eyebrow">Display-Only Controls</p><h3>Standby Flags</h3></div><p>Signals update displays only. They do not start or modify a session.</p></div>
 <div class="flag-grid">
 <button class="flag yellow" data-flag="yellow"><b>YELLOW</b><strong>Caution</strong><small>Operational display only</small></button>
@@ -55,6 +56,39 @@
 <button class="flag checkered" data-flag="checkered"><b>CHECKERED</b><strong>Checkered</strong><small>Operational display only</small></button>
 <button class="flag" data-flag="clear"><b>CLEAR</b><strong>Clear / Standby</strong><small>Reset operational display</small></button>
 </div>
+</section>
+
+<section id="sprint-panel" class="hidden">
+<section class="panel sprint-status"><div><p class="eyebrow">Informal Competition Mode</p><h2>MFMA Sprint</h2><p>Sprint is independent from scored sessions and ends only when manually terminated.</p></div><span id="sprint-badge" class="live-badge">SPRINT ACTIVE</span></section>
+<section class="timer-panel sprint-timer-panel"><div><p class="eyebrow">Sprint Timer</p><div id="sprint-timer-mode-label" class="phase">NO TIMER</div></div><div id="sprint-timer" class="timer">NO TIMER</div><div class="timer-side"><span id="sprint-timer-status">STOPPED</span><span id="sprint-active-flag">CLEAR</span></div></section>
+<section class="panel">
+<div class="section-head compact"><div><p class="eyebrow">Independent Timing</p><h2>Timer Controls</h2></div><p>Flags never affect the Sprint timer.</p></div>
+<div class="form-grid two">
+<label>Timer Mode<select id="sprint-timer-mode"><option value="none">No timer</option><option value="count-up">Count up</option><option value="count-down">Count down</option></select></label>
+<label>Countdown / Reset Duration (seconds)<input id="sprint-duration" type="number" min="0" value="60"></label>
+<label>Adjustment (seconds)<input id="sprint-adjustment" type="number" min="1" value="10"></label>
+<label>Direct Set (seconds)<input id="sprint-direct-time" type="number" min="0" value="0"></label>
+</div>
+<div class="button-row">
+<button id="sprint-start-timer" class="action primary-btn">Start / Resume</button>
+<button id="sprint-pause-timer" class="action secondary-btn">Pause</button>
+<button id="sprint-reset-timer" class="action secondary-btn">Reset</button>
+<button id="sprint-add-time" class="action secondary-btn">Add Time</button>
+<button id="sprint-subtract-time" class="action secondary-btn">Subtract Time</button>
+<button id="sprint-set-time" class="action secondary-btn">Set Time</button>
+</div>
+</section>
+<section class="panel"><div class="section-head compact"><div><p class="eyebrow">Display-Only Signals</p><h2>Sprint Flags</h2></div><p>All flags are operational displays only.</p></div>
+<div class="flag-grid">
+<button class="flag green" data-sprint-flag="green"><b>GREEN</b><strong>Green</strong><small>Display only</small></button>
+<button class="flag yellow" data-sprint-flag="yellow"><b>YELLOW</b><strong>Yellow</strong><small>Display only</small></button>
+<button class="flag red" data-sprint-flag="red"><b>RED</b><strong>Red</strong><small>Display only</small></button>
+<button class="flag safety-car" data-sprint-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Display only</small></button>
+<button class="flag white" data-sprint-flag="white"><b>WHITE</b><strong>White</strong><small>Display only</small></button>
+<button class="flag checkered" data-sprint-flag="checkered"><b>CHECKERED</b><strong>Checkered</strong><small>Display only</small></button>
+<button class="flag" data-sprint-flag="clear"><b>CLEAR</b><strong>Clear</strong><small>Remain in Sprint</small></button>
+</div></section>
+<section class="panel sprint-terminate"><div><p class="eyebrow">Manual Termination Only</p><h2>End MFMA Sprint</h2><p>This stops the timer, clears Sprint data, and returns displays to Standby.</p></div><button id="terminate-sprint" class="danger-btn">Terminate MFMA Sprint</button></section>
 </section>
 <section id="course-lap-panel" class="panel hidden">
 <p class="eyebrow">Pre-Event Procedure</p>
@@ -133,7 +167,7 @@
 <button id="termination-restart" class="action secondary-btn">Restart Session</button>
 </div>
 </section>
-<section class="panel"><div class="section-head compact"><div><p class="eyebrow">Event Score</p><h2>Session Victories</h2></div></div><div id="scoreboard" class="scoreboard"></div></section>
+<section id="event-score-panel" class="panel"><div class="section-head compact"><div><p class="eyebrow">Event Score</p><h2>Session Victories</h2></div></div><div id="scoreboard" class="scoreboard"></div></section>
 </section></div></main>
 
 <dialog id="event-dialog"><form id="event-form"><div class="dialog-head"><div><p class="eyebrow">New Event</p><h2>Start Event</h2></div><button type="button" id="close-dialog">×</button></div>
@@ -177,4 +211,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=42"></script></body></html>
+<script type="module" src="control.js?v=43"></script></body></html>
