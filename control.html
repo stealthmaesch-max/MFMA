@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=40">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=41">
 </head><body class="control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -92,6 +92,7 @@
 
 <section id="live-panel" class="hidden">
 <section class="timer-panel"><div><p class="eyebrow">Official Session Timer</p><div id="phase-name" class="phase">HIDING</div></div><div id="timer" class="timer">01:00</div><div class="timer-side"><span id="session-label">Session 1</span><span id="roles"></span></div></section>
+<section id="finding-start-panel" class="finding-start-panel hidden"><div><p class="eyebrow">Hiding Complete</p><h2>Awaiting Race Director.</h2><p>The finding timer is held at its full duration.</p></div><button id="start-finding" class="action primary-btn start-finding-btn">Start Finding</button></section>
 <section class="panel signal-status"><div><p class="eyebrow">Current Signal</p><h2 id="active-state">GO</h2></div><span id="live-badge" class="live-badge">SESSION LIVE</span></section>
 <div class="flag-grid">
 <button class="flag green" data-flag="green"><b>GREEN</b><strong>Resume</strong><small>Normal competition</small></button>
@@ -165,4 +166,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=40"></script></body></html>
+<script type="module" src="control.js?v=41"></script></body></html>

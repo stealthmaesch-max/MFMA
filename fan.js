@@ -49,7 +49,7 @@ function render(){
  $("fan-state").textContent=state.systemState.replaceAll("-"," ").toUpperCase();
  $("fan-flag").textContent=(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY").toUpperCase();
 
- $("fan-phase").textContent=s?s.phase.toUpperCase():"STANDBY";
+ $("fan-phase").textContent=s?(s.phase==="awaiting-finding-start"?"HIDING COMPLETE • AWAITING RACE DIRECTOR":s.phase.toUpperCase()):"STANDBY";
  $("fan-timer").textContent=s?fmt(liveRemaining()):"--:--";
  $("fan-session").textContent=s?`Session ${s.number}`:"";
  $("fan-roles").textContent=s?`PURSUIT: ${names[s.pursuitTeam]||"—"} • EVADING: ${names[s.evadingTeam]||"—"}`:"";

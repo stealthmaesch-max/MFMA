@@ -23,7 +23,7 @@ const stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);
 let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null;
 
-const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),live:$("live-panel"),provisional:$("provisional-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
+const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),live:$("live-panel"),provisional:$("provisional-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
 
 
 const authPanel=$("auth-panel");
@@ -207,7 +207,7 @@ async function issueFlag(flag){
  if(!requireAuthenticatedWrite())return;
  if(!state?.session)return;
  if(flag==="yellow"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"yellow","session/flag":"yellow","session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
- if(flag==="green"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
+ if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
  if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,updatedAt:serverTimestamp()});return}
  if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",updatedAt:serverTimestamp()});return}
  if(flag==="white")openWhiteDialog();
@@ -216,8 +216,16 @@ async function issueFlag(flag){
 
 async function confirmSpot(id){
  if(!requireAuthenticatedWrite())return;
+ if(state?.systemState!=="session-live"||state?.session?.phase!=="finding"||!state.session.pursuitVehicleIds?.includes(id)||state.session.spotStatus?.[id])return;
  const status={...(state.session.spotStatus||{}),[id]:true};await update(stateRef,{"session/spotStatus":status,updatedAt:serverTimestamp()});
  if(state.session.pursuitVehicleIds.every(v=>v===id||status[v]))await automaticCheckered(state.session.pursuitTeam,"All required pursuit vehicles confirmed valid radio spots");
+}
+
+async function startFinding(){
+ if(!requireAuthenticatedWrite())return;
+ if(state?.systemState!=="session-live"||state?.session?.phase!=="awaiting-finding-start")return;
+ const now=Date.now();
+ await update(stateRef,{"session/phase":"finding","session/remainingMs":state.session.findDurationMs,"session/running":true,"session/lastTickAt":now,updatedAt:serverTimestamp()});
 }
 
 function tick(){
@@ -226,7 +234,7 @@ function tick(){
  E.timer.textContent=fmt(remaining);
  if(remaining<=0){
   if(s.flag==="yellow"){E.timer.textContent="00:01";return}
-  if(s.phase==="hiding")update(stateRef,{"session/phase":"finding","session/remainingMs":s.findDurationMs,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});
+  if(s.phase==="hiding")update(stateRef,{"session/phase":"awaiting-finding-start","session/remainingMs":s.findDurationMs,"session/running":false,updatedAt:serverTimestamp()});
   else automaticCheckered(s.evadingTeam,"Finding period expired");
  }else if(elapsed>=900)update(stateRef,{"session/remainingMs":remaining,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});
 }
@@ -481,7 +489,7 @@ function render(){
   E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":"White Flag Termination";
   E.terminationDetail.textContent=state.session?.terminationDetail||state.session?.provisionalReason||"Session terminated.";
  }
- if(live){const s=state.session;E.phase.textContent=s.phase==="hiding"?"HIDING":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=s.running?"SESSION LIVE":"SESSION PAUSED";E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]?"disabled":""}><span>${vehicles[v].name}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":"CONFIRM VALID RADIO SPOT"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
+ if(live){const s=state.session,awaiting=s.phase==="awaiting-finding-start",spotsEnabled=s.phase==="finding";E.phase.textContent=s.phase==="hiding"?"HIDING":awaiting?"HIDING COMPLETE":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=awaiting?"AWAITING RACE DIRECTOR":s.running?"SESSION LIVE":"SESSION PAUSED";E.findingStart.classList.toggle("hidden",!awaiting);E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]||!spotsEnabled?"disabled":""}><span>${vehicles[v].name}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":spotsEnabled?"CONFIRM VALID RADIO SPOT":"FINDING NOT STARTED"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
  if(prov||complete){
   E.provisionalDetail.textContent=state.session.provisionalReason||"Session complete";
   E.resultTitle.textContent=complete?"Official Checkered":"Provisional Checkered";
@@ -499,6 +507,7 @@ $("vf-team-a").oninput=updateRoleSummary;$("vf-team-b").oninput=updateRoleSummar
 $("create-event").onclick=()=>$("event-dialog").showModal();$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};
 $("end-event").onclick=async()=>{if(!requireAuthenticatedWrite())return;if(confirm("End the event?"))await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,updatedAt:serverTimestamp()})};
 $("standby-button").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("start-session").onclick=startSession;
+$("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("post-white").onclick=openWhiteDialog;$("close-white").onclick=()=>{$("white-review-overlay").classList.add("hidden");document.body.classList.remove("modal-open")};$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};
 $("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
