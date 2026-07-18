@@ -130,7 +130,7 @@ function sprintTimerPatch(s=state?.sprint,now=Date.now()){
 }
 function setConn(kind,text){E.connection.className=`pill ${kind||""}`;E.connection.querySelector("span:last-child").textContent=text}
 function availableVehicles(){return ["ranger","shelly","gator"].filter(v=>$(`available-${v}`).checked)}
-function driverOptions(v){return Object.entries(personnel).filter(([,p])=>p.canDrive&&p.vehicles.includes(v)).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join("")}
+function driverOptions(){return Object.entries(personnel).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join("")}
 function passengerChecks(prefix){return Object.entries(personnel).map(([id,p])=>`<label class="chip"><input type="checkbox" data-passenger="${id}" data-prefix="${prefix}">${p.name}</label>`).join("")}
 
 function currentTeams(){
@@ -153,10 +153,10 @@ function renderVVSelectors(){
 }
 function renderVVAssignments(){
  const chosen=[...new Set([$("vv-team-1").value,$("vv-team-2").value].filter(Boolean))];
- $("vv-assignments").innerHTML=chosen.map(v=>`<article class="assignment"><p class="eyebrow">${vehicles[v].name} Team</p><label>Driver<select data-vv-driver="${v}"><option value="">Select driver</option>${driverOptions(v)}</select></label><details class="passenger-details"><summary>Passengers</summary><div class="chips">${passengerChecks(v)}</div></details></article>`).join("");
+ $("vv-assignments").innerHTML=chosen.map(v=>`<div class="assignment-row"><strong>${vehicles[v].name}</strong><label><span class="sr-only">${vehicles[v].name} driver</span><select data-vv-driver="${v}"><option value="">Unassigned</option>${driverOptions()}</select></label><details class="passenger-details"><summary>Select passengers</summary><div class="chips">${passengerChecks(v)}</div></details></div>`).join("");
 }
 function renderVF(){
- const v=$("vf-vehicle").value;$("vf-driver").innerHTML=`<option value="">Select driver</option>${driverOptions(v)}`;$("vf-passengers").innerHTML=passengerChecks("vf");updateRoleSummary();
+ $("vf-driver").innerHTML=`<option value="">Unassigned</option>${driverOptions()}`;$("vf-passengers").innerHTML=passengerChecks("vf");updateRoleSummary();
 }
 function updateRoleSummary(){const r=rolePair();E.roleSummary.textContent=`${r.names[r.pursuit]} pursuing • ${r.names[r.evading]} evading`}
 
@@ -175,12 +175,10 @@ function validate(){
  if(sessionType==="vehicle-vehicle"){
   if($("vv-team-1").value===$("vv-team-2").value)errors.push("Choose two different vehicle teams.");
   for(const [v,t] of Object.entries(setup.vehicleTeams)){
-   if(!t.driver)errors.push(`${vehicles[v].name} needs one driver.`);
    for(const p of [t.driver,...t.passengers].filter(Boolean)){if(used.has(p))errors.push(`${personnel[p].name} is assigned twice.`);used.add(p)}
    if(t.passengers.includes(t.driver))errors.push(`${personnel[t.driver]?.name} cannot also be a passenger.`);
   }
  }else{
-  if(!$("vf-driver").value)errors.push("The pursuit vehicle needs a driver.");
   for(const p of [$("vf-driver").value,...setup.passengers].filter(Boolean)){if(used.has(p))errors.push(`${personnel[p].name} is assigned twice.`);used.add(p)}
   if(setup.passengers.includes($("vf-driver").value))errors.push("The driver cannot also be a passenger.");
  }
@@ -310,7 +308,7 @@ async function startFinding(){
 function tick(){
  if(!state?.session||state.systemState!=="session-live"||!state.session.running)return;
  const s=state.session,elapsed=Date.now()-(s.lastTickAt||Date.now()),factor=s.flag==="yellow"?0.5:1,remaining=Math.max(0,s.remainingMs-elapsed*factor);
- E.timer.textContent=fmt(remaining);
+ E.timer.textContent=fmt(remaining);$("toolbar-timer").textContent=fmt(remaining);
  if(remaining<=0){
   if(s.flag==="yellow"){E.timer.textContent="00:01";return}
   if(s.phase==="hiding")update(stateRef,{"session/phase":"awaiting-finding-start","session/remainingMs":s.findDurationMs,"session/running":false,updatedAt:serverTimestamp()});
@@ -321,7 +319,7 @@ function tick(){
 function sprintTick(){
  if(state?.systemState!=="sprint-live"||!state?.sprint?.active)return;
  const s=state.sprint,value=sprintTime(s);
- $("sprint-timer").textContent=s.timerMode==="none"?"NO TIMER":fmt(value);
+ $("sprint-timer").textContent=s.timerMode==="none"?"NO TIMER":fmt(value);$("toolbar-timer").textContent=s.timerMode==="none"?"NO TIMER":fmt(value);
  if(!s.running)return;
  if(s.timerMode==="count-down"&&value<=0){update(stateRef,{"sprint/remainingMs":0,"sprint/running":false,"sprint/lastTickAt":null,updatedAt:serverTimestamp()});return}
  if(Date.now()-(s.lastTickAt||Date.now())>=900)update(stateRef,{...sprintTimerPatch(),updatedAt:serverTimestamp()});
@@ -560,11 +558,17 @@ function renderCircuit(id){
  $(id).innerHTML=Object.keys(names).map(k=>`<div class="progress-card"><strong>${names[k]}</strong><span>Pursuit ${roles[k]?.pursuit?"✓":"○"}</span><span>Evading ${roles[k]?.evading?"✓":"○"}</span></div>`).join("");
 }
 function render(){
- const mode=getRenderMode(state),has=mode!=="no-event";E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
+ const mode=getRenderMode(state),has=mode!=="no-event";document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
  E.eventName.textContent=state.event.name;E.eventMeta.textContent=state.event.circuit?.format?state.event.circuit.format.replace("-","–"):"Awaiting first session";
  const standby=mode==="standby",course=mode==="course-lap",sprintLive=mode==="sprint-live",live=mode==="session-live"||mode==="awaiting-finding-start",awaiting=mode==="awaiting-finding-start",prov=mode==="provisional",complete=mode==="session-complete",safetyTerm=mode==="safety-car-termination",whiteTerm=mode==="white-termination";
  showOnly(mode,{standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"safety-car-termination":E.termination,"white-termination":E.termination});
- E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(live&&!awaiting));
+ E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(standby||(live&&!awaiting)));
+ const flagsAllowed=standby||sprintLive||(live&&!awaiting);$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-status").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
+ const permittedFlags=standby?new Set(["yellow","red","safety-car","white","checkered","clear"]):sprintLive?new Set(["green","yellow","red","safety-car","white","checkered","clear"]):new Set(["green","yellow","red","safety-car","white","checkered"]);
+ document.querySelectorAll("[data-quick-flag]").forEach(button=>{button.disabled=!permittedFlags.has(button.dataset.quickFlag);button.classList.toggle("active",button.dataset.quickFlag===state.activeFlag)});
+ $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
+ $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):live?fmt(state.session?.remainingMs||0):(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
+ renderScore("scoreboard");renderCircuit("sidebar-circuit");$("sidebar-status").textContent=awaiting?"Hiding complete — confirmation required":live?`${state.session?.format?.replaceAll("-"," ")||"Session"} • Session ${state.session?.number||""}`:state.event?.courseLap?.status==="complete"?"✓ Course Lap Complete":"Ready for competition";
  const dedicatedTermination=safetyTerm||whiteTerm;$("standby-button").classList.toggle("hidden",sprintLive||course||live||prov||complete||dedicatedTermination);$("end-event").classList.toggle("hidden",sprintLive||course||live||dedicatedTermination);
  if(standby||course){
   const lap=state.event?.courseLap||{},overtake=state.event?.safetyCarOvertake||null;
@@ -613,6 +617,7 @@ $("start-sprint").onclick=startSprint;$("terminate-sprint").onclick=()=>{if(conf
 $("sprint-timer-mode").onchange=setSprintTimerMode;$("sprint-duration").onchange=configureSprintDuration;$("sprint-start-timer").onclick=startSprintTimer;$("sprint-pause-timer").onclick=pauseSprintTimer;$("sprint-reset-timer").onclick=resetSprintTimer;
 $("sprint-add-time").onclick=()=>adjustSprintTimer(Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-subtract-time").onclick=()=>adjustSprintTimer(-Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-set-time").onclick=setSprintTimer;
 document.querySelectorAll("[data-sprint-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.sprintFlag));
+document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.quickFlag));
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("post-white").onclick=openWhiteDialog;$("close-white").onclick=()=>{$("white-review-overlay").classList.add("hidden");document.body.classList.remove("modal-open")};$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};
@@ -635,5 +640,5 @@ $("white-review-overlay").onclick=e=>{
  }
 };
 
-onValue(stateRef,s=>{state=s.val()||{systemState:"no-event"};setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;render()},e=>{setConn("error","Connection error");console.error(e)});
+onValue(stateRef,s=>{state=s.val()||{systemState:"no-event"};setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
 renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick()},250);

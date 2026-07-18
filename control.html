@@ -2,8 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=44">
-</head><body class="control-page"><main class="control-shell">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=46">
+</head><body class="control-page race-control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
     <div class="brand-row">
@@ -26,7 +26,8 @@
   </section>
 </section>
 <div id="secured-control" class="hidden">
-<header class="topbar"><div class="brand-row"><div class="mark small">MFMA</div><div><p class="eyebrow">Race Director Console</p><h1>Race Control</h1></div></div>
+<header class="topbar control-toolbar"><div class="brand-row"><div class="mark small">MFMA</div><div><p class="eyebrow">Race Director Console</p><h1 id="toolbar-event-name">Race Control</h1></div></div>
+<div class="toolbar-telemetry"><div><span>STATE</span><strong id="toolbar-state">NO EVENT</strong></div><div><span>FLAG</span><strong id="toolbar-flag">CLEAR</strong></div><div><span>TIMER</span><strong id="toolbar-timer">--:--</strong></div></div>
 <div class="header-account">
       <div id="connection" class="pill"><span class="dot"></span><span>Connecting</span></div>
       <div id="account-pill" class="account-pill">
@@ -40,11 +41,13 @@
 
 <section id="no-event" class="panel"><p class="eyebrow">System Status</p><h2>No Active Event</h2><p>The display network is online. No event has been opened.</p><button id="create-event" class="action primary-btn">Start Event</button></section>
 
-<section id="event-area" class="hidden">
-<section class="panel event-head"><div><p class="eyebrow">Active Event</p><h2 id="event-name">MFMA Event</h2><p id="event-meta"></p></div>
+<section id="event-area" class="hidden dashboard-grid">
+<section class="panel event-head dashboard-event"><div><p class="eyebrow">Active Event</p><h2 id="event-name">MFMA Event</h2><p id="event-meta"></p></div>
 <div class="button-row"><button id="standby-button" class="action secondary-btn">Standby</button><button id="end-event" class="danger-btn">End Event</button></div></section>
 
-<section id="standby-panel" class="panel">
+<section id="quick-flag-panel" class="panel quick-flag-panel hidden"><div class="section-head compact"><div><p class="eyebrow">Quick Flags</p><h2>Race Signals</h2></div><strong id="quick-flag-status">CLEAR</strong></div><div class="quick-flag-bar"><button class="flag green" data-quick-flag="green"><b>GREEN</b><strong>Green</strong></button><button class="flag yellow" data-quick-flag="yellow"><b>YELLOW</b><strong>Yellow</strong></button><button class="flag red" data-quick-flag="red"><b>RED</b><strong>Red</strong></button><button class="flag safety-car" data-quick-flag="safety-car"><b>SC</b><strong>Safety Car</strong></button><button class="flag white" data-quick-flag="white"><b>WHITE</b><strong>White</strong></button><button class="flag checkered" data-quick-flag="checkered"><b>FINISH</b><strong>Checkered</strong></button><button class="flag" data-quick-flag="clear"><b>CLEAR</b><strong>Clear</strong></button></div></section>
+
+<section id="standby-panel" class="panel dashboard-left">
 <p class="eyebrow">Event Status</p><h2>Standby</h2><p>Event active. No session is live.</p>
 <div id="standby-course-lap" class="status-note hidden"><span id="standby-course-lap-status"></span><button id="start-course-lap" class="action primary-btn hidden">Start Course Lap</button></div>
 <button id="start-sprint" class="action primary-btn wide">Start MFMA Sprint</button>
@@ -59,7 +62,7 @@
 </div>
 </section>
 
-<section id="sprint-panel" class="hidden">
+<section id="sprint-panel" class="dashboard-main hidden">
 <section class="panel sprint-status"><div><p class="eyebrow">Informal Competition Mode</p><h2>MFMA Sprint</h2><p>Sprint is independent from scored sessions and ends only when manually terminated.</p></div><span id="sprint-badge" class="live-badge">SPRINT ACTIVE</span></section>
 <section class="timer-panel sprint-timer-panel"><div><p class="eyebrow">Sprint Timer</p><div id="sprint-timer-mode-label" class="phase">NO TIMER</div></div><div id="sprint-timer" class="timer">NO TIMER</div><div class="timer-side"><span id="sprint-timer-status">STOPPED</span><span id="sprint-active-flag">CLEAR</span></div></section>
 <section class="panel">
@@ -91,7 +94,7 @@
 </div></section>
 <section class="panel sprint-terminate"><div><p class="eyebrow">Manual Termination Only</p><h2>End MFMA Sprint</h2><p>This stops the timer, clears Sprint data, and returns displays to Standby.</p></div><button id="terminate-sprint" class="danger-btn">Terminate MFMA Sprint</button></section>
 </section>
-<section id="course-lap-panel" class="panel hidden">
+<section id="course-lap-panel" class="panel dashboard-main hidden">
 <p class="eyebrow">Pre-Event Procedure</p>
 <h2>Safety Car Familiarization Lap</h2>
 <p>All participating vehicles follow the Official Vehicle around the course before Session 1.</p>
@@ -103,7 +106,7 @@
 <div id="course-lap-status" class="status-note"></div>
 </section>
 
-<section id="setup-panel" class="panel">
+<section id="setup-panel" class="panel dashboard-main">
 <div class="section-head"><div><p class="eyebrow">Next Session</p><h2>Quick Setup</h2></div><p>Settings carry forward unless changed.</p></div>
 <div class="quick-row">
 <div><p class="eyebrow">Session Type</p><div class="segmented"><button class="segment active" data-type="vehicle-vehicle">Vehicle–Vehicle</button><button class="segment" data-type="vehicle-foot">Vehicle–Foot</button></div></div>
@@ -117,14 +120,14 @@
 <label class="chip"><input id="available-gator" type="checkbox"> Gator</label>
 </div></div>
 <div class="form-grid two"><label>Vehicle Team 1<select id="vv-team-1"></select></label><label>Vehicle Team 2<select id="vv-team-2"></select></label></div>
-<div id="vv-assignments" class="assignment-grid"></div>
+<div class="assignment-table-head"><span>Vehicle</span><span>Driver (optional)</span><span>Passengers (optional)</span></div><div id="vv-assignments" class="compact-assignments"></div>
 </div>
 
 <div id="vehicle-foot-setup" class="hidden">
 <div class="form-grid two"><label>Personnel Team A<input id="vf-team-a" value="Team A"></label><label>Personnel Team B<input id="vf-team-b" value="Team B"></label></div>
 <div class="subsection"><p class="eyebrow">Pursuit Vehicle</p><div class="form-grid two">
 <label>Vehicle<select id="vf-vehicle"><option value="ranger">Ranger</option><option value="shelly">Shelly</option><option value="gator">Gator</option></select></label>
-<label>Driver<select id="vf-driver"></select></label></div></div>
+<label>Driver (optional)<select id="vf-driver"></select></label></div></div>
 <details class="passenger-details"><summary>Pursuit Vehicle Passengers</summary><div id="vf-passengers" class="chips"></div></details>
 </div>
 
@@ -135,7 +138,7 @@
 <div id="validation" class="validation hidden"></div><button id="start-session" class="action primary-btn wide">Start Session</button>
 </section>
 
-<section id="live-panel" class="hidden">
+<section id="live-panel" class="dashboard-main hidden">
 <section id="live-timer-panel" class="timer-panel"><div><p class="eyebrow">Official Session Timer</p><div id="phase-name" class="phase">HIDING</div></div><div id="timer" class="timer">01:00</div><div class="timer-side"><span id="session-label">Session 1</span><span id="roles"></span></div></section>
 <section id="finding-start-panel" class="finding-start-panel hidden"><div><p class="eyebrow">Hiding Complete</p><h2>Awaiting Race Director.</h2><p>The finding timer is held at its full duration.</p></div><button id="start-finding" class="action primary-btn start-finding-btn">Start Finding</button></section>
 <section id="live-signal-panel" class="panel signal-status"><div><p class="eyebrow">Current Signal</p><h2 id="active-state">GO</h2></div><span id="live-badge" class="live-badge">SESSION LIVE</span></section>
@@ -150,13 +153,13 @@
 <section id="live-spots-panel" class="panel"><div class="section-head compact"><div><p class="eyebrow">Pursuit Spots</p><h2>Required Radio Spots</h2></div></div><div id="spot-buttons" class="spot-grid"></div></section>
 </section>
 
-<section id="provisional-panel" class="panel hidden"><p class="eyebrow">Session Complete</p><h2 id="result-title">Provisional Checkered</h2><p id="provisional-detail"></p>
+<section id="provisional-panel" class="panel dashboard-main hidden"><p class="eyebrow">Session Complete</p><h2 id="result-title">Provisional Checkered</h2><p id="provisional-detail"></p>
 <div id="between-scoreboard" class="scoreboard"></div><div id="circuit-progress" class="circuit-progress"></div>
 <div class="button-row"><button id="finalize-result" class="action primary-btn">Finalize Result</button><button id="next-session" class="action primary-btn hidden">Next Session</button><button id="show-scoreboard" class="action secondary-btn">Show Scoreboard</button><button id="post-white" class="action white-btn">White Flag Review</button><button id="return-standby" class="action secondary-btn">Standby</button></div>
 </section>
 
 
-<section id="termination-panel" class="panel hidden">
+<section id="termination-panel" class="panel dashboard-main hidden">
 <p class="eyebrow">Special Termination</p>
 <h2 id="termination-title">Session Terminated</h2>
 <p id="termination-detail"></p>
@@ -167,7 +170,7 @@
 <button id="termination-restart" class="action secondary-btn">Restart Session</button>
 </div>
 </section>
-<section id="event-score-panel" class="panel"><div class="section-head compact"><div><p class="eyebrow">Event Score</p><h2>Session Victories</h2></div></div><div id="scoreboard" class="scoreboard"></div></section>
+<aside id="event-score-panel" class="panel dashboard-right"><details class="secondary-details"><summary>Scores &amp; session details</summary><div class="section-head compact"><div><p class="eyebrow">Event Score</p><h2>Session Victories</h2></div></div><div id="scoreboard" class="scoreboard"></div><div class="sidebar-divider"></div><p class="eyebrow">Circuit Progress</p><div id="sidebar-circuit" class="circuit-progress"></div><div class="sidebar-divider"></div><p class="eyebrow">Quick Status</p><div id="sidebar-status" class="status-note"></div></details></aside>
 </section></div></main>
 
 <dialog id="event-dialog"><form id="event-form"><div class="dialog-head"><div><p class="eyebrow">New Event</p><h2>Start Event</h2></div><button type="button" id="close-dialog">×</button></div>
@@ -211,4 +214,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=44"></script></body></html>
+<script type="module" src="control.js?v=46"></script></body></html>
