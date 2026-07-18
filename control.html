@@ -44,7 +44,18 @@
 <section class="panel event-head"><div><p class="eyebrow">Active Event</p><h2 id="event-name">MFMA Event</h2><p id="event-meta"></p></div>
 <div class="button-row"><button id="standby-button" class="action secondary-btn">Standby</button><button id="end-event" class="danger-btn">End Event</button></div></section>
 
-<section id="standby-panel" class="panel"><p class="eyebrow">Event Status</p><h2>Standby</h2><p>Event active. No session is live.</p></section>
+<section id="standby-panel" class="panel">
+<p class="eyebrow">Event Status</p><h2>Standby</h2><p>Event active. No session is live.</p>
+<div class="section-head compact"><div><p class="eyebrow">Display-Only Controls</p><h3>Standby Flags</h3></div><p>Signals update displays only. They do not start or modify a session.</p></div>
+<div class="flag-grid">
+<button class="flag yellow" data-flag="yellow"><b>YELLOW</b><strong>Caution</strong><small>Operational display only</small></button>
+<button class="flag red" data-flag="red"><b>RED</b><strong>Stop</strong><small>Operational display only</small></button>
+<button class="flag safety-car" data-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Operational display only</small></button>
+<button class="flag white" data-flag="white"><b>WHITE</b><strong>White Flag</strong><small>Operational display only</small></button>
+<button class="flag checkered" data-flag="checkered"><b>CHECKERED</b><strong>Checkered</strong><small>Operational display only</small></button>
+<button class="flag" data-flag="clear"><b>CLEAR</b><strong>Clear / Standby</strong><small>Reset operational display</small></button>
+</div>
+</section>
 <section id="course-lap-panel" class="panel hidden">
 <p class="eyebrow">Pre-Event Procedure</p>
 <h2>Safety Car Familiarization Lap</h2>
@@ -166,4 +177,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=41"></script></body></html>
+<script type="module" src="control.js?v=42"></script></body></html>

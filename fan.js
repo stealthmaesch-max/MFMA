@@ -47,7 +47,8 @@ function render(){
  const names=s?.teamNames||event.teamNames||{};
  $("fan-event").textContent=event.name;
  $("fan-state").textContent=state.systemState.replaceAll("-"," ").toUpperCase();
- $("fan-flag").textContent=(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY").toUpperCase();
+ const standbyFlag=state.systemState==="standby"?(state.activeFlag||"clear"):null;
+ $("fan-flag").textContent=(standbyFlag==="clear"?"STANDBY":standbyFlag?standbyFlag.replaceAll("-"," "):(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY")).toUpperCase();
 
  $("fan-phase").textContent=s?(s.phase==="awaiting-finding-start"?"HIDING COMPLETE • AWAITING RACE DIRECTOR":s.phase.toUpperCase()):"STANDBY";
  $("fan-timer").textContent=s?fmt(liveRemaining()):"--:--";

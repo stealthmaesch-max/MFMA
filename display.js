@@ -27,7 +27,14 @@ function renderStandbyLeaderboard(){
  standbyLeaderboard.classList.remove("hidden");
 }
 function showLive(){const sig=signals[state.activeFlag]||signals.clear,s=state.session,awaiting=s.phase==="awaiting-finding-start";statusView.classList.add("hidden");liveView.classList.remove("hidden");display.className=`display ${sig.className}${sig.flash?" flash":""}`;label.textContent=awaiting?"HIDING COMPLETE":sig.label;instruction.textContent=awaiting?"Awaiting Race Director.":sig.instruction;theme.content=sig.theme;sessionLine.textContent=`SESSION ${s.number} • ${awaiting?"AWAITING FINDING START":s.phase.toUpperCase()} • PURSUIT: ${s.teamNames[s.pursuitTeam]} • EVADING: ${s.teamNames[s.evadingTeam]}`;timer.textContent=fmt(s.remainingMs)}
-function render(){if(!state?.event||state.systemState==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(state.systemState==="standby"){showStatus("STANDBY","Event active. No session is live.",state.event.name);renderStandbyLeaderboard();return}if(state.systemState==="course-lap"){
+function showStandbyFlag(){
+ const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear;
+ if(flag==="clear"){showStatus("STANDBY","Event active. No session is live.",state.event.name);renderStandbyLeaderboard();return}
+ const copy={yellow:["CAUTION","OPERATIONAL SIGNAL"],red:["STOP","AWAIT RACE CONTROL INSTRUCTIONS"],"safety-car":["SAFETY CAR","FOLLOW OFFICIAL VEHICLE"],white:["WHITE","OPERATIONAL SIGNAL"],checkered:["CHECKERED","OPERATIONAL SIGNAL"]}[flag]||[sig.label,sig.instruction];
+ statusView.classList.add("hidden");liveView.classList.remove("hidden");display.className=`display ${sig.className}${sig.flash?" flash":""}`;
+ label.textContent=copy[0];instruction.textContent=copy[1];sessionLine.textContent=`${state.event.name} • STANDBY`;timer.textContent="--:--";theme.content=sig.theme;
+}
+function render(){if(!state?.event||state.systemState==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(state.systemState==="standby"){showStandbyFlag();return}if(state.systemState==="course-lap"){
  const overtake=state.event?.safetyCarOvertake;
  if(overtake?.active){
   showStatus("OVERTAKE SAFETY CAR","AUTHORIZED BY RACE DIRECTOR • PROCEED WITH CAUTION",state.event.name);display.classList.add("overtake-flash");

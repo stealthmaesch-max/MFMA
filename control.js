@@ -205,7 +205,13 @@ async function automaticCheckered(winner,reason){
 
 async function issueFlag(flag){
  if(!requireAuthenticatedWrite())return;
- if(!state?.session)return;
+ if(state?.systemState==="standby"){
+  const standbyFlags=new Set(["yellow","red","safety-car","white","checkered","clear"]);
+  if(!standbyFlags.has(flag))return;
+  await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
+  return;
+ }
+ if(!state?.session||state.systemState!=="session-live")return;
  if(flag==="yellow"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"yellow","session/flag":"yellow","session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
  if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
  if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,updatedAt:serverTimestamp()});return}
