@@ -13,6 +13,7 @@ import {
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { personnel, vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
+import { getRenderMode, showOnly } from "./display-state.js?v=44";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -559,17 +560,21 @@ function renderCircuit(id){
  $(id).innerHTML=Object.keys(names).map(k=>`<div class="progress-card"><strong>${names[k]}</strong><span>Pursuit ${roles[k]?.pursuit?"✓":"○"}</span><span>Evading ${roles[k]?.evading?"✓":"○"}</span></div>`).join("");
 }
 function render(){
- const has=!!state?.event&&state.systemState!=="no-event";E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
+ const mode=getRenderMode(state),has=mode!=="no-event";E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
  E.eventName.textContent=state.event.name;E.eventMeta.textContent=state.event.circuit?.format?state.event.circuit.format.replace("-","–"):"Awaiting first session";
- const standby=state.systemState==="standby",course=state.systemState==="course-lap",sprintLive=state.systemState==="sprint-live",live=state.systemState==="session-live",prov=state.systemState==="provisional",complete=state.systemState==="session-complete",safetyTerm=state.systemState==="safety-car-termination",whiteTerm=state.systemState==="white-termination";
- E.standby.classList.toggle("hidden",!standby);E.setup.classList.toggle("hidden",!standby);E.sprint.classList.toggle("hidden",!sprintLive);E.courseLap.classList.toggle("hidden",!(standby||course));E.live.classList.toggle("hidden",!live);E.provisional.classList.toggle("hidden",!(prov||complete));E.termination.classList.toggle("hidden",!(safetyTerm||whiteTerm));$("event-score-panel").classList.toggle("hidden",sprintLive);$("standby-button").classList.toggle("hidden",sprintLive);$("end-event").classList.toggle("hidden",sprintLive);renderScore("scoreboard");
+ const standby=mode==="standby",course=mode==="course-lap",sprintLive=mode==="sprint-live",live=mode==="session-live"||mode==="awaiting-finding-start",awaiting=mode==="awaiting-finding-start",prov=mode==="provisional",complete=mode==="session-complete",safetyTerm=mode==="safety-car-termination",whiteTerm=mode==="white-termination";
+ showOnly(mode,{standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"safety-car-termination":E.termination,"white-termination":E.termination});
+ E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(live&&!awaiting));
+ const dedicatedTermination=safetyTerm||whiteTerm;$("standby-button").classList.toggle("hidden",sprintLive||course||live||prov||complete||dedicatedTermination);$("end-event").classList.toggle("hidden",sprintLive||course||live||dedicatedTermination);
  if(standby||course){
   const lap=state.event?.courseLap||{},overtake=state.event?.safetyCarOvertake||null;
-  $("start-course-lap").classList.toggle("hidden",lap.status==="active"||lap.status==="complete");
+  $("standby-course-lap").classList.toggle("hidden",!standby||lap.required===false);
+  $("standby-course-lap-status").textContent=lap.status==="complete"?"Course Lap Complete":"Course Lap Required";
+  $("start-course-lap").classList.toggle("hidden",!standby||lap.status==="active"||lap.status==="complete");
   $("complete-course-lap").classList.toggle("hidden",lap.status!=="active");
   $("authorize-overtake").classList.toggle("hidden",lap.status!=="active");
   $("cancel-overtake").classList.toggle("hidden",!overtake?.active);
-  E.courseLapStatus.textContent=lap.status==="complete"?"Course familiarization complete.":lap.status==="active"?(overtake?.active?"Safety Car overtake authorized for all drivers.":"Course lap in progress."):"Course familiarization required before Session 1.";
+  E.courseLapStatus.textContent=overtake?.active?"Safety Car overtake authorized for all drivers.":"Course lap in progress.";
  }
  if(safetyTerm||whiteTerm){
   $("termination-authorize-overtake").classList.toggle("hidden",!safetyTerm);
@@ -586,7 +591,7 @@ function render(){
   $("sprint-active-flag").textContent=`FLAG: ${flag}`;
   $("sprint-duration").value=Math.max(0,(s.configuredMs||0)/1000);
  }
- if(live){const s=state.session,awaiting=s.phase==="awaiting-finding-start",spotsEnabled=s.phase==="finding";E.phase.textContent=s.phase==="hiding"?"HIDING":awaiting?"HIDING COMPLETE":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=awaiting?"AWAITING RACE DIRECTOR":s.running?"SESSION LIVE":"SESSION PAUSED";E.findingStart.classList.toggle("hidden",!awaiting);E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]||!spotsEnabled?"disabled":""}><span>${vehicles[v].name}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":spotsEnabled?"CONFIRM VALID RADIO SPOT":"FINDING NOT STARTED"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
+ if(live){const s=state.session,spotsEnabled=s.phase==="finding";E.phase.textContent=s.phase==="hiding"?"HIDING":awaiting?"HIDING COMPLETE":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=awaiting?"AWAITING RACE DIRECTOR":s.running?"SESSION LIVE":"SESSION PAUSED";E.findingStart.classList.toggle("hidden",!awaiting);$("live-signal-panel").classList.toggle("hidden",awaiting);$("live-flag-panel").classList.toggle("hidden",awaiting);$("live-spots-panel").classList.toggle("hidden",awaiting);E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]||!spotsEnabled?"disabled":""}><span>${vehicles[v].name}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":spotsEnabled?"CONFIRM VALID RADIO SPOT":"FINDING NOT STARTED"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
  if(prov||complete){
   E.provisionalDetail.textContent=state.session.provisionalReason||"Session complete";
   E.resultTitle.textContent=complete?"Official Checkered":"Provisional Checkered";

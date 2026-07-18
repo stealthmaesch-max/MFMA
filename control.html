@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=43">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=44">
 </head><body class="control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -46,6 +46,7 @@
 
 <section id="standby-panel" class="panel">
 <p class="eyebrow">Event Status</p><h2>Standby</h2><p>Event active. No session is live.</p>
+<div id="standby-course-lap" class="status-note hidden"><span id="standby-course-lap-status"></span><button id="start-course-lap" class="action primary-btn hidden">Start Course Lap</button></div>
 <button id="start-sprint" class="action primary-btn wide">Start MFMA Sprint</button>
 <div class="section-head compact"><div><p class="eyebrow">Display-Only Controls</p><h3>Standby Flags</h3></div><p>Signals update displays only. They do not start or modify a session.</p></div>
 <div class="flag-grid">
@@ -95,7 +96,6 @@
 <h2>Safety Car Familiarization Lap</h2>
 <p>All participating vehicles follow the Official Vehicle around the course before Session 1.</p>
 <div class="button-row">
-<button id="start-course-lap" class="action primary-btn">Start Course Lap</button>
 <button id="complete-course-lap" class="action primary-btn hidden">Complete Course Lap</button>
 <button id="authorize-overtake" class="action yellow-btn hidden">Allow Safety Car Overtake</button>
 <button id="cancel-overtake" class="action secondary-btn hidden">End Overtake Authorization</button>
@@ -136,10 +136,10 @@
 </section>
 
 <section id="live-panel" class="hidden">
-<section class="timer-panel"><div><p class="eyebrow">Official Session Timer</p><div id="phase-name" class="phase">HIDING</div></div><div id="timer" class="timer">01:00</div><div class="timer-side"><span id="session-label">Session 1</span><span id="roles"></span></div></section>
+<section id="live-timer-panel" class="timer-panel"><div><p class="eyebrow">Official Session Timer</p><div id="phase-name" class="phase">HIDING</div></div><div id="timer" class="timer">01:00</div><div class="timer-side"><span id="session-label">Session 1</span><span id="roles"></span></div></section>
 <section id="finding-start-panel" class="finding-start-panel hidden"><div><p class="eyebrow">Hiding Complete</p><h2>Awaiting Race Director.</h2><p>The finding timer is held at its full duration.</p></div><button id="start-finding" class="action primary-btn start-finding-btn">Start Finding</button></section>
-<section class="panel signal-status"><div><p class="eyebrow">Current Signal</p><h2 id="active-state">GO</h2></div><span id="live-badge" class="live-badge">SESSION LIVE</span></section>
-<div class="flag-grid">
+<section id="live-signal-panel" class="panel signal-status"><div><p class="eyebrow">Current Signal</p><h2 id="active-state">GO</h2></div><span id="live-badge" class="live-badge">SESSION LIVE</span></section>
+<div id="live-flag-panel" class="flag-grid">
 <button class="flag green" data-flag="green"><b>GREEN</b><strong>Resume</strong><small>Normal competition</small></button>
 <button class="flag yellow" data-flag="yellow"><b>YELLOW</b><strong>Caution</strong><small>Timer runs at half speed</small></button>
 <button class="flag safety-car" data-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Terminate session</small></button>
@@ -147,7 +147,7 @@
 <button class="flag white" data-flag="white"><b>WHITE</b><strong>Penalty / DQ</strong><small>Terminate session</small></button>
 <button class="flag checkered" data-flag="checkered"><b>CHECKERED</b><strong>Complete Session</strong><small>Manual fallback</small></button>
 </div>
-<section class="panel"><div class="section-head compact"><div><p class="eyebrow">Pursuit Spots</p><h2>Required Radio Spots</h2></div></div><div id="spot-buttons" class="spot-grid"></div></section>
+<section id="live-spots-panel" class="panel"><div class="section-head compact"><div><p class="eyebrow">Pursuit Spots</p><h2>Required Radio Spots</h2></div></div><div id="spot-buttons" class="spot-grid"></div></section>
 </section>
 
 <section id="provisional-panel" class="panel hidden"><p class="eyebrow">Session Complete</p><h2 id="result-title">Provisional Checkered</h2><p id="provisional-detail"></p>
@@ -211,4 +211,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=43"></script></body></html>
+<script type="module" src="control.js?v=44"></script></body></html>

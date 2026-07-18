@@ -3,6 +3,7 @@ import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { personnel, vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
+import { getRenderMode } from "./display-state.js?v=44";
 
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
@@ -34,7 +35,15 @@ function render(){
  connection.className="pill connected";
  connection.querySelector("span:last-child").textContent="Connected";
 
- if(!state?.event||state.systemState==="no-event"){
+ const mode=getRenderMode(state);
+ const visibility={
+  "no-event":[],standby:[],"course-lap":[],"sprint-live":["fan-timer-panel"],
+  "session-live":["fan-timer-panel","fan-score-panel","fan-circuit-panel","fan-assignments-panel"],
+  "awaiting-finding-start":["fan-timer-panel"],provisional:["fan-score-panel","fan-circuit-panel"],
+  "session-complete":["fan-score-panel","fan-circuit-panel"],"safety-car-termination":[],"white-termination":[]
+ };
+ ["fan-timer-panel","fan-score-panel","fan-circuit-panel","fan-assignments-panel"].forEach(id=>$(id).classList.toggle("hidden",!visibility[mode]?.includes(id)));
+ if(mode==="no-event"){
   $("fan-event").textContent="No Active Event";
   $("fan-state").textContent="Waiting for Race Control.";
   $("fan-flag").textContent="OFF AIR";
@@ -56,15 +65,22 @@ function render(){
  const operationalFlag=["standby","sprint-live"].includes(state.systemState)?(state.activeFlag||"clear"):null;
  $("fan-flag").textContent=(operationalFlag==="clear"?(state.systemState==="sprint-live"?"CLEAR":"STANDBY"):operationalFlag?operationalFlag.replaceAll("-"," "):(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY")).toUpperCase();
 
- if(state.systemState==="sprint-live"){
+ if(mode==="course-lap"){
+  $("fan-state").textContent="COURSE LAP";$("fan-flag").textContent="SAFETY CAR";return;
+ }
+ if(mode==="sprint-live"){
   $("fan-state").textContent="MFMA SPRINT";$("fan-phase").textContent="MFMA SPRINT";$("fan-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());$("fan-session").textContent="";$("fan-roles").textContent="";
-  $("fan-scoreboard").innerHTML="<p>Sprint does not affect event scores.</p>";$("fan-circuit").innerHTML="<p>Sprint has no circuit role progress.</p>";$("fan-assignments").innerHTML="<p>No Sprint teams or pursuit/evading roles.</p>";return;
+  return;
  }
 
  $("fan-phase").textContent=s?(s.phase==="awaiting-finding-start"?"HIDING COMPLETE • AWAITING RACE DIRECTOR":s.phase.toUpperCase()):"STANDBY";
  $("fan-timer").textContent=s?fmt(liveRemaining()):"--:--";
  $("fan-session").textContent=s?`Session ${s.number}`:"";
  $("fan-roles").textContent=s?`PURSUIT: ${names[s.pursuitTeam]||"—"} • EVADING: ${names[s.evadingTeam]||"—"}`:"";
+
+ if(mode==="standby"){const complete=event.courseLap?.status==="complete";$("fan-state").textContent=complete?"STANDBY • COURSE LAP COMPLETE":"STANDBY";return}
+ if(mode==="awaiting-finding-start"){$("fan-session").textContent=`Session ${s.number}`;$("fan-roles").textContent="";return}
+ if(mode==="safety-car-termination"||mode==="white-termination"){$("fan-phase").textContent=mode.replaceAll("-"," ").toUpperCase();$("fan-flag").textContent=mode==="white-termination"?"WHITE":"SAFETY CAR";return}
 
  const scores=event.scores||{};
  const sorted=Object.keys(scores).map(key=>({key,name:names[key]||key.toUpperCase(),score:Number(scores[key]||0)})).sort((a,b)=>b.score-a.score);
