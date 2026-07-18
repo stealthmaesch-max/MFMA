@@ -14,7 +14,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { personnel, vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
-import { enableSounds, getVolume, onSoundStatus, playSound, replayLastSound, setVolume, stopSounds } from "./sounds.js?v=48";
+import { enableSounds, getVolume, onSoundStatus, playSound, playStateTransition, replayLastSound, setVolume, stopSounds } from "./sounds.js?v=49";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -658,5 +658,5 @@ $("white-review-overlay").onclick=e=>{
  }
 };
 
-onValue(stateRef,s=>{state=s.val()||{systemState:"no-event"};setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
+onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
 renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick()},250);

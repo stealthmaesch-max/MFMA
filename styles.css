@@ -765,6 +765,10 @@ dialog form {
   font-weight: 900;
 }
 
+.display-tools { display: flex; align-items: center; gap: 6px; }
+.display-sound { min-height: 36px; padding: 7px 10px; border: 1px solid rgba(255,255,255,.2); border-radius: 999px; background: rgba(0,0,0,.28); color: #fff; font-size: 10px; font-weight: 900; }
+.display-sound[data-state="enabled"] { color: #b7f4cb; }
+
 .display-status.live { color: #b7f4cb; }
 .display-status.error { color: #ffd0d0; }
 

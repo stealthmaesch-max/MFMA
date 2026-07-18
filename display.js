@@ -3,9 +3,11 @@ import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode } from "./display-state.js?v=44";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=49";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null,wake=null;
 const display=$("display"),status=$("display-status"),statusText=status.querySelector("span:last-child"),statusView=$("status-view"),liveView=$("live-view"),title=$("status-title"),detail=$("status-detail"),kicker=$("status-kicker"),sessionLine=$("display-session"),timer=$("display-timer"),label=$("label"),instruction=$("instruction"),theme=document.querySelector('meta[name="theme-color"]'),standbyLeaderboard=$("standby-leaderboard");
+const soundButton=$("display-sound");
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
 function sprintTime(s=state?.sprint){if(!s||s.timerMode==="none")return 0;const delta=s.running?Math.max(0,Date.now()-(s.lastTickAt||Date.now())):0;return s.timerMode==="count-up"?Math.max(0,(s.elapsedMs||0)+delta):Math.max(0,(s.remainingMs||0)-delta)}
 async function awake(){try{if("wakeLock"in navigator)wake=await navigator.wakeLock.request("screen")}catch(_){}}
@@ -67,5 +69,8 @@ if(mode==="provisional"||mode==="session-complete"){
  timer.textContent="ENDED";theme.content=sig.theme;return
 }}
 function tick(){if(state?.systemState==="sprint-live"){timer.textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());return}if(!state?.session||state.systemState!=="session-live")return;if(!state.session.running){timer.textContent=fmt(state.session.remainingMs);return}const factor=state.session.flag==="yellow"?0.5:1;timer.textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}
-onValue(stateRef,s=>{state=s.val()||{systemState:"no-event"};status.className="display-status live";statusText.textContent="LIVE";render()},e=>{status.className="display-status error";statusText.textContent="ERROR";showStatus("CONNECTION ERROR","Unable to reach Race Control.")});
+function renderSoundStatus({state:audioState}){soundButton.textContent=audioState==="enabled"?"Sound On":"Enable Sound";soundButton.dataset.state=audioState}
+soundButton.onclick=async()=>{try{await enableSounds()}catch(error){console.warn("Unable to enable display sounds",error)}renderSoundStatus(getSoundStatus())};
+onSoundStatus(renderSoundStatus);
+onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);status.className="display-status live";statusText.textContent="LIVE";render()},e=>{status.className="display-status error";statusText.textContent="ERROR";showStatus("CONNECTION ERROR","Unable to reach Race Control.")});
 awake();setInterval(tick,250);

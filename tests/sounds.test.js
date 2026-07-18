@@ -65,3 +65,21 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.red.repetitions,4);
  assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);
 });
+
+test("Firebase state transitions resolve to authoritative signals",async()=>{
+ global.localStorage={getItem:()=>null,setItem:()=>{}};
+ global.window={AudioContext:FakeAudioContext};
+ const source=fs.readFileSync("sounds.js","utf8");
+ const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// transitions").toString("base64")}`);
+ const transition=(previous,current)=>sounds.soundForStateTransition(previous,current);
+ assert.equal(transition(null,{systemState:"standby",activeFlag:"clear"}),null,"initial snapshot stays silent");
+ assert.equal(transition({systemState:"standby",activeFlag:"clear"},{systemState:"session-live",activeFlag:"green"}),"green");
+ assert.equal(transition({systemState:"session-live",activeFlag:"green"},{systemState:"session-live",activeFlag:"yellow"}),"yellow");
+ assert.equal(transition({systemState:"standby"},{systemState:"course-lap",activeFlag:"safety-car"}),"courseLapStart");
+ assert.equal(transition({systemState:"session-live",session:{phase:"hiding"}},{systemState:"session-live",session:{phase:"awaiting-finding-start"}}),"awaitingFinding");
+ assert.equal(transition({systemState:"session-live",session:{phase:"awaiting-finding-start"}},{systemState:"session-live",session:{phase:"finding"}}),"findingStart");
+ assert.equal(transition({systemState:"session-live"},{systemState:"provisional",activeFlag:"checkered",session:{provisionalReason:"Finding period expired"}}),"timerExpired");
+ assert.equal(transition({systemState:"standby"},{systemState:"sprint-live",sprint:{active:true}}),"sprintStart");
+ assert.equal(transition({systemState:"sprint-live",sprint:{timerMode:"count-down",remainingMs:900}},{systemState:"sprint-live",sprint:{timerMode:"count-down",remainingMs:0}}),"sprintTimerZero");
+ assert.equal(transition({systemState:"sprint-live"},{systemState:"standby",activeFlag:"clear"}),"sprintTerminated");
+});

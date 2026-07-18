@@ -135,6 +135,32 @@ export function getActiveSoundState(){
  return {oscillators:activeOscillators.size,gains:activeGains.size,timeouts:activeTimeouts.size,intervals:activeIntervals.size};
 }
 
+export function soundForStateTransition(previous,current){
+ if(!previous||!current)return null;
+ const previousMode=previous.systemState;
+ const currentMode=current.systemState;
+ if(previousMode==="sprint-live"&&currentMode!=="sprint-live")return "sprintTerminated";
+ if(previousMode!=="sprint-live"&&currentMode==="sprint-live")return "sprintStart";
+ if(currentMode==="sprint-live"&&previous.sprint?.timerMode==="count-down"&&(previous.sprint?.remainingMs||0)>0&&(current.sprint?.remainingMs||0)<=0)return "sprintTimerZero";
+ if(previousMode!=="course-lap"&&currentMode==="course-lap")return "courseLapStart";
+ const previousPhase=previous.session?.phase;
+ const currentPhase=current.session?.phase;
+ if(previousPhase!=="awaiting-finding-start"&&currentPhase==="awaiting-finding-start")return "awaitingFinding";
+ if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
+ if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
+ if(previous.activeFlag!==current.activeFlag){
+  const flagSounds={green:"green",yellow:"yellow",red:"red","safety-car":"safetyCar",white:"white",checkered:"checkered",clear:"clear"};
+  return flagSounds[current.activeFlag]||null;
+ }
+ return null;
+}
+
+export function playStateTransition(previous,current){
+ const sound=soundForStateTransition(previous,current);
+ if(!sound||!context||context.state!=="running")return null;
+ playSound(sound);return sound;
+}
+
 export function playSound(name){
  const definition=soundDefinitions[name];
  if(!definition)throw new Error(`Unknown sound: ${name}`);
