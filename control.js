@@ -14,7 +14,6 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { personnel, vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
-import { enableSounds, getVolume, onSoundStatus, playSound, playStateTransition, replayLastSound, setVolume, stopSounds } from "./sounds.js?v=49";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -33,23 +32,6 @@ const securedControl=$("secured-control");
 const authStatus=$("auth-status");
 const authError=$("auth-error");
 const accountName=$("account-name");
-
-function setSoundStatus({state,message}){
- const element=$("sound-status");element.dataset.state=state;element.textContent=message;
- $("enable-sounds").textContent=state==="enabled"?"Sounds Enabled":"Enable Sounds";
-}
-
-function soundError(error){
- console.warn("Sound preview failed",error);setSoundStatus({state:"blocked",message:error?.message||"Tap to Enable Sounds"});
-}
-
-$("sound-volume").value=String(getVolume());
-$("sound-volume").oninput=event=>setVolume(event.target.value);
-$("enable-sounds").onclick=async()=>{try{setSoundStatus(await enableSounds())}catch(error){soundError(error)}};
-$("stop-sound").onclick=()=>stopSounds();
-$("replay-sound").onclick=()=>{try{replayLastSound()}catch(error){soundError(error)}};
-document.querySelectorAll("[data-sound-preview]").forEach(button=>button.onclick=()=>{try{playSound(button.dataset.soundPreview);setSoundStatus({state:"enabled",message:`Playing: ${button.childNodes[0].textContent.trim()}`})}catch(error){soundError(error)}});
-onSoundStatus(setSoundStatus);
 
 function providerLabel(user){
  const provider=user?.providerData?.[0]?.providerId||"firebase";
@@ -658,5 +640,5 @@ $("white-review-overlay").onclick=e=>{
  }
 };
 
-onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
+onValue(stateRef,s=>{state=s.val()||{systemState:"no-event"};setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
 renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick()},250);
