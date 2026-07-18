@@ -1,27 +1,18 @@
 const ENABLED_KEY="mfma-sounds-enabled";
 const VOLUME_KEY="mfma-sounds-volume";
+const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",
- yellow:"Yellow",
- red:"Red",
- safetyCar:"Safety Car",
- white:"White",
- checkered:"Checkered",
- clear:"Clear / Standby",
- courseLapStart:"Course Lap Start",
- awaitingFinding:"Awaiting Finding",
- findingStart:"Finding Start",
- timerExpired:"Timer Expired",
- sprintStart:"Sprint Start",
- sprintTimerZero:"Sprint Timer Zero",
- sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",red:"Red",safetyCar:"Safety Car",white:"White",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
 let volume=readNumber(VOLUME_KEY,.65);
 let lastSound=null;
-let activeNodes=new Set();
+const activeOscillators=new Set();
+const activeGains=new Set();
+const activeTimeouts=new Set();
+const activeIntervals=new Set();
 const listeners=new Set();
 
 function readNumber(key,fallback){
@@ -64,46 +55,91 @@ export async function enableSounds(){
  }catch(error){notify();throw error}
 }
 
-function oscillator(frequency,start,duration,{type="sine",gain=.22,endFrequency=null}={}){
- const osc=context.createOscillator(),amp=context.createGain(),now=context.currentTime;
- osc.type=type;osc.frequency.setValueAtTime(frequency,now+start);
- if(endFrequency)osc.frequency.exponentialRampToValueAtTime(endFrequency,now+start+duration);
- const peak=Math.max(.0001,gain*volume);
- amp.gain.setValueAtTime(.0001,now+start);
- amp.gain.exponentialRampToValueAtTime(peak,now+start+.015);
- amp.gain.exponentialRampToValueAtTime(.0001,now+start+duration);
- osc.connect(amp).connect(context.destination);activeNodes.add(osc);
- osc.onended=()=>activeNodes.delete(osc);osc.start(now+start);osc.stop(now+start+duration+.02);
+export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endFrequency=null,attack=.012,release=.045}={}){
+ const oscillator=context.createOscillator();
+ const gainNode=context.createGain();
+ const begins=context.currentTime+start;
+ const ends=begins+duration;
+ oscillator.type=type;
+ oscillator.frequency.setValueAtTime(frequency,begins);
+ if(endFrequency)oscillator.frequency.exponentialRampToValueAtTime(endFrequency,ends);
+ const peak=Math.max(MIN_GAIN,Math.min(.24,gain)*volume);
+ gainNode.gain.setValueAtTime(MIN_GAIN,begins);
+ gainNode.gain.exponentialRampToValueAtTime(peak,begins+Math.min(attack,duration/3));
+ gainNode.gain.setValueAtTime(peak,Math.max(begins,ends-release));
+ gainNode.gain.exponentialRampToValueAtTime(MIN_GAIN,ends);
+ oscillator.connect(gainNode).connect(context.destination);
+ activeOscillators.add(oscillator);activeGains.add(gainNode);
+ oscillator.onended=()=>{
+  activeOscillators.delete(oscillator);activeGains.delete(gainNode);
+  try{oscillator.disconnect();gainNode.disconnect()}catch{}
+ };
+ oscillator.start(begins);oscillator.stop(ends+.01);
+ return ends-context.currentTime;
 }
 
-function playTestTone(){stopSounds();oscillator(660,0,.09,{gain:.16});oscillator(880,.1,.14,{gain:.16})}
+export function schedulePattern(pattern,offset=0){
+ let end=offset;
+ for(const tone of pattern){const {start=0,duration,...options}=tone;scheduleTone(tone.frequency,offset+start,duration,options);end=Math.max(end,offset+start+duration)}
+ return end;
+}
 
-const patterns={
- green:()=>{oscillator(523,0,.1,{gain:.2});oscillator(659,.1,.16,{gain:.22})},
- yellow:()=>{oscillator(440,0,.14,{type:"triangle",gain:.2});oscillator(440,.23,.14,{type:"triangle",gain:.2})},
- red:()=>{oscillator(196,0,.42,{type:"sawtooth",gain:.25,endFrequency:130})},
- safetyCar:()=>{oscillator(330,0,.2,{type:"square",gain:.18});oscillator(196,.22,.34,{type:"square",gain:.22})},
- white:()=>{oscillator(740,0,.16,{gain:.17});oscillator(622,.18,.2,{gain:.17})},
- checkered:()=>{[523,659,784,1047].forEach((frequency,index)=>oscillator(frequency,index*.085,.15,{type:"triangle",gain:.18}))},
- clear:()=>{oscillator(440,0,.14,{gain:.12});oscillator(330,.13,.22,{gain:.1})},
- courseLapStart:()=>{oscillator(147,0,.28,{type:"triangle",gain:.2});oscillator(196,.26,.3,{type:"triangle",gain:.2})},
- awaitingFinding:()=>{oscillator(523,0,.12,{gain:.12});oscillator(659,.2,.18,{gain:.12})},
- findingStart:()=>{oscillator(659,0,.09,{type:"square",gain:.16});oscillator(880,.09,.18,{type:"square",gain:.18})},
- timerExpired:()=>{[0,.18,.36].forEach((start,index)=>oscillator(220-index*35,start,.14,{type:"sawtooth",gain:.23}))},
- sprintStart:()=>{[440,660,880].forEach((frequency,index)=>oscillator(frequency,index*.075,.14,{type:"square",gain:.16}))},
- sprintTimerZero:()=>{[0,.13,.26,.39].forEach((start,index)=>oscillator(index%2?180:270,start,.11,{type:"square",gain:.23}))},
- sprintTerminated:()=>{[523,392,262].forEach((frequency,index)=>oscillator(frequency,index*.13,.2,{type:"triangle",gain:.17}))}
+export function repeatPattern(pattern,repetitions,cycleDuration,offset=0){
+ let end=offset;
+ for(let index=0;index<repetitions;index++)end=Math.max(end,schedulePattern(pattern,offset+index*cycleDuration));
+ return end;
+}
+
+const yellowCaution=[
+ {frequency:554,start:0,duration:.18,type:"triangle",gain:.17},
+ {frequency:740,start:.24,duration:.18,type:"triangle",gain:.17}
+];
+const redAlarm=[
+ {frequency:247,start:0,duration:.18,type:"sawtooth",gain:.18,endFrequency:185,attack:.006},
+ {frequency:165,start:.2,duration:.22,type:"square",gain:.15,endFrequency:123,attack:.006}
+];
+const safetyCarWarning=[
+ {frequency:784,start:0,duration:.27,type:"square",gain:.13},
+ {frequency:294,start:.34,duration:.38,type:"square",gain:.15}
+];
+
+export const soundDefinitions={
+ green:{description:"single rising start cue",play:()=>schedulePattern([{frequency:523,start:0,duration:.11,type:"triangle",gain:.16},{frequency:784,start:.1,duration:.2,type:"triangle",gain:.18}])},
+ yellow:{description:"3× caution",repetitions:3,play:()=>repeatPattern(yellowCaution,3,1.05)},
+ red:{description:"4× urgent",repetitions:4,play:()=>repeatPattern(redAlarm,4,.82)},
+ safetyCar:{description:"5× repeating",repetitions:5,play:()=>repeatPattern(safetyCarWarning,5,1.15)},
+ white:{description:"neutral attention",play:()=>schedulePattern([{frequency:988,start:0,duration:.1,type:"sine",gain:.12},{frequency:880,start:.14,duration:.18,type:"sine",gain:.11}])},
+ checkered:{description:"finish flourish",play:()=>schedulePattern([523,659,784,1047].map((frequency,index)=>({frequency,start:index*.09,duration:.2,type:"triangle",gain:.13})))},
+ clear:{description:"soft reset",play:()=>schedulePattern([{frequency:392,start:0,duration:.12,type:"sine",gain:.09},{frequency:294,start:.11,duration:.23,type:"sine",gain:.08}])},
+ courseLapStart:{description:"formal start",play:()=>schedulePattern([{frequency:262,start:0,duration:.22,type:"triangle",gain:.13},{frequency:262,start:.3,duration:.12,type:"triangle",gain:.12},{frequency:392,start:.46,duration:.25,type:"triangle",gain:.14}])},
+ awaitingFinding:{description:"confirmation prompt",play:()=>schedulePattern([{frequency:440,start:0,duration:.13,type:"sine",gain:.09},{frequency:554,start:.19,duration:.2,type:"sine",gain:.1}])},
+ findingStart:{description:"sharp start cue",play:()=>schedulePattern([{frequency:1175,start:0,duration:.07,type:"square",gain:.12,attack:.004},{frequency:880,start:.08,duration:.16,type:"square",gain:.14,attack:.004}])},
+ timerExpired:{description:"mechanical triple pulse",play:()=>repeatPattern([{frequency:233,start:0,duration:.13,type:"sawtooth",gain:.15,attack:.004}],3,.24)},
+ sprintStart:{description:"energetic rise",play:()=>schedulePattern([392,587,880].map((frequency,index)=>({frequency,start:index*.1,duration:.18,type:"triangle",gain:.14})))},
+ sprintTimerZero:{description:"alternating sprint buzzer",play:()=>repeatPattern([{frequency:330,start:0,duration:.09,type:"square",gain:.15},{frequency:440,start:.12,duration:.09,type:"square",gain:.14}],3,.34)},
+ sprintTerminated:{description:"descending end cue",play:()=>schedulePattern([659,440,262].map((frequency,index)=>({frequency,start:index*.15,duration:.23,type:"triangle",gain:.13})))},
 };
 
+function playTestTone(){stopSounds();schedulePattern([{frequency:660,start:0,duration:.08,gain:.1},{frequency:880,start:.09,duration:.12,gain:.1}])}
+
 export function stopSounds(){
- for(const node of activeNodes){try{node.onended=null;node.stop()}catch{}}
- activeNodes.clear();
+ for(const timeout of activeTimeouts)clearTimeout(timeout);
+ for(const interval of activeIntervals)clearInterval(interval);
+ activeTimeouts.clear();activeIntervals.clear();
+ for(const oscillator of activeOscillators){try{oscillator.onended=null;oscillator.stop();oscillator.disconnect()}catch{}}
+ for(const gainNode of activeGains){try{gainNode.gain.cancelScheduledValues(context?.currentTime||0);gainNode.disconnect()}catch{}}
+ activeOscillators.clear();activeGains.clear();
+}
+
+export function getActiveSoundState(){
+ return {oscillators:activeOscillators.size,gains:activeGains.size,timeouts:activeTimeouts.size,intervals:activeIntervals.size};
 }
 
 export function playSound(name){
- if(!patterns[name])throw new Error(`Unknown sound: ${name}`);
+ const definition=soundDefinitions[name];
+ if(!definition)throw new Error(`Unknown sound: ${name}`);
  if(!context||context.state!=="running"){notify();throw new Error("Tap to Enable Sounds");}
- stopSounds();lastSound=name;patterns[name]();return name;
+ stopSounds();lastSound=name;definition.play();return name;
 }
 
 export function replayLastSound(){

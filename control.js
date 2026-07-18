@@ -14,7 +14,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { personnel, vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
-import { enableSounds, getVolume, onSoundStatus, playSound, replayLastSound, setVolume, stopSounds } from "./sounds.js?v=47";
+import { enableSounds, getVolume, onSoundStatus, playSound, replayLastSound, setVolume, stopSounds } from "./sounds.js?v=48";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -48,7 +48,7 @@ $("sound-volume").oninput=event=>setVolume(event.target.value);
 $("enable-sounds").onclick=async()=>{try{setSoundStatus(await enableSounds())}catch(error){soundError(error)}};
 $("stop-sound").onclick=()=>stopSounds();
 $("replay-sound").onclick=()=>{try{replayLastSound()}catch(error){soundError(error)}};
-document.querySelectorAll("[data-sound-preview]").forEach(button=>button.onclick=()=>{try{playSound(button.dataset.soundPreview);setSoundStatus({state:"enabled",message:`Playing: ${button.textContent}`})}catch(error){soundError(error)}});
+document.querySelectorAll("[data-sound-preview]").forEach(button=>button.onclick=()=>{try{playSound(button.dataset.soundPreview);setSoundStatus({state:"enabled",message:`Playing: ${button.childNodes[0].textContent.trim()}`})}catch(error){soundError(error)}});
 onSoundStatus(setSoundStatus);
 
 function providerLabel(user){

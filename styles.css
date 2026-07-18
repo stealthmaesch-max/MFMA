@@ -1351,7 +1351,8 @@ button, input, select, summary { min-height: 44px; touch-action: manipulation; }
 .sound-master-controls label { padding: 7px 9px; border: 1px solid var(--line); border-radius: 11px; background: #0f141c; }
 .sound-master-controls input[type="range"] { min-height: 28px; padding: 0; }
 .sound-preview-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 6px; }
-.sound-preview-grid button { min-width: 0; min-height: 44px; padding: 7px; border: 1px solid var(--line); border-radius: 10px; background: #202835; color: #fff; font-weight: 800; font-size: 12px; }
+.sound-preview-grid button { display: grid; place-content: center; gap: 1px; min-width: 0; min-height: 44px; padding: 5px 7px; border: 1px solid var(--line); border-radius: 10px; background: #202835; color: #fff; font-weight: 800; font-size: 12px; }
+.sound-preview-grid button small { color: var(--muted); font-size: 9px; line-height: 1.1; }
 .sound-preview-grid button:active { background: #344258; }
 
 @media (min-width: 600px) {
