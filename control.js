@@ -14,6 +14,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { personnel, vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
+import { enableSounds, getVolume, onSoundStatus, playSound, replayLastSound, setVolume, stopSounds } from "./sounds.js?v=47";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -32,6 +33,23 @@ const securedControl=$("secured-control");
 const authStatus=$("auth-status");
 const authError=$("auth-error");
 const accountName=$("account-name");
+
+function setSoundStatus({state,message}){
+ const element=$("sound-status");element.dataset.state=state;element.textContent=message;
+ $("enable-sounds").textContent=state==="enabled"?"Sounds Enabled":"Enable Sounds";
+}
+
+function soundError(error){
+ console.warn("Sound preview failed",error);setSoundStatus({state:"blocked",message:error?.message||"Tap to Enable Sounds"});
+}
+
+$("sound-volume").value=String(getVolume());
+$("sound-volume").oninput=event=>setVolume(event.target.value);
+$("enable-sounds").onclick=async()=>{try{setSoundStatus(await enableSounds())}catch(error){soundError(error)}};
+$("stop-sound").onclick=()=>stopSounds();
+$("replay-sound").onclick=()=>{try{replayLastSound()}catch(error){soundError(error)}};
+document.querySelectorAll("[data-sound-preview]").forEach(button=>button.onclick=()=>{try{playSound(button.dataset.soundPreview);setSoundStatus({state:"enabled",message:`Playing: ${button.textContent}`})}catch(error){soundError(error)}});
+onSoundStatus(setSoundStatus);
 
 function providerLabel(user){
  const provider=user?.providerData?.[0]?.providerId||"firebase";
