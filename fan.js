@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { personnel, vehicles } from "./personnel.js?v=40";
+import { vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode } from "./display-state.js?v=44";
 
@@ -91,18 +91,17 @@ function render(){
 
  const setup=s?.setup;
  if(!setup){
-  $("fan-assignments").innerHTML="<p>No live session assignments.</p>";
- }else if(setup.vehicleTeams){
-  $("fan-assignments").innerHTML=Object.entries(setup.vehicleTeams).map(([vehicleId,team])=>`
+  $("fan-assignments").innerHTML="<p>No live session setup.</p>";
+ }else if(setup.vehicleIds||setup.vehicleTeams){
+  const vehicleIds=setup.vehicleIds||Object.keys(setup.vehicleTeams);
+  $("fan-assignments").innerHTML=vehicleIds.map(vehicleId=>`
    <article class="assignment">
     <p class="eyebrow">${vehicles[vehicleId]?.name||vehicleId} Team</p>
     <h3>${vehicles[vehicleId]?.name||vehicleId}</h3>
-    <p>Driver: ${personnel[team.driver]?.name||"Unassigned"}</p>
-    <p>Passengers: ${(team.passengers||[]).map(id=>personnel[id]?.name).filter(Boolean).join(", ")||"None"}</p>
    </article>`).join("");
  }else{
   $("fan-assignments").innerHTML=`
-   <article class="assignment"><p class="eyebrow">Pursuit Team</p><h3>${names[s.pursuitTeam]||"Pursuit"}</h3><p>Vehicle: ${vehicles[setup.pursuitVehicle]?.name||"—"}</p><p>Driver: ${personnel[setup.pursuitDriver]?.name||"Unassigned"}</p></article>
+   <article class="assignment"><p class="eyebrow">Pursuit Team</p><h3>${names[s.pursuitTeam]||"Pursuit"}</h3><p>Vehicle: ${vehicles[setup.pursuitVehicle]?.name||"—"}</p></article>
    <article class="assignment"><p class="eyebrow">Evading Team</p><h3>${names[s.evadingTeam]||"Evading"}</h3><p>On foot</p></article>`;
  }
 }

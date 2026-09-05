@@ -11,7 +11,7 @@ import {
   browserLocalPersistence
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { personnel, vehicles } from "./personnel.js?v=40";
+import { vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=51";
@@ -35,7 +35,7 @@ const authError=$("auth-error");
 const accountName=$("account-name");
 const controlSound=$("control-sound");
 
-function renderControlSound({state:audioState}){controlSound.textContent=audioState==="enabled"?"Sound On":"Enable Sound"}
+function renderControlSound({state:audioState}){controlSound.textContent=audioState==="enabled"?"Sound On":"Enable Sounds";controlSound.dataset.state=audioState}
 controlSound.onclick=async()=>{try{await enableSounds()}catch(error){console.warn("Unable to enable Race Control sounds",error)}renderControlSound(getSoundStatus())};
 onSoundStatus(renderControlSound);
 
@@ -136,9 +136,6 @@ function sprintTimerPatch(s=state?.sprint,now=Date.now()){
 }
 function setConn(kind,text){E.connection.className=`pill ${kind||""}`;E.connection.querySelector("span:last-child").textContent=text}
 function availableVehicles(){return ["ranger","shelly","gator"].filter(v=>$(`available-${v}`).checked)}
-function driverOptions(){return Object.entries(personnel).map(([id,p])=>`<option value="${id}">${p.name}</option>`).join("")}
-function passengerChecks(prefix){return Object.entries(personnel).map(([id,p])=>`<label class="chip"><input type="checkbox" data-passenger="${id}" data-prefix="${prefix}">${p.name}</label>`).join("")}
-
 function currentTeams(){
  if(sessionType==="vehicle-vehicle"){
   const a=$("vv-team-1").value,b=$("vv-team-2").value;
@@ -155,38 +152,26 @@ function renderVVSelectors(){
   if(prev&&ids.includes(prev))s.value=prev;
  }
  if(ids.length>1&&$("vv-team-1").value===$("vv-team-2").value)$("vv-team-2").value=ids[1];
- renderVVAssignments();updateRoleSummary();
-}
-function renderVVAssignments(){
- const chosen=[...new Set([$("vv-team-1").value,$("vv-team-2").value].filter(Boolean))];
- $("vv-assignments").innerHTML=chosen.map(v=>`<div class="assignment-row"><strong>${vehicles[v].name}</strong><label><span class="sr-only">${vehicles[v].name} driver</span><select data-vv-driver="${v}"><option value="">Unassigned</option>${driverOptions()}</select></label><details class="passenger-details"><summary>Select passengers</summary><div class="chips">${passengerChecks(v)}</div></details></div>`).join("");
+ updateRoleSummary();
 }
 function renderVF(){
- $("vf-driver").innerHTML=`<option value="">Unassigned</option>${driverOptions()}`;$("vf-passengers").innerHTML=passengerChecks("vf");updateRoleSummary();
+ updateRoleSummary();
 }
 function updateRoleSummary(){const r=rolePair();E.roleSummary.textContent=`${r.names[r.pursuit]} pursuing • ${r.names[r.evading]} evading`}
 
 function collectSetup(){
  const r=rolePair();
  if(sessionType==="vehicle-vehicle"){
-  const ids=[$("vv-team-1").value,$("vv-team-2").value],teams={};
-  for(const v of ids)teams[v]={vehicle:v,driver:document.querySelector(`[data-vv-driver="${v}"]`)?.value||"",passengers:[...document.querySelectorAll(`[data-passenger][data-prefix="${v}"]:checked`)].map(x=>x.dataset.passenger)};
-  return {format:sessionType,teamNames:r.names,role:r,vehicleTeams:teams,pursuitVehicleIds:[ids[r.pursuit==="a"?0:1]],evadingVehicleId:ids[r.evading==="a"?0:1]};
+  const ids=[$("vv-team-1").value,$("vv-team-2").value];
+  return {format:sessionType,teamNames:r.names,role:r,vehicleIds:ids,pursuitVehicleIds:[ids[r.pursuit==="a"?0:1]],evadingVehicleId:ids[r.evading==="a"?0:1]};
  }
  const v=$("vf-vehicle").value;
- return {format:sessionType,teamNames:r.names,role:r,pursuitVehicleIds:[v],pursuitVehicle:v,pursuitDriver:$("vf-driver").value,passengers:[...document.querySelectorAll(`[data-passenger][data-prefix="vf"]:checked`)].map(x=>x.dataset.passenger),evadingOnFoot:true};
+ return {format:sessionType,teamNames:r.names,role:r,pursuitVehicleIds:[v],pursuitVehicle:v,evadingOnFoot:true};
 }
 function validate(){
- const errors=[],setup=collectSetup(),used=new Set();
+ const errors=[],setup=collectSetup();
  if(sessionType==="vehicle-vehicle"){
   if($("vv-team-1").value===$("vv-team-2").value)errors.push("Choose two different vehicle teams.");
-  for(const [v,t] of Object.entries(setup.vehicleTeams)){
-   for(const p of [t.driver,...t.passengers].filter(Boolean)){if(used.has(p))errors.push(`${personnel[p].name} is assigned twice.`);used.add(p)}
-   if(t.passengers.includes(t.driver))errors.push(`${personnel[t.driver]?.name} cannot also be a passenger.`);
-  }
- }else{
-  for(const p of [$("vf-driver").value,...setup.passengers].filter(Boolean)){if(used.has(p))errors.push(`${personnel[p].name} is assigned twice.`);used.add(p)}
-  if(setup.passengers.includes($("vf-driver").value))errors.push("The driver cannot also be a passenger.");
  }
  E.validation.classList.toggle("hidden",!errors.length);E.validation.innerHTML=errors.length?`<strong>Fix before starting:</strong><ul>${errors.map(e=>`<li>${e}</li>`).join("")}</ul>`:"";
  return {ok:!errors.length,setup};
@@ -347,29 +332,7 @@ function populateWhite(){
  $("dq-team").innerHTML=teamOptions;
  $("benefiting-team").innerHTML=teamOptions;
 
- const people=new Set();
- const setup=session.setup||{};
-
- if(setup.vehicleTeams&&typeof setup.vehicleTeams==="object"){
-  Object.values(setup.vehicleTeams).forEach(team=>{
-   if(team?.driver)people.add(team.driver);
-   (Array.isArray(team?.passengers)?team.passengers:[]).forEach(personId=>{
-    if(personId)people.add(personId);
-   });
-  });
- }else{
-  if(setup.pursuitDriver)people.add(setup.pursuitDriver);
-  (Array.isArray(setup.passengers)?setup.passengers:[]).forEach(personId=>{
-   if(personId)people.add(personId);
-  });
- }
-
- $("responsible-party").innerHTML=
-  `<option value="unknown">Unknown / Team Responsibility</option>`+
-  [...people]
-   .filter(id=>personnel[id])
-   .map(id=>`<option value="${id}">${personnel[id].name}</option>`)
-   .join("");
+ $("responsible-party").innerHTML=`<option value="unknown">Unknown / Team Responsibility</option>`;
 }
 function openWhiteDialog(){
  try{
@@ -406,7 +369,7 @@ async function resolveWhiteForm(){
  const responsibleName=
   responsible==="unknown"
    ?"Unknown / team responsibility"
-   :(personnel[responsible]?.name||"Unknown");
+   :"Unknown";
 
  let winner=null;
  let nextState="white-termination";
@@ -614,7 +577,7 @@ function render(){
 
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-type]").forEach(x=>x.classList.remove("active"));b.classList.add("active");sessionType=b.dataset.type;$("vehicle-vehicle-setup").classList.toggle("hidden",sessionType!=="vehicle-vehicle");$("vehicle-foot-setup").classList.toggle("hidden",sessionType!=="vehicle-foot");if(sessionType==="vehicle-foot"){E.hide.value=120;E.find.value=300;renderVF()}else{E.hide.value=60;E.find.value=120;renderVVSelectors()}});
 ["ranger","shelly","gator"].forEach(v=>$(`available-${v}`).onchange=renderVVSelectors);
-$("vv-team-1").onchange=()=>{renderVVAssignments();updateRoleSummary()};$("vv-team-2").onchange=()=>{renderVVAssignments();updateRoleSummary()};
+$("vv-team-1").onchange=updateRoleSummary;$("vv-team-2").onchange=updateRoleSummary;
 $("vf-team-a").oninput=updateRoleSummary;$("vf-team-b").oninput=updateRoleSummary;$("vf-vehicle").onchange=renderVF;$("swap-teams").onclick=()=>{roleIndex=roleIndex%2===0?1:0;updateRoleSummary()};
 $("create-event").onclick=()=>$("event-dialog").showModal();$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};
 $("end-event").onclick=async()=>{if(!requireAuthenticatedWrite()||state?.systemState==="sprint-live")return;if(confirm("End the event?"))await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null,updatedAt:serverTimestamp()})};

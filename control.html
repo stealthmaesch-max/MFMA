@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=48">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=49">
 </head><body class="control-page race-control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -30,10 +30,10 @@
 <div class="toolbar-telemetry"><div><span>STATE</span><strong id="toolbar-state">NO EVENT</strong></div><div><span>FLAG</span><strong id="toolbar-flag">CLEAR</strong></div><div><span>TIMER</span><strong id="toolbar-timer">--:--</strong></div></div>
 <div class="header-account">
       <div id="connection" class="pill"><span class="dot"></span><span>Connecting</span></div>
+      <button id="control-sound" class="sound-toggle" type="button">Enable Sounds</button>
       <div id="account-pill" class="account-pill">
         <span class="lock-mark">SECURE</span>
         <span id="account-name">Signed in</span>
-        <button id="control-sound" class="account-button" type="button">Enable Sound</button>
         <button id="copy-uid" class="account-button" type="button">Copy UID</button>
         <button id="sign-out" class="account-button" type="button">Sign Out</button>
       </div>
@@ -121,15 +121,13 @@
 <label class="chip"><input id="available-gator" type="checkbox"> Gator</label>
 </div></div>
 <div class="form-grid two"><label>Vehicle Team 1<select id="vv-team-1"></select></label><label>Vehicle Team 2<select id="vv-team-2"></select></label></div>
-<div class="assignment-table-head"><span>Vehicle</span><span>Driver (optional)</span><span>Passengers (optional)</span></div><div id="vv-assignments" class="compact-assignments"></div>
 </div>
 
 <div id="vehicle-foot-setup" class="hidden">
 <div class="form-grid two"><label>Personnel Team A<input id="vf-team-a" value="Team A"></label><label>Personnel Team B<input id="vf-team-b" value="Team B"></label></div>
-<div class="subsection"><p class="eyebrow">Pursuit Vehicle</p><div class="form-grid two">
+<div class="subsection"><p class="eyebrow">Pursuit Vehicle</p><div class="form-grid">
 <label>Vehicle<select id="vf-vehicle"><option value="ranger">Ranger</option><option value="shelly">Shelly</option><option value="gator">Gator</option></select></label>
-<label>Driver (optional)<select id="vf-driver"></select></label></div></div>
-<details class="passenger-details"><summary>Pursuit Vehicle Passengers</summary><div id="vf-passengers" class="chips"></div></details>
+</div></div>
 </div>
 
 <details class="advanced"><summary>Advanced timing</summary><div class="advanced-body"><div class="form-grid two">
@@ -215,4 +213,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=49"></script></body></html>
+<script type="module" src="control.js?v=50"></script></body></html>

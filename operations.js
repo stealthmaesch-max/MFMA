@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { personnel, vehicles } from "./personnel.js?v=40";
+import { vehicles } from "./personnel.js?v=40";
 import { getRenderMode } from "./display-state.js?v=44";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null;
@@ -27,8 +27,9 @@ function render(){
  $("ops-scoreboard").innerHTML=Object.keys(scores).map(k=>`<div class="score"><span>${names[k]||k}</span><strong>${scores[k]}</strong></div>`).join("")||"<p>No score yet.</p>";
  $("ops-circuit").innerHTML=Object.keys(names).map(k=>`<div class="progress-card"><strong>${names[k]}</strong><span>Pursuit ${roles[k]?.pursuit?"✓":"○"}</span><span>Evading ${roles[k]?.evading?"✓":"○"}</span></div>`).join("");
  const setup=s?.setup;if(mode!=="session-live"||!setup)return;
- if(setup.vehicleTeams)$("ops-assignments").innerHTML=Object.entries(setup.vehicleTeams).map(([v,t])=>`<article class="assignment"><h3>${vehicles[v]?.name||v} Team</h3><p>Driver: ${personnel[t.driver]?.name||"Unassigned"}</p><p>Passengers: ${(t.passengers||[]).map(p=>personnel[p]?.name).filter(Boolean).join(", ")||"None"}</p></article>`).join("");
- else $("ops-assignments").innerHTML=`<article class="assignment"><h3>${s.teamNames[s.pursuitTeam]}</h3><p>Pursuit vehicle: ${vehicles[setup.pursuitVehicle]?.name||"—"}</p><p>Driver: ${personnel[setup.pursuitDriver]?.name||"Unassigned"}</p></article><article class="assignment"><h3>${s.teamNames[s.evadingTeam]}</h3><p>Evading on foot</p></article>`;
+ const vehicleIds=setup.vehicleIds||(setup.vehicleTeams?Object.keys(setup.vehicleTeams):null);
+ if(vehicleIds)$("ops-assignments").innerHTML=vehicleIds.map(v=>`<article class="assignment"><h3>${vehicles[v]?.name||v} Team</h3></article>`).join("");
+ else $("ops-assignments").innerHTML=`<article class="assignment"><h3>${s.teamNames[s.pursuitTeam]}</h3><p>Pursuit vehicle: ${vehicles[setup.pursuitVehicle]?.name||"—"}</p></article><article class="assignment"><h3>${s.teamNames[s.evadingTeam]}</h3><p>Evading on foot</p></article>`;
 }
 onValue(stateRef,s=>{state=s.val()||{};render()},e=>console.error(e));
 setInterval(()=>{if(state?.systemState==="sprint-live")$("ops-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());if(state?.session&&getRenderMode(state)==="session-live"&&state.session.running){const factor=state.session.flag==="yellow"?0.5:1;$("ops-timer").textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}},250);
