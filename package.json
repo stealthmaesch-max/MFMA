@@ -1,0 +1,14 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/assignment-removal.test.js tests/reports-and-circuits.test.js tests/sounds.test.js tests/sprint-state-transitions.test.js",
+    "test:rules": "firebase emulators:exec --only database 'node --test tests/database-rules.test.js'",
+    "test:ui": "node --test tests/mobile-driver-ui.test.js"
+  },
+  "devDependencies": {
+    "@firebase/rules-unit-testing": "^5.0.0",
+    "firebase": "^12.1.0",
+    "firebase-tools": "^14.12.0",
+    "playwright": "^1.63.0"
+  }
+}

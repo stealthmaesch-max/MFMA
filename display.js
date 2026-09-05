@@ -1,16 +1,18 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, onValue, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode } from "./display-state.js?v=44";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=50";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
-const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
+const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null,wake=null;
 const display=$("display"),status=$("display-status"),statusText=status.querySelector("span:last-child"),statusView=$("status-view"),liveView=$("live-view"),title=$("status-title"),detail=$("status-detail"),kicker=$("status-kicker"),sessionLine=$("display-session"),timer=$("display-timer"),label=$("label"),instruction=$("instruction"),theme=document.querySelector('meta[name="theme-color"]'),standbyLeaderboard=$("standby-leaderboard");
 const soundButton=$("display-sound");
 const vehicleSelect=$("driver-vehicle"),tools=$("driver-tools");
 let selectedVehicle=localStorage.getItem("mfma-driver-vehicle")||"ranger";vehicleSelect.value=selectedVehicle;
+let driverUser=null,crewEditing=false,lastReportKey="",resolvedTimer=null;
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
 let visualSignal=null;
 function applyDisplayClass(className,signal){
@@ -82,17 +84,30 @@ if(mode==="provisional"||mode==="session-complete"){
 function tick(){if(state?.systemState==="sprint-live"){timer.textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());return}if(!state?.session||state.systemState!=="session-live")return;if(!state.session.running){timer.textContent=fmt(state.session.remainingMs);return}const factor=state.session.flag==="yellow"?0.5:1;timer.textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}
 function loadVehicleReports(){
  const report=state?.event?.vehicleReports?.[selectedVehicle]||{};
- $("driver-name").value=report.driverName||"";$("passenger-name").value=report.passengerName||"";
+ const reportKey=`${selectedVehicle}:${report.submittedAt||""}`;
+ if(!crewEditing&&reportKey!==lastReportKey){$("driver-name").value=report.driverName||"";$("passenger-name").value=report.passengerName||"";lastReportKey=reportKey}
+ $("crew-names").textContent=report.driverName?[report.driverName,report.passengerName].filter(Boolean).join(" • "):"Add driver & passenger";
+ $("crew-action").textContent=report.driverName?"Edit":"›";
+ const role=state?.session?.pursuitVehicleIds?.includes(selectedVehicle)?"Pursuit":state?.session?.evadingVehicleIds?.includes(selectedVehicle)?"Evading":"Standby";
+ $("driver-role").textContent=role;
  const hazards=Object.values(state?.event?.hazards||{}).filter(h=>h.vehicleId===selectedVehicle).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
- $("driver-hazard-status").innerHTML=hazards.slice(0,3).map(h=>`<p><strong>${h.status==="open"?"Submitted":h.status==="acknowledged"?"Acknowledged":"Resolved"}</strong> ${escapeHtml(h.description)}</p>`).join("");
+ const hazard=hazards.find(item=>item.status!=="resolved")||hazards[0];clearTimeout(resolvedTimer);
+ if(!hazard){$("driver-hazard-status").innerHTML="";return}
+ const text=hazard.status==="open"?"Sent to Race Control • Awaiting acknowledgment":hazard.status==="acknowledged"?"Acknowledged by Race Control":"Resolved";
+ $("driver-hazard-status").innerHTML=`<div class="hazard-status-pill ${escapeHtml(hazard.status)}"><strong>Hazard Report</strong><span>${text}</span></div>`;
+ if(hazard.status==="resolved")resolvedTimer=setTimeout(()=>{$("driver-hazard-status").innerHTML=""},4000);
 }
 vehicleSelect.onchange=()=>{selectedVehicle=vehicleSelect.value;localStorage.setItem("mfma-driver-vehicle",selectedVehicle);loadVehicleReports()};
-$("driver-tools-toggle").onclick=()=>tools.classList.remove("hidden");$("driver-tools-close").onclick=()=>tools.classList.add("hidden");
-$("hazard-open").onclick=()=>$("hazard-form-panel").classList.remove("hidden");$("hazard-cancel").onclick=()=>$("hazard-form-panel").classList.add("hidden");
-$("occupant-form").onsubmit=async event=>{event.preventDefault();if(!state?.event){$("occupant-status").textContent="No active event";return}try{const report=cleanOccupantReport($("driver-name").value,$("passenger-name").value,serverTimestamp());await update(ref(db,`mfma/state/event/vehicleReports/${selectedVehicle}`),report);$("occupant-status").textContent="Submitted to Race Control"}catch(error){$("occupant-status").textContent=error.message}};
-$("hazard-form").onsubmit=async event=>{event.preventDefault();if(!state?.event){return}const hazardRef=push(ref(db,"mfma/state/event/hazards"));try{const report=cleanHazardReport({id:hazardRef.key,vehicleId:selectedVehicle,description:$("hazard-description").value,category:$("hazard-category").value,requestStopClock:$("hazard-stop").checked,requestSafetyCar:$("hazard-safety").checked},serverTimestamp());await update(hazardRef,report);$("hazard-form").reset();$("hazard-form-panel").classList.add("hidden")}catch(error){alert(error.message)}};
+function setCrewEditing(open){crewEditing=open;$("occupant-form").classList.toggle("hidden",!open);$("crew-toggle").setAttribute("aria-expanded",String(open));if(open)$("driver-name").focus()}
+function setSheet(open){$("hazard-sheet").classList.toggle("hidden",!open);document.body.classList.toggle("modal-open",open);if(open)$("hazard-description").focus()}
+function friendlyWriteError(error){console.error("Firebase Driver report write failed",error);return error?.code?.includes("permission-denied")||error?.code?.includes("permission_denied")?"Could not send report to Race Control. Connection or permission error.":"Could not send report to Race Control. Check your connection and try again."}
+$("crew-toggle").onclick=()=>setCrewEditing(true);$("crew-cancel").onclick=()=>setCrewEditing(false);
+$("hazard-open").onclick=()=>setSheet(true);$("hazard-cancel").onclick=$("hazard-close").onclick=()=>setSheet(false);$("hazard-sheet").onclick=event=>{if(event.target===$("hazard-sheet"))setSheet(false)};
+$("occupant-form").onsubmit=async event=>{event.preventDefault();const button=$("crew-submit");$("occupant-status").textContent="";if(!state?.event){$("occupant-status").textContent="No active event";return}if(!driverUser){$("occupant-status").textContent="Connecting securely…";return}button.disabled=true;button.textContent="Sending…";try{const report=cleanOccupantReport($("driver-name").value,$("passenger-name").value,serverTimestamp());await update(ref(db,`mfma/state/event/vehicleReports/${selectedVehicle}`),report);setCrewEditing(false);$("occupant-status").textContent="Sent to Race Control";setTimeout(()=>{$("occupant-status").textContent=""},2500)}catch(error){$("occupant-status").textContent=friendlyWriteError(error)}finally{button.disabled=false;button.textContent="Submit"}};
+$("hazard-form").onsubmit=async event=>{event.preventDefault();const button=$("hazard-submit");$("hazard-error").textContent="";if(!state?.event||!driverUser){$("hazard-error").textContent=!state?.event?"No active event.":"Connecting securely…";return}button.disabled=true;button.textContent="Sending…";const hazardRef=push(ref(db,"mfma/state/event/hazards"));try{const report=cleanHazardReport({vehicleId:selectedVehicle,description:$("hazard-description").value,category:document.querySelector('input[name="hazard-category"]:checked')?.value||"",requestStopClock:$("hazard-stop").checked,requestSafetyCar:$("hazard-safety").checked},serverTimestamp());await update(hazardRef,report);$("hazard-form").reset();setSheet(false)}catch(error){$("hazard-error").textContent=friendlyWriteError(error)}finally{button.disabled=false;button.textContent="Send Report"}};
 function renderSoundStatus({state:audioState}){soundButton.textContent=audioState==="enabled"?"Sound On":"Enable Sound";soundButton.dataset.state=audioState}
 soundButton.onclick=async()=>{try{await enableSounds()}catch(error){console.warn("Unable to enable display sounds",error)}renderSoundStatus(getSoundStatus())};
 onSoundStatus(renderSoundStatus);
 onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);status.className="display-status live";statusText.textContent="LIVE";render();loadVehicleReports()},e=>{status.className="display-status error";statusText.textContent="ERROR";showStatus("CONNECTION ERROR","Unable to reach Race Control.")});
+onAuthStateChanged(auth,user=>{if(user){driverUser=user;return}signInAnonymously(auth).catch(error=>console.error("Anonymous Driver authentication failed",error))});
 awake();setInterval(tick,250);
