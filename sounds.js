@@ -3,7 +3,7 @@ const VOLUME_KEY="mfma-sounds-volume";
 const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",red:"Red",safetyCar:"Safety Car",white:"White",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"White",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
@@ -104,6 +104,7 @@ const safetyCarWarning=[
 ];
 
 export const soundDefinitions={
+ hazard:{description:"distinct driver hazard alert",play:()=>schedulePattern([{frequency:932,start:0,duration:.11,type:"square",gain:.13},{frequency:622,start:.16,duration:.16,type:"triangle",gain:.15},{frequency:932,start:.37,duration:.2,type:"square",gain:.13}])},
  green:{description:"single rising start cue",play:()=>schedulePattern([{frequency:523,start:0,duration:.11,type:"triangle",gain:.16},{frequency:784,start:.1,duration:.2,type:"triangle",gain:.18}])},
  yellow:{description:"3× caution",repetitions:3,play:()=>repeatPattern(yellowCaution,3,1.05)},
  red:{description:"4× urgent",repetitions:4,play:()=>repeatPattern(redAlarm,4,.82)},

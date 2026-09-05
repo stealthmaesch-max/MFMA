@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebas
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
+import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { getRenderMode } from "./display-state.js?v=44";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null;
@@ -23,9 +24,9 @@ function render(){
  if(mode==="awaiting-finding-start"){$("ops-special-title").textContent="Awaiting Finding Start";$("ops-special-detail").textContent="Hiding complete. Waiting for Race Director confirmation.";return}
  if(mode==="safety-car-termination"||mode==="white-termination"){$("ops-special-title").textContent=mode==="white-termination"?"White Flag Termination":"Safety Car Termination";$("ops-special-detail").textContent=s?.terminationDetail||s?.provisionalReason||"Session terminated.";return}
  if(mode==="session-live"){$("ops-phase").textContent=`${s.phase.toUpperCase()} • ${(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase()}`;$("ops-timer").textContent=fmt(s.remainingMs);$("ops-session").textContent=`Session ${s.number}`;$("ops-roles").textContent=`PURSUIT: ${s.teamNames?.[s.pursuitTeam]||"—"} • EVADING: ${s.teamNames?.[s.evadingTeam]||"—"}`}
- const names=s?.teamNames||state.event.teamNames||{},scores=state.event.scores||{},roles=state.event.circuit?.roles||{};
+ const names=s?.teamNames||state.event.teamNames||{},scores=state.event.scores||{},circuit=getCircuitStatus(state.event.circuit,Object.keys(names)),roles=circuit.roles;
  $("ops-scoreboard").innerHTML=Object.keys(scores).map(k=>`<div class="score"><span>${names[k]||k}</span><strong>${scores[k]}</strong></div>`).join("")||"<p>No score yet.</p>";
- $("ops-circuit").innerHTML=Object.keys(names).map(k=>`<div class="progress-card"><strong>${names[k]}</strong><span>Pursuit ${roles[k]?.pursuit?"✓":"○"}</span><span>Evading ${roles[k]?.evading?"✓":"○"}</span></div>`).join("");
+ $("ops-circuit").innerHTML=`<div class="circuit-summary"><strong>${circuit.completedCircuitCount} Circuit${circuit.completedCircuitCount===1?"":"s"} Complete</strong><span>${circuit.isCircuitBalanced?"Balanced":`Circuit ${circuit.currentCircuitNumber} In Progress`}</span></div>`+Object.keys(names).map(k=>`<div class="progress-card"><strong>${names[k]}</strong><span>Pursuit ${roles[k]?.pursuitCount||0}</span><span>Evading ${roles[k]?.evadingCount||0}</span></div>`).join("");
  const setup=s?.setup;if(mode!=="session-live"||!setup)return;
  const vehicleIds=setup.vehicleIds||(setup.vehicleTeams?Object.keys(setup.vehicleTeams):null);
  if(vehicleIds)$("ops-assignments").innerHTML=vehicleIds.map(v=>`<article class="assignment"><h3>${vehicles[v]?.name||v} Team</h3></article>`).join("");

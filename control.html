@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=49">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=52">
 </head><body class="control-page race-control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -45,6 +45,8 @@
 <section id="event-area" class="hidden dashboard-grid">
 <section class="panel event-head dashboard-event"><div><p class="eyebrow">Active Event</p><h2 id="event-name">MFMA Event</h2><p id="event-meta"></p></div>
 <div class="button-row"><button id="standby-button" class="action secondary-btn">Standby</button><button id="end-event" class="danger-btn">End Event</button></div></section>
+<section id="hazard-panel" class="panel hazard-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Driver Reports</p><h2>Track Hazards</h2></div></div><div id="hazard-list" class="hazard-list"></div></section>
+<section id="occupant-panel" class="panel occupant-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Latest Reports</p><h2>Crew / Occupants</h2></div></div><div id="occupant-list" class="occupant-list"></div></section>
 
 <section id="quick-flag-panel" class="panel quick-flag-panel hidden"><div class="section-head compact"><div><p class="eyebrow">Quick Flags</p><h2>Race Signals</h2></div><strong id="quick-flag-status">CLEAR</strong></div><div class="quick-flag-bar"><button class="flag green" data-quick-flag="green"><b>GREEN</b><strong>Green</strong></button><button class="flag yellow" data-quick-flag="yellow"><b>YELLOW</b><strong>Yellow</strong></button><button class="flag red" data-quick-flag="red"><b>RED</b><strong>Red</strong></button><button class="flag safety-car" data-quick-flag="safety-car"><b>SC</b><strong>Safety Car</strong></button><button class="flag white" data-quick-flag="white"><b>WHITE</b><strong>White</strong></button><button class="flag checkered" data-quick-flag="checkered"><b>FINISH</b><strong>Checkered</strong></button><button class="flag" data-quick-flag="clear"><b>CLEAR</b><strong>Clear</strong></button></div></section>
 
@@ -213,4 +215,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=50"></script></body></html>
+<script type="module" src="control.js?v=52"></script></body></html>

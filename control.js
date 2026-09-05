@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
-import { getDatabase, ref, set, update, onValue, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
+import { getDatabase, ref, set, update, onValue, serverTimestamp, runTransaction } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import {
   getAuth,
   GithubAuthProvider,
@@ -14,7 +14,9 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=51";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=52";
+import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
+import { newOpenHazardIds } from "./report-model.js?v=52";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -23,6 +25,7 @@ const googleProvider=new GoogleAuthProvider();
 const db=getDatabase(app);
 const stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);
+const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
 let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null;
 
 const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),live:$("live-panel"),provisional:$("provisional-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
@@ -428,23 +431,7 @@ async function resolveWhiteForm(){
 
 async function finalizeResult(){
  if(!requireAuthenticatedWrite())return;
- const winner=state.session.provisionalWinner;
- const scores={...(state.event.scores||{})};
- if(winner)scores[winner]=(scores[winner]||0)+1;
-
- const roles={...(state.event.circuit.roles||{})},s=state.session;
- roles[s.pursuitTeam]={...(roles[s.pursuitTeam]||{}),pursuit:true};
- roles[s.evadingTeam]={...(roles[s.evadingTeam]||{}),evading:true};
-
- await update(stateRef,{
-  systemState:"session-complete",
-  activeFlag:"checkered",
-  "session/running":false,
-  "session/resultOfficial":true,
-  "event/scores":scores,
-  "event/circuit/roles":roles,
-  updatedAt:serverTimestamp()
- });
+ await runTransaction(stateRef,current=>{const next=applyOfficialSessionResult(current);if(next!==current)next.updatedAt=Date.now();return next});
 }
 
 async function advanceNextSession(){
@@ -523,8 +510,21 @@ function renderScore(id){
  $(id).innerHTML=Object.keys(scores).map(k=>`<div class="score"><span>${names[k]||k}</span><strong>${scores[k]}</strong></div>`).join("")||"<p>No score yet.</p>";
 }
 function renderCircuit(id){
- const roles=state?.event?.circuit?.roles||{},names=state?.session?.teamNames||currentTeams().names||{};
- $(id).innerHTML=Object.keys(names).map(k=>`<div class="progress-card"><strong>${names[k]}</strong><span>Pursuit ${roles[k]?.pursuit?"✓":"○"}</span><span>Evading ${roles[k]?.evading?"✓":"○"}</span></div>`).join("");
+ const names=state?.session?.teamNames||state?.event?.teamNames||currentTeams().names||{},teamIds=Object.keys(names),status=getCircuitStatus(state?.event?.circuit,teamIds);
+ const summary=status.completedCircuitCount===1?"1 Circuit Complete":`${status.completedCircuitCount} Circuits Complete`;
+ const progress=status.isCircuitBalanced?"Balanced":`Circuit ${status.currentCircuitNumber} In Progress`;
+ $(id).innerHTML=`<div class="circuit-summary"><strong>${summary}</strong><span>${progress}</span></div>`+teamIds.map(k=>`<div class="progress-card"><strong>${names[k]}</strong><span>Pursuit ${status.roles[k].pursuitCount}</span><span>Evading ${status.roles[k].evadingCount}</span></div>`).join("");
+}
+function relativeTime(timestamp){if(!timestamp)return"";const seconds=Math.max(0,Math.floor((Date.now()-timestamp)/1000));return seconds<60?"Updated just now":seconds<3600?`Updated ${Math.floor(seconds/60)}m ago`:`Updated ${Math.floor(seconds/3600)}h ago`}
+async function stopRequestedClock(){if(state?.systemState==="sprint-live")return pauseSprintTimer();if(state?.systemState==="session-live")return issueFlag("red")}
+function renderReports(){
+ const reports=state?.event?.vehicleReports||{};
+ $("occupant-panel").classList.toggle("hidden",!Object.keys(reports).length);$("occupant-list").innerHTML=Object.entries(reports).map(([vehicleId,r])=>`<article><strong>${escapeHtml(vehicles[vehicleId]?.name||vehicleId)}</strong><span>Driver: ${escapeHtml(r.driverName||"—")}</span><span>Passenger: ${escapeHtml(r.passengerName||"—")}</span><small>${relativeTime(r.submittedAt)}</small></article>`).join("");
+ const hazards=Object.values(state?.event?.hazards||{}).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+ $("hazard-panel").classList.toggle("hidden",!hazards.length);$("hazard-list").innerHTML=hazards.map(h=>`<article class="hazard-alert ${escapeHtml(h.status)}"><div><strong>${escapeHtml(vehicles[h.vehicleId]?.name||h.vehicleId)}: ${escapeHtml(h.description)}</strong>${h.category?`<small>${escapeHtml(h.category)}</small>`:""}</div><div class="hazard-requests">${h.requestStopClock?"<b>STOP CLOCK REQUESTED</b>":""}${h.requestSafetyCar?"<b>SAFETY CAR REQUESTED</b>":""}</div><div class="button-row">${h.status==="open"?`<button class="mini-btn" data-hazard-ack="${h.id}">Acknowledge</button>`:""}${h.status!=="resolved"?`<button class="mini-btn" data-hazard-resolve="${h.id}">Resolve</button>`:""}${h.requestStopClock&&(state?.session?.running||state?.sprint?.running)?`<button class="mini-btn" data-hazard-stop="${h.id}">Stop Clock</button>`:""}${h.requestSafetyCar?`<button class="mini-btn" data-hazard-safety="${h.id}">Safety Car</button>`:""}</div><small>${escapeHtml(h.status).toUpperCase()}</small></article>`).join("");
+ document.querySelectorAll("[data-hazard-ack]").forEach(b=>b.onclick=()=>update(stateRef,{[`event/hazards/${b.dataset.hazardAck}/status`]:"acknowledged",[`event/hazards/${b.dataset.hazardAck}/acknowledgedAt`]:serverTimestamp()}));
+ document.querySelectorAll("[data-hazard-resolve]").forEach(b=>b.onclick=()=>update(stateRef,{[`event/hazards/${b.dataset.hazardResolve}/status`]:"resolved",[`event/hazards/${b.dataset.hazardResolve}/resolvedAt`]:serverTimestamp()}));
+ document.querySelectorAll("[data-hazard-stop]").forEach(b=>b.onclick=stopRequestedClock);document.querySelectorAll("[data-hazard-safety]").forEach(b=>b.onclick=()=>issueFlag("safety-car"));
 }
 function render(){
  const mode=getRenderMode(state),has=mode!=="no-event";document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
@@ -538,6 +538,7 @@ function render(){
  $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):live?fmt(state.session?.remainingMs||0):(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
  renderScore("scoreboard");renderCircuit("sidebar-circuit");$("sidebar-status").textContent=awaiting?"Hiding complete — confirmation required":live?`${state.session?.format?.replaceAll("-"," ")||"Session"} • Session ${state.session?.number||""}`:state.event?.courseLap?.status==="complete"?"✓ Course Lap Complete":"Ready for competition";
+ renderReports();
  const dedicatedTermination=safetyTerm||whiteTerm;$("standby-button").classList.toggle("hidden",sprintLive||course||live||prov||complete||dedicatedTermination);$("end-event").classList.toggle("hidden",sprintLive||course||live||dedicatedTermination);
  if(standby||course){
   const lap=state.event?.courseLap||{},overtake=state.event?.safetyCarOvertake||null;
@@ -609,5 +610,5 @@ $("white-review-overlay").onclick=e=>{
  }
 };
 
-onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
+onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);if(newOpenHazardIds(previous,state).length){try{playSound("hazard")}catch{}}setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
 renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick()},250);

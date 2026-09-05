@@ -3,10 +3,27 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d1117"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>MFMA Flag Display</title>
-<link rel="stylesheet" href="styles.css?v=49"></head>
+<link rel="stylesheet" href="styles.css?v=52"></head>
 <body class="display-body"><section id="display" class="display flag-clear">
 <div class="display-top"><div class="display-brand">MFMA</div><div class="display-tools"><button id="display-sound" class="display-sound" type="button">Enable Sound</button><div id="display-status" class="display-status"><span class="dot"></span><span>Connecting</span></div></div></div>
 <div id="status-view" class="status-view"><div id="status-kicker" class="status-kicker">MFMA DIGITAL FLAG NETWORK</div><div id="status-title" class="status-title">NO ACTIVE EVENT</div><div id="status-detail" class="status-detail">Race Control has not opened an event.</div><div id="standby-leaderboard" class="driver-leaderboard hidden"></div></div>
 <div id="live-view" class="live-view hidden"><div id="display-session" class="display-session"></div><div id="display-timer" class="display-timer">00:00</div><div id="label" class="signal-label">MFMA</div><div id="instruction" class="signal-instruction">STANDBY</div></div>
+<button id="driver-tools-toggle" class="driver-tools-toggle" type="button">Driver Tools</button>
+<aside id="driver-tools" class="driver-tools hidden" aria-label="Driver reporting tools">
+<div class="driver-tools-head"><strong>Driver Tools</strong><button id="driver-tools-close" type="button" aria-label="Close driver tools">×</button></div>
+<label>Vehicle<select id="driver-vehicle"><option value="ranger">Ranger</option><option value="shelly">Shelly</option><option value="gator">Gator</option></select></label>
+<details><summary>Crew / Occupants</summary><form id="occupant-form" class="driver-report-form">
+<label>Driver Name<input id="driver-name" autocomplete="name" required maxlength="60"></label>
+<label>Passenger Name <small>Optional</small><input id="passenger-name" autocomplete="name" maxlength="60"></label>
+<button class="action primary-btn" type="submit">Submit to Race Director</button><p id="occupant-status" class="report-status" role="status"></p>
+</form></details>
+<button id="hazard-open" class="hazard-open" type="button">Report Hazard</button>
+<section id="hazard-form-panel" class="hidden"><form id="hazard-form" class="driver-report-form">
+<label>Hazard description<textarea id="hazard-description" required maxlength="240" rows="2"></textarea></label>
+<label>Category<select id="hazard-category"><option value="">Optional</option><option>Object / Debris</option><option>Vehicle Issue</option><option>Track Surface</option><option>Person / Animal</option><option>Other</option></select></label>
+<div class="hazard-options"><label><input id="hazard-stop" type="checkbox"> Stop Clock</label><label><input id="hazard-safety" type="checkbox"> Safety Car Needed</label></div>
+<div class="button-row"><button id="hazard-cancel" class="action secondary-btn" type="button">Cancel</button><button class="action danger-btn" type="submit">Submit Hazard</button></div>
+</form></section><div id="driver-hazard-status" class="driver-hazard-status" aria-live="polite"></div>
+</aside>
 <div class="display-footer"><span>DIGITAL FLAG NETWORK</span><span>MFMA SAFETY OPERATIONS</span></div>
-</section><script type="module" src="display.js?v=46"></script></body></html>
+</section><script type="module" src="display.js?v=52"></script></body></html>

@@ -2,6 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebas
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
+import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { signals } from "./signals.js?v=40";
 import { getRenderMode } from "./display-state.js?v=44";
 
@@ -86,8 +87,8 @@ function render(){
  const sorted=Object.keys(scores).map(key=>({key,name:names[key]||key.toUpperCase(),score:Number(scores[key]||0)})).sort((a,b)=>b.score-a.score);
  $("fan-scoreboard").innerHTML=sorted.map((entry,index)=>`<div class="score fan-score"><span>${index+1}. ${entry.name}</span><strong>${entry.score}</strong></div>`).join("")||"<p>No score yet.</p>";
 
- const roles=event.circuit?.roles||{};
- $("fan-circuit").innerHTML=Object.keys(names).map(key=>`<div class="progress-card"><strong>${names[key]}</strong><span>Pursuit ${roles[key]?.pursuit?"✓":"○"}</span><span>Evading ${roles[key]?.evading?"✓":"○"}</span></div>`).join("")||"<p>No role history yet.</p>";
+ const circuit=getCircuitStatus(event.circuit,Object.keys(names)),roles=circuit.roles;
+ $("fan-circuit").innerHTML=`<div class="circuit-summary"><strong>${circuit.completedCircuitCount} Circuit${circuit.completedCircuitCount===1?"":"s"} Complete</strong><span>${circuit.isCircuitBalanced?"Balanced":`Circuit ${circuit.currentCircuitNumber} In Progress`}</span></div>`+Object.keys(names).map(key=>`<div class="progress-card"><strong>${names[key]}</strong><span>Pursuit ${roles[key]?.pursuitCount||0}</span><span>Evading ${roles[key]?.evadingCount||0}</span></div>`).join("");
 
  const setup=s?.setup;
  if(!setup){
