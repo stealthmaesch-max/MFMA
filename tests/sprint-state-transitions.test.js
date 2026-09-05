@@ -50,7 +50,7 @@ assert.match(functionSource("startSession"),/systemState!=="standby"\|\|state\?\
 assert.match(functionSource("startCourseLap"),/systemState!=="standby"\|\|state\?\.sprint\?\.active/);
 
 const sprintPanel=html.match(/<section id="sprint-panel"[\s\S]*?<section class="panel sprint-terminate">/)?.[0]||"";
-for(const flag of ["green","yellow","red","safety-car","white","checkered","clear"])assert(sprintPanel.includes(`data-sprint-flag="${flag}"`),`${flag} control is present`);
+for(const flag of ["green","yellow","move-over","red","safety-car","white","checkered","clear"])assert(sprintPanel.includes(`data-sprint-flag="${flag}"`),`${flag} control is present`);
 for(const controlId of ["sprint-timer-mode","sprint-start-timer","sprint-pause-timer","sprint-reset-timer","sprint-add-time","sprint-subtract-time","sprint-set-time","terminate-sprint"])assert(html.includes(`id="${controlId}"`),`${controlId} is present`);
 
 assert(control.includes('if(flag==="yellow"&&state.systemState==="session-live")'),"normal Yellow behavior remains");

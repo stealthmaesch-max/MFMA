@@ -3,7 +3,7 @@ const VOLUME_KEY="mfma-sounds-volume";
 const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"White",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"White",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
@@ -107,6 +107,7 @@ export const soundDefinitions={
  hazard:{description:"distinct driver hazard alert",play:()=>schedulePattern([{frequency:932,start:0,duration:.11,type:"square",gain:.13},{frequency:622,start:.16,duration:.16,type:"triangle",gain:.15},{frequency:932,start:.37,duration:.2,type:"square",gain:.13}])},
  green:{description:"single rising start cue",play:()=>schedulePattern([{frequency:523,start:0,duration:.11,type:"triangle",gain:.16},{frequency:784,start:.1,duration:.2,type:"triangle",gain:.18}])},
  yellow:{description:"3× caution",repetitions:3,play:()=>repeatPattern(yellowCaution,3,1.05)},
+ moveOver:{description:"passing instruction",play:()=>schedulePattern([{frequency:440,start:0,duration:.14,type:"triangle",gain:.12},{frequency:659,start:.18,duration:.14,type:"triangle",gain:.14},{frequency:880,start:.36,duration:.2,type:"triangle",gain:.15}])},
  red:{description:"4× urgent",repetitions:4,play:()=>repeatPattern(redAlarm,4,.82)},
  safetyCar:{description:"5× repeating",repetitions:5,play:()=>repeatPattern(safetyCarWarning,5,1.15)},
  white:{description:"neutral attention",play:()=>schedulePattern([{frequency:988,start:0,duration:.1,type:"sine",gain:.12},{frequency:880,start:.14,duration:.18,type:"sine",gain:.11}])},
@@ -150,7 +151,7 @@ export function soundForStateTransition(previous,current){
  if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
  if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
  if(previous.activeFlag!==current.activeFlag){
-  const flagSounds={green:"green",yellow:"yellow",red:"red","safety-car":"safetyCar",white:"white",checkered:"checkered",clear:"clear"};
+  const flagSounds={green:"green",yellow:"yellow","move-over":"moveOver",red:"red","safety-car":"safetyCar",white:"white",checkered:"checkered",clear:"clear"};
   return flagSounds[current.activeFlag]||null;
  }
  return null;

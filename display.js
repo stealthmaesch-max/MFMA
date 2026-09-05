@@ -34,13 +34,13 @@ function showLive(){const sig=signals[state.activeFlag]||signals.clear,s=state.s
 function showStandbyFlag(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear;
  if(flag==="clear"){showStatus("STANDBY","Event active. No session is live.",state.event.name);return}
- const copy={yellow:["CAUTION","OPERATIONAL SIGNAL"],red:["STOP","AWAIT RACE CONTROL INSTRUCTIONS"],"safety-car":["SAFETY CAR","FOLLOW OFFICIAL VEHICLE"],white:["WHITE","OPERATIONAL SIGNAL"],checkered:["CHECKERED","OPERATIONAL SIGNAL"]}[flag]||[sig.label,sig.instruction];
+ const copy={yellow:["CAUTION","OPERATIONAL SIGNAL"],"move-over":["MOVE OVER","ALLOW FASTER VEHICLE TO PASS"],red:["STOP","AWAIT RACE CONTROL INSTRUCTIONS"],"safety-car":["SAFETY CAR","FOLLOW OFFICIAL VEHICLE"],white:["WHITE","OPERATIONAL SIGNAL"],checkered:["CHECKERED","OPERATIONAL SIGNAL"]}[flag]||[sig.label,sig.instruction];
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`standby:${flag}`);
  label.textContent=copy[0];instruction.textContent=copy[1];sessionLine.textContent=`${state.event.name} • STANDBY`;timer.textContent="--:--";theme.content=sig.theme;
 }
 function showSprint(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear,s=state.sprint||{};
- const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW",red:"RED","safety-car":"SAFETY CAR",white:"WHITE",checkered:"CHECKERED"};
+ const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW","move-over":"MOVE OVER",red:"RED","safety-car":"SAFETY CAR",white:"WHITE",checkered:"CHECKERED"};
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`sprint:${flag}`);
  label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent="MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
 }

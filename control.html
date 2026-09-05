@@ -48,7 +48,7 @@
 <section id="hazard-panel" class="panel hazard-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Driver Reports</p><h2>Track Hazards</h2></div></div><div id="hazard-list" class="hazard-list"></div></section>
 <section id="occupant-panel" class="panel occupant-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Latest Reports</p><h2>Crew / Occupants</h2></div></div><div id="occupant-list" class="occupant-list"></div></section>
 
-<section id="quick-flag-panel" class="panel quick-flag-panel hidden"><div class="section-head compact"><div><p class="eyebrow">Quick Flags</p><h2>Race Signals</h2></div><strong id="quick-flag-status">CLEAR</strong></div><div class="quick-flag-bar"><button class="flag green" data-quick-flag="green"><b>GREEN</b><strong>Green</strong></button><button class="flag yellow" data-quick-flag="yellow"><b>YELLOW</b><strong>Yellow</strong></button><button class="flag red" data-quick-flag="red"><b>RED</b><strong>Red</strong></button><button class="flag safety-car" data-quick-flag="safety-car"><b>SC</b><strong>Safety Car</strong></button><button class="flag white" data-quick-flag="white"><b>WHITE</b><strong>White</strong></button><button class="flag checkered" data-quick-flag="checkered"><b>FINISH</b><strong>Checkered</strong></button><button class="flag" data-quick-flag="clear"><b>CLEAR</b><strong>Clear</strong></button></div></section>
+<section id="quick-flag-panel" class="panel quick-flag-panel hidden"><div class="section-head compact"><div><p class="eyebrow">Quick Flags</p><h2>Race Signals</h2></div><strong id="quick-flag-status">CLEAR</strong></div><div class="quick-flag-bar"><button class="flag green" data-quick-flag="green"><b>GREEN</b><strong>Green</strong></button><button class="flag yellow" data-quick-flag="yellow"><b>YELLOW</b><strong>Yellow</strong></button><button class="flag move-over" data-quick-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong></button><button class="flag red" data-quick-flag="red"><b>RED</b><strong>Red</strong></button><button class="flag safety-car" data-quick-flag="safety-car"><b>SC</b><strong>Safety Car</strong></button><button class="flag white" data-quick-flag="white"><b>WHITE</b><strong>White</strong></button><button class="flag checkered" data-quick-flag="checkered"><b>FINISH</b><strong>Checkered</strong></button><button class="flag" data-quick-flag="clear"><b>CLEAR</b><strong>Clear</strong></button></div></section>
 
 <section id="standby-panel" class="panel dashboard-left">
 <p class="eyebrow">Event Status</p><h2>Standby</h2><p>Event active. No session is live.</p>
@@ -57,6 +57,7 @@
 <div class="section-head compact"><div><p class="eyebrow">Display-Only Controls</p><h3>Standby Flags</h3></div><p>Signals update displays only. They do not start or modify a session.</p></div>
 <div class="flag-grid">
 <button class="flag yellow" data-flag="yellow"><b>YELLOW</b><strong>Caution</strong><small>Operational display only</small></button>
+<button class="flag move-over" data-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong><small>Allow faster vehicle to pass</small></button>
 <button class="flag red" data-flag="red"><b>RED</b><strong>Stop</strong><small>Operational display only</small></button>
 <button class="flag safety-car" data-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Operational display only</small></button>
 <button class="flag white" data-flag="white"><b>WHITE</b><strong>White Flag</strong><small>Operational display only</small></button>
@@ -89,6 +90,7 @@
 <div class="flag-grid">
 <button class="flag green" data-sprint-flag="green"><b>GREEN</b><strong>Green</strong><small>Display only</small></button>
 <button class="flag yellow" data-sprint-flag="yellow"><b>YELLOW</b><strong>Yellow</strong><small>Display only</small></button>
+<button class="flag move-over" data-sprint-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong><small>Display only</small></button>
 <button class="flag red" data-sprint-flag="red"><b>RED</b><strong>Red</strong><small>Display only</small></button>
 <button class="flag safety-car" data-sprint-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Display only</small></button>
 <button class="flag white" data-sprint-flag="white"><b>WHITE</b><strong>White</strong><small>Display only</small></button>
@@ -146,6 +148,7 @@
 <div id="live-flag-panel" class="flag-grid">
 <button class="flag green" data-flag="green"><b>GREEN</b><strong>Resume</strong><small>Normal competition</small></button>
 <button class="flag yellow" data-flag="yellow"><b>YELLOW</b><strong>Caution</strong><small>Timer runs at half speed</small></button>
+<button class="flag move-over" data-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong><small>Timer continues normally</small></button>
 <button class="flag safety-car" data-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Terminate session</small></button>
 <button class="flag red" data-flag="red"><b>RED</b><strong>Stop</strong><small>Pause session</small></button>
 <button class="flag white" data-flag="white"><b>WHITE</b><strong>Penalty / DQ</strong><small>Terminate session</small></button>

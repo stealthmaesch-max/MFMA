@@ -538,7 +538,7 @@ select {
 .quick-flag-panel { padding: 10px 12px !important; }
 .quick-flag-panel .section-head { margin-bottom: 7px; }
 .quick-flag-panel h2 { font-size: 15px; }
-.quick-flag-bar { display: grid; grid-template-columns: repeat(7, minmax(86px,1fr)); gap: 7px; }
+.quick-flag-bar { display: grid; grid-template-columns: repeat(8, minmax(82px,1fr)); gap: 7px; }
 .quick-flag-bar .flag { min-height: 52px; padding: 8px 10px; border-radius: 12px; }
 .quick-flag-bar .flag b { font-size: 9px; }
 .quick-flag-bar .flag strong { margin-top: 3px; font-size: 13px; }
@@ -828,6 +828,7 @@ dialog form {
 
 .flag-green { background: linear-gradient(145deg, #10a648, #087a34); color: #fff; }
 .flag-yellow { background: linear-gradient(145deg, #ffec1a, #e6c900); color: #111; }
+.flag-move-over,.flag.move-over {background:linear-gradient(to bottom,#0756a5 0 40%,#ffd719 40% 60%,#0756a5 60% 100%);color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.9)}
 
 .flag-safety-car {
   background:
@@ -1302,7 +1303,7 @@ button, input, select, summary { min-height: 44px; touch-action: manipulation; }
   .control-toolbar h1 { max-width: 210px; }
   .toolbar-telemetry { grid-column: 2; grid-row: 1; grid-template-columns: repeat(3,1fr); }
   .toolbar-telemetry > div:last-child { display: grid; }
-  .quick-flag-bar { grid-template-columns: repeat(7,minmax(0,1fr)); }
+  .quick-flag-bar { grid-template-columns: repeat(8,minmax(0,1fr)); }
   .quick-flag-panel { max-width: 740px; margin-inline: auto; }
   .quick-flag-bar .flag strong { font-size: 11px; }
   .dashboard-event .button-row { width: auto; display: flex; }

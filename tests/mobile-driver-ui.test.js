@@ -1,12 +1,28 @@
-const {test}=require("node:test");
+const {after,before,test}=require("node:test");
 const assert=require("node:assert/strict");
 const {chromium}=require("playwright");
+const fs=require("node:fs");
+const http=require("node:http");
+const path=require("node:path");
+
+let server,baseUrl;
+before(async()=>{
+ server=http.createServer((request,response)=>{
+  const pathname=new URL(request.url,"http://localhost").pathname;
+  const file=path.join(process.cwd(),pathname==="/"?"display.html":pathname);
+  const type=file.endsWith(".css")?"text/css":file.endsWith(".js")?"text/javascript":"text/html";
+  fs.readFile(file,(error,data)=>{response.writeHead(error?404:200,{"Content-Type":type});response.end(error?"Not found":data)});
+ });
+ await new Promise(resolve=>server.listen(0,"127.0.0.1",resolve));
+ baseUrl=`http://127.0.0.1:${server.address().port}`;
+});
+after(()=>new Promise(resolve=>server.close(resolve)));
 
 for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,height:852},{width:430,height:932}]){
  test(`Driver layout fits ${viewport.width}x${viewport.height}`,async()=>{
   const browser=await chromium.launch({headless:true});
   const page=await browser.newPage({viewport});
-  await page.goto("http://127.0.0.1:8765/display.html",{waitUntil:"domcontentloaded"});
+  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
   await page.evaluate(()=>{
    document.querySelector("#status-view").classList.add("hidden");
    document.querySelector("#live-view").classList.remove("hidden");

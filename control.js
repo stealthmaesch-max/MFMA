@@ -265,19 +265,20 @@ async function automaticCheckered(winner,reason){
 async function issueFlag(flag){
  if(!requireAuthenticatedWrite())return;
  if(state?.systemState==="sprint-live"){
-  const sprintFlags=new Set(["green","yellow","red","safety-car","white","checkered","clear"]);
+  const sprintFlags=new Set(["green","yellow","move-over","red","safety-car","white","checkered","clear"]);
   if(!state?.sprint?.active||!sprintFlags.has(flag))return;
   await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
   return;
  }
  if(state?.systemState==="standby"){
-  const standbyFlags=new Set(["yellow","red","safety-car","white","checkered","clear"]);
+  const standbyFlags=new Set(["yellow","move-over","red","safety-car","white","checkered","clear"]);
   if(!standbyFlags.has(flag))return;
   await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
   return;
  }
  if(!state?.session||state.systemState!=="session-live")return;
  if(flag==="yellow"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"yellow","session/flag":"yellow","session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
+ if(flag==="move-over"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"move-over",updatedAt:serverTimestamp()});return}
  if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
  if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,updatedAt:serverTimestamp()});return}
  if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",updatedAt:serverTimestamp()});return}
@@ -533,7 +534,7 @@ function render(){
  showOnly(mode,{standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"safety-car-termination":E.termination,"white-termination":E.termination});
  E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(standby||(live&&!awaiting)));
  const flagsAllowed=standby||sprintLive||(live&&!awaiting);$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-status").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
- const permittedFlags=standby?new Set(["yellow","red","safety-car","white","checkered","clear"]):sprintLive?new Set(["green","yellow","red","safety-car","white","checkered","clear"]):new Set(["green","yellow","red","safety-car","white","checkered"]);
+ const permittedFlags=standby?new Set(["yellow","move-over","red","safety-car","white","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","white","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","white","checkered"]);
  document.querySelectorAll("[data-quick-flag]").forEach(button=>{button.disabled=!permittedFlags.has(button.dataset.quickFlag);button.classList.toggle("active",button.dataset.quickFlag===state.activeFlag)});
  $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):live?fmt(state.session?.remainingMs||0):(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
