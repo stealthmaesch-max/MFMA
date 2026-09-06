@@ -49,6 +49,15 @@ test("hazard receipt calls immediate yellow but leaves requested final flag to R
  assert.match(control,/canApplyFlag=new Set\(\["standby","sprint-live","session-live"\]\)/);
 });
 
+test("Safety Car termination initializes display state before rendering",()=>{
+ const display=fs.readFileSync("display.js","utf8");
+ const branch=display.match(/if\(mode==="safety-car-termination"\)\{([\s\S]*?)\n\}/)?.[1]||"";
+ assert(branch.indexOf("const overtake=")>=0,"Safety Car branch initializes overtake state");
+ assert(branch.indexOf("const overtake=")<branch.indexOf("Boolean(overtake?.active)"),"Safety Car render cannot access overtake before initialization");
+ assert.match(branch,/label\.textContent=.*"SAFETY CAR"/);
+ assert.match(branch,/timer\.textContent="ENDED"/);
+});
+
 test("Race Director acknowledgement, resolution, and one-time sound wiring exist",async()=>{
  const control=fs.readFileSync("control.js","utf8");
  assert.match(control,/status`\]:"acknowledged"/);assert.match(control,/status`\]:"resolved"/);

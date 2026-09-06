@@ -56,9 +56,9 @@ function render(){const mode=getRenderMode(state);if(mode==="no-event"){showStat
 }
 if(mode==="session-live"||mode==="awaiting-finding-start"){showLive();return}
 if(mode==="safety-car-termination"){
+ const overtake=state.event?.safetyCarOvertake;
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
  applyDisplayClass("display flag-safety-car flash",`safety-car-termination:${Boolean(overtake?.active)}`);
- const overtake=state.event?.safetyCarOvertake;
  label.textContent=overtake?.active?"OVERTAKE SAFETY CAR":"SAFETY CAR";
  instruction.textContent=overtake?.active?"AUTHORIZED BY RACE DIRECTOR • PROCEED WITH CAUTION":"SESSION TERMINATED • FOLLOW OFFICIAL VEHICLE • DO NOT OVERTAKE";
  sessionLine.textContent=`SESSION ${state.session?.number||""} • TERMINATED`;
