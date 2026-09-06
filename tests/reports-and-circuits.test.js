@@ -55,7 +55,7 @@ test("Race Director acknowledgement, resolution, and one-time sound wiring exist
  assert.match(control,/new Set\(\["yellow","red","safety-car"\]\)/);assert.match(control,/updates\.activeFlag="clear"/);
  const {newOpenHazardIds}=await importModule("report-model.js");
  const current={event:{hazards:{h1:{status:"open"}}}};
- assert.deepEqual(newOpenHazardIds(null,current),[],"initial Firebase render is silent");
+ assert.deepEqual(newOpenHazardIds(null,current),["h1"],"an open report survives reload and alerts Race Control");
  assert.deepEqual(newOpenHazardIds({event:{hazards:{}}},current),["h1"]);
  assert.deepEqual(newOpenHazardIds(current,current),[],"duplicate Firebase render is silent");
 });

@@ -7,6 +7,7 @@ test("Issue Violation replaces legacy White Flag controls",()=>{
  assert.match(html,/Issue Violation/);
  assert.match(html,/value="warning">Infraction Warning/);
  assert.match(html,/value="disqualification">Disqualification/);
+ assert.match(html,/quick-flag-bar[\s\S]*data-violation-open/);
  assert.doesNotMatch(html,/data-(?:quick-flag|sprint-flag|flag)="white"|Issue White Flag|White Flag Review/);
 });
 

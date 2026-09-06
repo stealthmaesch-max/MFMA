@@ -16,7 +16,7 @@ import { signals } from "./signals.js?v=56";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=56";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
-import { newOpenHazardIds } from "./report-model.js?v=52";
+import { newOpenHazardIds } from "./report-model.js?v=57";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);

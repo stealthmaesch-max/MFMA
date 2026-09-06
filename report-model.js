@@ -14,7 +14,6 @@ export function cleanHazardReport({vehicleId,description,category="",requestStop
 }
 
 export function newOpenHazardIds(previous,current){
- if(!previous)return [];
  const before=previous?.event?.hazards||{},after=current?.event?.hazards||{};
  return Object.keys(after).filter(id=>after[id]?.status==="open"&&!before[id]);
 }
