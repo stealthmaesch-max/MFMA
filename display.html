@@ -3,14 +3,17 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d1117"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>MFMA Flag Display</title>
-<link rel="stylesheet" href="styles.css?v=52"></head>
+<link rel="stylesheet" href="styles.css?v=53"></head>
 <body class="display-body"><section id="display" class="display flag-clear">
 <div class="display-top"><div class="display-brand">MFMA</div><div class="display-tools"><button id="display-sound" class="display-sound" type="button">Enable Sound</button><div id="display-status" class="display-status"><span class="dot"></span><span>Connecting</span></div></div></div>
 <div id="status-view" class="status-view"><div id="status-kicker" class="status-kicker">MFMA DIGITAL FLAG NETWORK</div><div id="status-title" class="status-title">NO ACTIVE EVENT</div><div id="status-detail" class="status-detail">Race Control has not opened an event.</div><div id="standby-leaderboard" class="driver-leaderboard hidden"></div></div>
 <div id="live-view" class="live-view hidden"><div id="display-session" class="display-session"></div><div id="display-timer" class="display-timer">00:00</div><div id="label" class="signal-label">MFMA</div><div id="instruction" class="signal-instruction">STANDBY</div></div>
 <section id="driver-tools" class="driver-tools" aria-label="Driver reporting tools">
 <div class="driver-identity"><label><span>Vehicle</span><select id="driver-vehicle"><option value="ranger">Ranger</option><option value="shelly">Shelly</option><option value="gator">Gator</option></select></label><strong id="driver-role">Standby</strong></div>
-<button id="hazard-open" class="hazard-open" type="button">Report Hazard</button>
+<div class="hazard-actions" aria-label="Request Race Control action">
+<button class="hazard-request safety-request" data-hazard-request="safety-car" type="button">Request Safety Car</button>
+<button class="hazard-request red-request" data-hazard-request="red-flag" type="button">Request Red Flag</button>
+</div>
 <div id="driver-hazard-status" class="driver-hazard-status" aria-live="polite"></div>
 <section class="crew-compact">
 <button id="crew-toggle" class="crew-summary" type="button" aria-expanded="false"><span><strong>Crew</strong><small id="crew-names">Add driver &amp; passenger</small></span><b id="crew-action">›</b></button>
@@ -21,14 +24,5 @@
 </form><p id="occupant-status" class="report-status" role="status"></p>
 </section>
 </section>
-<div id="hazard-sheet" class="driver-sheet hidden" role="dialog" aria-modal="true" aria-labelledby="hazard-title"><div class="driver-sheet-card">
-<div class="driver-sheet-head"><h2 id="hazard-title">Report Hazard</h2><button id="hazard-close" type="button" aria-label="Close">×</button></div>
-<form id="hazard-form" class="driver-report-form">
-<label>What is the hazard?<textarea id="hazard-description" required maxlength="240" rows="3"></textarea></label>
-<fieldset class="hazard-categories"><legend>Category (optional)</legend><div><label><input type="radio" name="hazard-category" value="Debris">Debris</label><label><input type="radio" name="hazard-category" value="Track">Track</label><label><input type="radio" name="hazard-category" value="Vehicle">Vehicle</label><label><input type="radio" name="hazard-category" value="Other">Other</label></div></fieldset>
-<fieldset class="hazard-options"><legend>Request Race Control action</legend><label><input id="hazard-stop" type="checkbox"> Stop Clock</label><label><input id="hazard-safety" type="checkbox"> Safety Car</label></fieldset>
-<p id="hazard-error" class="report-status error" role="alert"></p>
-<div class="button-row"><button id="hazard-cancel" class="action secondary-btn" type="button">Cancel</button><button id="hazard-submit" class="action danger-btn" type="submit">Send Report</button></div>
-</form></div></div>
 <div class="display-footer"><span>DIGITAL FLAG NETWORK</span><span>MFMA SAFETY OPERATIONS</span></div>
-</section><script type="module" src="display.js?v=52"></script></body></html>
+</section><script type="module" src="display.js?v=53"></script></body></html>

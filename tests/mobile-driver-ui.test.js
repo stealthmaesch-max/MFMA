@@ -39,7 +39,7 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
    label:document.querySelector("#label").getBoundingClientRect().toJSON(),
    timer:document.querySelector("#display-timer").getBoundingClientRect().toJSON(),
    tools:document.querySelector("#driver-tools").getBoundingClientRect().toJSON(),
-   hazard:document.querySelector("#hazard-open").getBoundingClientRect().toJSON(),
+   hazard:document.querySelector(".hazard-actions").getBoundingClientRect().toJSON(),
    crew:document.querySelector("#crew-toggle").getBoundingClientRect().toJSON()
   }));
   assert.equal(metrics.scrollWidth,metrics.clientWidth,"no horizontal scrolling");
@@ -48,10 +48,8 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
    assert(metrics[key].top>=0&&metrics[key].bottom<=viewport.height,`${key} is visible without scrolling`);
   }
   assert(metrics.label.bottom<metrics.tools.top,"race condition does not overlap Driver controls");
-  await page.click("#hazard-open");
-  const sheet=await page.locator("#hazard-sheet").boundingBox();
-  assert(sheet&&sheet.width<=viewport.width&&sheet.height<=viewport.height,"hazard sheet fits viewport");
-  assert.equal(await page.locator("#hazard-description").evaluate(element=>getComputedStyle(element).fontSize),"16px");
+  assert.equal(await page.locator("[data-hazard-request]").count(),2,"two one-tap hazard requests are visible");
+  for(const button of await page.locator("[data-hazard-request]").all())assert((await button.boundingBox()).height>=44,"hazard request has a 44px touch target");
   await browser.close();
  });
 }

@@ -102,12 +102,16 @@ const safetyCarWarning=[
  {frequency:784,start:0,duration:.27,type:"square",gain:.13},
  {frequency:294,start:.34,duration:.38,type:"square",gain:.15}
 ];
+const moveOverCommand=[
+ {frequency:740,start:0,duration:.16,type:"square",gain:.19,endFrequency:587,attack:.004,release:.025},
+ {frequency:370,start:.2,duration:.24,type:"sawtooth",gain:.18,endFrequency:294,attack:.004,release:.035}
+];
 
 export const soundDefinitions={
  hazard:{description:"distinct driver hazard alert",play:()=>schedulePattern([{frequency:932,start:0,duration:.11,type:"square",gain:.13},{frequency:622,start:.16,duration:.16,type:"triangle",gain:.15},{frequency:932,start:.37,duration:.2,type:"square",gain:.13}])},
  green:{description:"single rising start cue",play:()=>schedulePattern([{frequency:523,start:0,duration:.11,type:"triangle",gain:.16},{frequency:784,start:.1,duration:.2,type:"triangle",gain:.18}])},
  yellow:{description:"3× caution",repetitions:3,play:()=>repeatPattern(yellowCaution,3,1.05)},
- moveOver:{description:"passing instruction",play:()=>schedulePattern([{frequency:440,start:0,duration:.14,type:"triangle",gain:.12},{frequency:659,start:.18,duration:.14,type:"triangle",gain:.14},{frequency:880,start:.36,duration:.2,type:"triangle",gain:.15}])},
+ moveOver:{description:"3× authoritative passing command",repetitions:3,play:()=>repeatPattern(moveOverCommand,3,.62)},
  red:{description:"4× urgent",repetitions:4,play:()=>repeatPattern(redAlarm,4,.82)},
  safetyCar:{description:"5× repeating",repetitions:5,play:()=>repeatPattern(safetyCarWarning,5,1.15)},
  white:{description:"neutral attention",play:()=>schedulePattern([{frequency:988,start:0,duration:.1,type:"sine",gain:.12},{frequency:880,start:.14,duration:.18,type:"sine",gain:.11}])},

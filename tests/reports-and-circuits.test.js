@@ -19,19 +19,33 @@ test("occupant names are informational and excluded from session eligibility",()
  assert(!/driverName|passengerName|vehicleReports/.test(validation));
 });
 
-test("hazards store independent response requests including neither",async()=>{
+test("driver report submission waits for anonymous authentication",()=>{
+ const display=fs.readFileSync("display.js","utf8");
+ assert.match(display,/function ensureDriverAuth\(\)/);
+ assert.match(display,/await ensureDriverAuth\(\);const report=cleanOccupantReport/);
+ assert.match(display,/await ensureDriverAuth\(\);const hazardRef=push/);
+ assert.doesNotMatch(display,/if\(!driverUser\).*Connecting securely/);
+});
+
+test("hazards provide one-tap Safety Car and Red Flag requests",async()=>{
  const {cleanHazardReport}=await importModule("report-model.js");
  const neither=cleanHazardReport({id:"h1",vehicleId:"ranger",description:"Debris"},100);
  assert.equal(neither.status,"open");assert.equal(neither.requestStopClock,false);assert.equal(neither.requestSafetyCar,false);
  assert.equal(cleanHazardReport({...neither,id:"h2",requestStopClock:true},200).requestStopClock,true);
  assert.equal(cleanHazardReport({...neither,id:"h3",requestSafetyCar:true},300).requestSafetyCar,true);
+ const html=fs.readFileSync("display.html","utf8"),display=fs.readFileSync("display.js","utf8");
+ assert.match(html,/data-hazard-request="safety-car"/);assert.match(html,/data-hazard-request="red-flag"/);assert.doesNotMatch(html,/hazard-description|hazard-category/);
+ assert.match(display,/description:`\$\{label\} requested`/);assert.match(display,/requestStopClock:!safetyCar,requestSafetyCar:safetyCar/);
 });
 
-test("hazard submission cannot automatically change timer or deploy Safety Car",async()=>{
+test("hazard receipt calls immediate yellow but leaves requested final flag to Race Director",async()=>{
  const {cleanHazardReport}=await importModule("report-model.js");
  const state={systemState:"session-live",activeFlag:"green",session:{running:true}};
  cleanHazardReport({id:"h",vehicleId:"ranger",description:"Oil",requestStopClock:true,requestSafetyCar:true},100);
  assert.deepEqual(state,{systemState:"session-live",activeFlag:"green",session:{running:true}});
+ const display=fs.readFileSync("display.js","utf8"),control=fs.readFileSync("control.js","utf8");
+ assert.doesNotMatch(display,/issueFlag|activeFlag\s*:/);
+ assert.match(control,/newHazards\.length/);assert.match(control,/new Set\(\["clear","green","move-over"\]\)/);assert.match(control,/issueFlag\("yellow"\)/);assert.match(control,/data-hazard-red/);assert.match(control,/data-hazard-safety/);
 });
 
 test("Race Director acknowledgement, resolution, and one-time sound wiring exist",async()=>{

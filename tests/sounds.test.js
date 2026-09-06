@@ -63,6 +63,7 @@ test("urgent definitions expose the required repeat counts",async()=>{
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// definitions").toString("base64")}`);
  assert.equal(sounds.getVolume(),.65,"missing volume storage uses the audible default");
  assert.equal(sounds.soundDefinitions.yellow.repetitions,3);
+ assert.equal(sounds.soundDefinitions.moveOver.repetitions,3);
  assert.equal(sounds.soundDefinitions.red.repetitions,4);
  assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);
 });
@@ -74,7 +75,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",2],["yellow",6],["move-over",3],["red",8],["safety-car",10],["white",2],["checkered",4]];
+ const cases=[["green",2],["yellow",6],["move-over",6],["red",8],["safety-car",10],["white",2],["checkered",4]];
  for(const [flag,oscillators] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
