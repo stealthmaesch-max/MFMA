@@ -6,6 +6,7 @@ export const signals = {
   "safety-car":{className:"flag-safety-car",label:"SAFETY CAR",instruction:"FOLLOW OFFICIAL VEHICLE",flash:true,theme:"#050505"},
   red:{className:"flag-red",label:"STOP",instruction:"AWAIT RD INSTRUCTIONS",flash:true,theme:"#d40000"},
   "infraction-warning":{className:"flag-infraction-warning",label:"INFRACTION WARNING",instruction:"WHITE + FOLDED YELLOW • CONTINUE WITH CAUTION",flash:true,theme:"#f4f4f4"},
+  "under-review":{className:"flag-white",label:"UNDER REVIEW",instruction:"RETURN TO STARTING ZONE • AWAIT RACE DIRECTOR",flash:true,theme:"#ffffff"},
   disqualification:{className:"flag-white",label:"DISQUALIFIED",instruction:"RETURN TO STARTING ZONE",flash:true,theme:"#ffffff"},
   checkered:{className:"flag-checkered",label:"CHECKERED",instruction:"SESSION COMPLETE",flash:false,theme:"#000000"}
 };

@@ -2,9 +2,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebas
 import { getDatabase, ref, onValue, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { signals } from "./signals.js?v=56";
-import { getRenderMode } from "./display-state.js?v=44";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=56";
+import { signals } from "./signals.js?v=60";
+import { getRenderMode } from "./display-state.js?v=60";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=60";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null,wake=null;
@@ -64,11 +64,11 @@ if(mode==="safety-car-termination"){
  sessionLine.textContent=`SESSION ${state.session?.number||""} • TERMINATED`;
  timer.textContent="ENDED";theme.content="#050505";return
 }
-if(mode==="white-termination"){
+if(mode==="violation-review"||mode==="white-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
- applyDisplayClass("display flag-white flash","white-termination");
- label.textContent="DISQUALIFIED";
- instruction.textContent=state.session?.provisionalReason||"RETURN TO STARTING ZONE";
+ applyDisplayClass("display flag-white flash",mode);
+ label.textContent=mode==="violation-review"?"UNDER REVIEW":"DISQUALIFIED";
+ instruction.textContent=mode==="violation-review"?"RETURN TO STARTING ZONE • AWAIT RACE DIRECTOR":state.session?.provisionalReason||"RETURN TO STARTING ZONE";
  sessionLine.textContent=`SESSION ${state.session?.number||""}`;
  timer.textContent="ENDED";theme.content="#ffffff";return
 }

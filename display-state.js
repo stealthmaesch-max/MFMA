@@ -7,6 +7,7 @@ export const renderModes={
  provisional:"provisional",
  "session-complete":"session-complete",
  "safety-car-termination":"safety-car-termination",
+ "violation-review":"violation-review",
  "white-termination":"white-termination"
 };
 
