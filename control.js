@@ -518,13 +518,20 @@ function renderCircuit(id){
 }
 function relativeTime(timestamp){if(!timestamp)return"";const seconds=Math.max(0,Math.floor((Date.now()-timestamp)/1000));return seconds<60?"Updated just now":seconds<3600?`Updated ${Math.floor(seconds/60)}m ago`:`Updated ${Math.floor(seconds/3600)}h ago`}
 async function stopRequestedClock(){if(state?.systemState==="sprint-live")return pauseSprintTimer();if(state?.systemState==="session-live")return issueFlag("red")}
+async function resolveHazard(id){
+ if(!requireAuthenticatedWrite())return;
+ const otherActive=Object.entries(state?.event?.hazards||{}).some(([hazardId,hazard])=>hazardId!==id&&hazard.status!=="resolved");
+ const updates={[`event/hazards/${id}/status`]:"resolved",[`event/hazards/${id}/resolvedAt`]:serverTimestamp(),updatedAt:serverTimestamp()};
+ if(!otherActive&&state?.systemState==="standby"&&new Set(["yellow","red","safety-car"]).has(state.activeFlag))updates.activeFlag="clear";
+ await update(stateRef,updates);
+}
 function renderReports(){
  const reports=state?.event?.vehicleReports||{};
  $("occupant-panel").classList.toggle("hidden",!Object.keys(reports).length);$("occupant-list").innerHTML=Object.entries(reports).map(([vehicleId,r])=>`<article><strong>${escapeHtml(vehicles[vehicleId]?.name||vehicleId)}</strong><span>Driver: ${escapeHtml(r.driverName||"—")}</span><span>Passenger: ${escapeHtml(r.passengerName||"—")}</span><small>${relativeTime(r.submittedAt)}</small></article>`).join("");
  const hazards=Object.entries(state?.event?.hazards||{}).map(([id,hazard])=>({id,...hazard})).filter(h=>h.status!=="resolved").sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
  $("hazard-panel").classList.toggle("hidden",!hazards.length);$("hazard-list").innerHTML=hazards.map(h=>`<article class="hazard-alert ${escapeHtml(h.status)}"><div class="hazard-alert-head"><b>REQUEST • ${escapeHtml((vehicles[h.vehicleId]?.name||h.vehicleId).toUpperCase())}</b><span>${h.status==="open"?"NEW":"ACKNOWLEDGED"}</span></div><strong>${h.requestSafetyCar?"Safety Car requested":"Red Flag requested"}</strong><div class="hazard-requests">${h.requestStopClock?"<b>RED FLAG</b>":""}${h.requestSafetyCar?"<b>SAFETY CAR</b>":""}</div><div class="button-row">${h.status==="open"?`<button class="mini-btn" data-hazard-ack="${h.id}">Acknowledge</button>`:""}${h.status!=="resolved"?`<button class="mini-btn" data-hazard-resolve="${h.id}">Resolve</button>`:""}${h.requestStopClock?`<button class="mini-btn" data-hazard-red="${h.id}">Red Flag</button>`:""}${h.requestSafetyCar?`<button class="mini-btn" data-hazard-safety="${h.id}">Safety Car</button>`:""}</div></article>`).join("");
  document.querySelectorAll("[data-hazard-ack]").forEach(b=>b.onclick=()=>update(stateRef,{[`event/hazards/${b.dataset.hazardAck}/status`]:"acknowledged",[`event/hazards/${b.dataset.hazardAck}/acknowledgedAt`]:serverTimestamp()}));
- document.querySelectorAll("[data-hazard-resolve]").forEach(b=>b.onclick=()=>update(stateRef,{[`event/hazards/${b.dataset.hazardResolve}/status`]:"resolved",[`event/hazards/${b.dataset.hazardResolve}/resolvedAt`]:serverTimestamp()}));
+ document.querySelectorAll("[data-hazard-resolve]").forEach(b=>b.onclick=()=>resolveHazard(b.dataset.hazardResolve));
  document.querySelectorAll("[data-hazard-red]").forEach(b=>b.onclick=()=>issueFlag("red"));document.querySelectorAll("[data-hazard-safety]").forEach(b=>b.onclick=()=>issueFlag("safety-car"));
 }
 function render(){

@@ -51,6 +51,8 @@ test("hazard receipt calls immediate yellow but leaves requested final flag to R
 test("Race Director acknowledgement, resolution, and one-time sound wiring exist",async()=>{
  const control=fs.readFileSync("control.js","utf8");
  assert.match(control,/status`\]:"acknowledged"/);assert.match(control,/status`\]:"resolved"/);
+ assert.match(control,/function resolveHazard\(id\)/);assert.match(control,/state\?\.systemState==="standby"/);
+ assert.match(control,/new Set\(\["yellow","red","safety-car"\]\)/);assert.match(control,/updates\.activeFlag="clear"/);
  const {newOpenHazardIds}=await importModule("report-model.js");
  const current={event:{hazards:{h1:{status:"open"}}}};
  assert.deepEqual(newOpenHazardIds(null,current),[],"initial Firebase render is silent");
