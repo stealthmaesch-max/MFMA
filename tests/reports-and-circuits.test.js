@@ -46,6 +46,7 @@ test("hazard receipt calls immediate yellow but leaves requested final flag to R
  const display=fs.readFileSync("display.js","utf8"),control=fs.readFileSync("control.js","utf8");
  assert.doesNotMatch(display,/issueFlag|activeFlag\s*:/);
  assert.match(control,/newHazards\.length/);assert.match(control,/new Set\(\["clear","green","move-over"\]\)/);assert.match(control,/issueFlag\("yellow"\)/);assert.match(control,/data-hazard-red/);assert.match(control,/data-hazard-safety/);
+ assert.match(control,/canApplyFlag=new Set\(\["standby","sprint-live","session-live"\]\)/);
 });
 
 test("Race Director acknowledgement, resolution, and one-time sound wiring exist",async()=>{
@@ -58,6 +59,9 @@ test("Race Director acknowledgement, resolution, and one-time sound wiring exist
  assert.deepEqual(newOpenHazardIds(null,current),["h1"],"an open report survives reload and alerts Race Control");
  assert.deepEqual(newOpenHazardIds({event:{hazards:{}}},current),["h1"]);
  assert.deepEqual(newOpenHazardIds(current,current),[],"duplicate Firebase render is silent");
+ const css=fs.readFileSync("styles.css","utf8");
+ assert.doesNotMatch(css,/\]\) \.dashboard-event \{ display: none; \}/,"live modes do not hide Driver reports");
+ assert.match(css,/\]\) \.event-head\.dashboard-event \{ display: none; \}/,"only the compact event header is hidden during live modes");
 });
 
 test("circuit counts report completed history separately from balance",async()=>{

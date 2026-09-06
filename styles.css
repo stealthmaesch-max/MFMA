@@ -1191,7 +1191,7 @@ button, input, select, summary { min-height: 44px; touch-action: manipulation; }
 .dashboard-event, .dashboard-left, .dashboard-main, .dashboard-right, .quick-flag-panel { grid-column: 1; grid-row: auto; min-width: 0; }
 .dashboard-grid .panel, .dashboard-grid .timer-panel { width: 100%; min-width: 0; padding: 11px; border-radius: 14px; }
 .dashboard-event { min-height: 0; padding: 8px !important; }
-.race-control-page:is([data-mode="course-lap"],[data-mode="session-live"],[data-mode="awaiting-finding-start"],[data-mode="sprint-live"],[data-mode="safety-car-termination"],[data-mode="white-termination"]) .dashboard-event { display: none; }
+.race-control-page:is([data-mode="course-lap"],[data-mode="session-live"],[data-mode="awaiting-finding-start"],[data-mode="sprint-live"],[data-mode="safety-car-termination"],[data-mode="white-termination"]) .event-head.dashboard-event { display: none; }
 .dashboard-event > div:first-child { display: none; }
 .dashboard-event .button-row { width: 100%; display: grid; grid-template-columns: 1fr 1fr; }
 .dashboard-event .button-row > * { margin: 0; min-width: 0; padding-inline: 8px; }

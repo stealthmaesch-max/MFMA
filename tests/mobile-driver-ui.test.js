@@ -53,3 +53,17 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
   await browser.close();
  });
 }
+
+test("Race Control keeps Driver reports visible during a mobile live session",async()=>{
+ const browser=await chromium.launch({headless:true});
+ const page=await browser.newPage({viewport:{width:390,height:844}});
+ await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
+ const display=await page.evaluate(()=>{
+  document.body.dataset.mode="session-live";
+  document.querySelector("#event-area").classList.remove("hidden");
+  document.querySelector("#hazard-panel").classList.remove("hidden");
+  return getComputedStyle(document.querySelector("#hazard-panel")).display;
+ });
+ assert.notEqual(display,"none","live-session CSS does not hide Driver reports");
+ await browser.close();
+});
