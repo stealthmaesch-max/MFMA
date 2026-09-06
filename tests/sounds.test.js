@@ -81,11 +81,11 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",3],["yellow",6],["move-over",6],["red",8],["safety-car",10],["white",2],["checkered",4]];
- for(const [flag,oscillators] of cases){
+ const cases=[["green",3],["yellow",6],["move-over",6],["red",8],["safety-car",10],["infraction-warning",2,"white"],["disqualification",2,"white"],["checkered",4]];
+ for(const [flag,oscillators,expectedSound] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
-  assert.equal(await sounds.playStateTransition(base,current),flag==="safety-car"?"safetyCar":flag==="move-over"?"moveOver":flag);
+  assert.equal(await sounds.playStateTransition(base,current),expectedSound||(flag==="safety-car"?"safetyCar":flag==="move-over"?"moveOver":flag));
   assert.equal(FakeAudioContext.latest.state,"running","the enabled AudioContext resumes before playback");
   assert.equal(sounds.getActiveSoundState().oscillators,oscillators,`${flag} schedules exactly one complete sequence`);
   assert.equal(await sounds.playStateTransition(current,{...current}),null,"an unchanged Firebase snapshot stays silent");

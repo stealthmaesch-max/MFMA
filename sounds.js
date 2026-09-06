@@ -3,7 +3,7 @@ const VOLUME_KEY="mfma-sounds-volume";
 const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"White",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
@@ -155,7 +155,7 @@ export function soundForStateTransition(previous,current){
  if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
  if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
  if(previous.activeFlag!==current.activeFlag){
-  const flagSounds={green:"green",yellow:"yellow","move-over":"moveOver",red:"red","safety-car":"safetyCar",white:"white",checkered:"checkered",clear:"clear"};
+  const flagSounds={green:"green",yellow:"yellow","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white",disqualification:"white",checkered:"checkered",clear:"clear"};
   return flagSounds[current.activeFlag]||null;
  }
  return null;

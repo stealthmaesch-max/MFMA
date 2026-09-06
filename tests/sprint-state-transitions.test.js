@@ -19,7 +19,8 @@ function functionSource(name){
 const issue=functionSource("issueFlag");
 const sprintBranch=issue.match(/if\(state\?\.systemState==="sprint-live"\)\{([\s\S]*?)\n \}/)?.[1];
 assert(sprintBranch,"Sprint flag branch exists");
-for(const flag of ["green","yellow","red","safety-car","white","checkered","clear"])assert(sprintBranch.includes(`"${flag}"`),`${flag} is allowed in Sprint`);
+for(const flag of ["green","yellow","red","safety-car","checkered","clear"])assert(sprintBranch.includes(`"${flag}"`),`${flag} is allowed in Sprint`);
+assert(!sprintBranch.includes('"white"'),"legacy White Flag is removed from Sprint");
 assert.match(sprintBranch,/update\(stateRef,\{activeFlag:flag,updatedAt:serverTimestamp\(\)\}\)/);
 for(const forbidden of ["automaticCheckered","openWhiteDialog","safety-car-termination","session/","event/"])assert(!sprintBranch.includes(forbidden),`Sprint flags exclude ${forbidden}`);
 
@@ -50,7 +51,8 @@ assert.match(functionSource("startSession"),/systemState!=="standby"\|\|state\?\
 assert.match(functionSource("startCourseLap"),/systemState!=="standby"\|\|state\?\.sprint\?\.active/);
 
 const sprintPanel=html.match(/<section id="sprint-panel"[\s\S]*?<section class="panel sprint-terminate">/)?.[0]||"";
-for(const flag of ["green","yellow","move-over","red","safety-car","white","checkered","clear"])assert(sprintPanel.includes(`data-sprint-flag="${flag}"`),`${flag} control is present`);
+for(const flag of ["green","yellow","move-over","red","safety-car","checkered","clear"])assert(sprintPanel.includes(`data-sprint-flag="${flag}"`),`${flag} control is present`);
+assert(!sprintPanel.includes('data-sprint-flag="white"'),"legacy White Flag control is removed");
 for(const controlId of ["sprint-timer-mode","sprint-start-timer","sprint-pause-timer","sprint-reset-timer","sprint-add-time","sprint-subtract-time","sprint-set-time","terminate-sprint"])assert(html.includes(`id="${controlId}"`),`${controlId} is present`);
 
 assert(control.includes('if(flag==="yellow"&&state.systemState==="session-live")'),"normal Yellow behavior remains");

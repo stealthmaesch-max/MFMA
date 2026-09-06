@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=52">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=56">
 </head><body class="control-page race-control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -48,7 +48,7 @@
 <section id="hazard-panel" class="panel hazard-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Driver Reports</p><h2>Track Hazards</h2></div></div><div id="hazard-list" class="hazard-list"></div></section>
 <section id="occupant-panel" class="panel occupant-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Latest Reports</p><h2>Crew / Occupants</h2></div></div><div id="occupant-list" class="occupant-list"></div></section>
 
-<section id="quick-flag-panel" class="panel quick-flag-panel hidden"><div class="section-head compact"><div><p class="eyebrow">Quick Flags</p><h2>Race Signals</h2></div><strong id="quick-flag-status">CLEAR</strong></div><div class="quick-flag-bar"><button class="flag green" data-quick-flag="green"><b>GREEN</b><strong>Green</strong></button><button class="flag yellow" data-quick-flag="yellow"><b>YELLOW</b><strong>Yellow</strong></button><button class="flag move-over" data-quick-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong></button><button class="flag red" data-quick-flag="red"><b>RED</b><strong>Red</strong></button><button class="flag safety-car" data-quick-flag="safety-car"><b>SC</b><strong>Safety Car</strong></button><button class="flag white" data-quick-flag="white"><b>WHITE</b><strong>White</strong></button><button class="flag checkered" data-quick-flag="checkered"><b>FINISH</b><strong>Checkered</strong></button><button class="flag" data-quick-flag="clear"><b>CLEAR</b><strong>Clear</strong></button></div></section>
+<section id="quick-flag-panel" class="panel quick-flag-panel hidden"><div class="section-head compact"><div><p class="eyebrow">Quick Flags</p><h2>Race Signals</h2></div><strong id="quick-flag-status">CLEAR</strong></div><div class="quick-flag-bar"><button class="flag green" data-quick-flag="green"><b>GREEN</b><strong>Green</strong></button><button class="flag yellow" data-quick-flag="yellow"><b>YELLOW</b><strong>Yellow</strong></button><button class="flag move-over" data-quick-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong></button><button class="flag red" data-quick-flag="red"><b>RED</b><strong>Red</strong></button><button class="flag safety-car" data-quick-flag="safety-car"><b>SC</b><strong>Safety Car</strong></button><button class="flag checkered" data-quick-flag="checkered"><b>FINISH</b><strong>Checkered</strong></button><button class="flag" data-quick-flag="clear"><b>CLEAR</b><strong>Clear</strong></button></div></section>
 
 <section id="standby-panel" class="panel dashboard-left">
 <p class="eyebrow">Event Status</p><h2>Standby</h2><p>Event active. No session is live.</p>
@@ -60,7 +60,6 @@
 <button class="flag move-over" data-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong><small>Allow faster vehicle to pass</small></button>
 <button class="flag red" data-flag="red"><b>RED</b><strong>Stop</strong><small>Operational display only</small></button>
 <button class="flag safety-car" data-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Operational display only</small></button>
-<button class="flag white" data-flag="white"><b>WHITE</b><strong>White Flag</strong><small>Operational display only</small></button>
 <button class="flag checkered" data-flag="checkered"><b>CHECKERED</b><strong>Checkered</strong><small>Operational display only</small></button>
 <button class="flag" data-flag="clear"><b>CLEAR</b><strong>Clear / Standby</strong><small>Reset operational display</small></button>
 </div>
@@ -93,7 +92,6 @@
 <button class="flag move-over" data-sprint-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong><small>Display only</small></button>
 <button class="flag red" data-sprint-flag="red"><b>RED</b><strong>Red</strong><small>Display only</small></button>
 <button class="flag safety-car" data-sprint-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Display only</small></button>
-<button class="flag white" data-sprint-flag="white"><b>WHITE</b><strong>White</strong><small>Display only</small></button>
 <button class="flag checkered" data-sprint-flag="checkered"><b>CHECKERED</b><strong>Checkered</strong><small>Display only</small></button>
 <button class="flag" data-sprint-flag="clear"><b>CLEAR</b><strong>Clear</strong><small>Remain in Sprint</small></button>
 </div></section>
@@ -151,7 +149,7 @@
 <button class="flag move-over" data-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong><small>Timer continues normally</small></button>
 <button class="flag safety-car" data-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Terminate session</small></button>
 <button class="flag red" data-flag="red"><b>RED</b><strong>Stop</strong><small>Pause session</small></button>
-<button class="flag white" data-flag="white"><b>WHITE</b><strong>Penalty / DQ</strong><small>Terminate session</small></button>
+<button class="flag violation" data-violation-open><b>VIOLATION</b><strong>Issue Violation</strong><small>Warning or disqualification</small></button>
 <button class="flag checkered" data-flag="checkered"><b>CHECKERED</b><strong>Complete Session</strong><small>Manual fallback</small></button>
 </div>
 <section id="live-spots-panel" class="panel"><div class="section-head compact"><div><p class="eyebrow">Pursuit Spots</p><h2>Required Radio Spots</h2></div></div><div id="spot-buttons" class="spot-grid"></div></section>
@@ -159,7 +157,7 @@
 
 <section id="provisional-panel" class="panel dashboard-main hidden"><p class="eyebrow">Session Complete</p><h2 id="result-title">Provisional Checkered</h2><p id="provisional-detail"></p>
 <div id="between-scoreboard" class="scoreboard"></div><div id="circuit-progress" class="circuit-progress"></div>
-<div class="button-row"><button id="finalize-result" class="action primary-btn">Finalize Result</button><button id="next-session" class="action primary-btn hidden">Next Session</button><button id="show-scoreboard" class="action secondary-btn">Show Scoreboard</button><button id="post-white" class="action white-btn">White Flag Review</button><button id="return-standby" class="action secondary-btn">Standby</button></div>
+<div class="button-row"><button id="finalize-result" class="action primary-btn">Finalize Result</button><button id="next-session" class="action primary-btn hidden">Next Session</button><button id="show-scoreboard" class="action secondary-btn">Show Scoreboard</button><button id="post-white" class="action white-btn">Issue Violation</button><button id="return-standby" class="action secondary-btn">Standby</button></div>
 </section>
 
 
@@ -183,8 +181,10 @@
 <div id="white-review-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="white-review-title">
 <section class="modal-card">
 <form id="white-form">
-<div class="dialog-head"><div><p class="eyebrow">MFMA Session Review</p><h2 id="white-review-title">Issue White Flag</h2></div><button type="button" id="close-white" class="modal-close">×</button></div>
-<label>Disqualified Team<select id="dq-team"></select></label>
+<div class="dialog-head"><div><p class="eyebrow">Rule Enforcement</p><h2 id="white-review-title">Issue Violation</h2></div><button type="button" id="close-white" class="modal-close">×</button></div>
+<label>Enforcement Action<select id="violation-type"><option value="warning">Infraction Warning</option><option value="disqualification">Disqualification</option></select></label>
+<p id="violation-guidance" class="status-note">Displays a white flag crossed with a folded yellow flag. The session continues.</p>
+<label>Team<select id="dq-team"></select></label>
 <label>Responsible Party<select id="responsible-party"></select></label>
 <label>Reason<select id="dq-reason">
 <option>Improper radio use</option>
@@ -200,14 +200,14 @@
 <option>Unsportsmanlike conduct</option>
 <option>Other</option>
 </select></label>
-<div class="dq-notice"><strong>Team Disqualification</strong><span>The selected team is always disqualified when White Flag is issued.</span></div><label>Additional Penalty<select id="penalty-type"><option value="none">No additional penalty</option><option value="time">Time penalty</option></select></label>
+<div id="disqualification-options" class="hidden"><div class="dq-notice"><strong>Team Disqualification</strong><span>The selected team is removed from this session result.</span></div><label>Additional Penalty<select id="penalty-type"><option value="none">No additional penalty</option><option value="time">Time penalty</option></select></label>
 <div id="time-penalty-options" class="hidden">
 <label>Fair-Playing Team<select id="benefiting-team"></select></label>
 <label>Chosen Remedy<select id="time-remedy"><option value="reduce-hide">Reduce hiding time</option><option value="increase-find">Increase finding time</option></select></label>
 <label>Seconds<input id="time-seconds" type="number" min="1" value="15"></label>
 </div>
-<label>Official Outcome<select id="white-outcome"><option value="award-opponent">Award opposing team</option><option value="restart">Restart session</option><option value="no-result">No result</option><option value="preserve">Preserve provisional result</option></select></label>
-<button class="action white-btn wide" type="submit">Issue White Flag</button>
+<label>Official Outcome<select id="white-outcome"><option value="award-opponent">Award opposing team</option><option value="restart">Restart session</option><option value="no-result">No result</option><option value="preserve">Preserve provisional result</option></select></label></div>
+<button id="issue-violation-submit" class="action white-btn wide" type="submit">Issue Infraction Warning</button>
 </form>
 </section>
 </div>
@@ -218,4 +218,4 @@
 <label>Reason<input id="overtake-reason" value="Race Director authorization"></label>
 <button class="action yellow-btn wide" type="submit">Authorize Overtake for All Drivers</button>
 </form></section></div>
-<script type="module" src="control.js?v=55"></script></body></html>
+<script type="module" src="control.js?v=56"></script></body></html>

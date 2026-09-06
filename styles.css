@@ -631,6 +631,7 @@ select {
 .safety-car { background: linear-gradient(145deg, #151515, #050505); color: #ffe919; }
 .red { background: linear-gradient(145deg, #e31313, #a80000); color: #fff; }
 .white { background: linear-gradient(145deg, #fff, #e4e8ed); color: #111; }
+.violation,.flag-infraction-warning{background:linear-gradient(135deg,#fff 0 38%,#f0cf16 38% 47%,#fff 47% 53%,#f0cf16 53% 62%,#fff 62% 100%);color:#111;text-shadow:none}
 
 .checkered {
   color: #fff;

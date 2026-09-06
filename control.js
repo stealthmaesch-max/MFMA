@@ -12,9 +12,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
-import { signals } from "./signals.js?v=40";
+import { signals } from "./signals.js?v=56";
 import { getRenderMode, showOnly } from "./display-state.js?v=44";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=55";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=56";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
 import { newOpenHazardIds } from "./report-model.js?v=52";
 
@@ -265,13 +265,13 @@ async function automaticCheckered(winner,reason){
 async function issueFlag(flag){
  if(!requireAuthenticatedWrite())return;
  if(state?.systemState==="sprint-live"){
-  const sprintFlags=new Set(["green","yellow","move-over","red","safety-car","white","checkered","clear"]);
+  const sprintFlags=new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]);
   if(!state?.sprint?.active||!sprintFlags.has(flag))return;
   await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
   return;
  }
  if(state?.systemState==="standby"){
-  const standbyFlags=new Set(["yellow","move-over","red","safety-car","white","checkered","clear"]);
+  const standbyFlags=new Set(["yellow","move-over","red","safety-car","checkered","clear"]);
   if(!standbyFlags.has(flag))return;
   await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
   return;
@@ -282,7 +282,6 @@ async function issueFlag(flag){
  if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
  if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,updatedAt:serverTimestamp()});return}
  if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",updatedAt:serverTimestamp()});return}
- if(flag==="white")openWhiteDialog();
  if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered(null,"Manual Checkered");
 }
 
@@ -341,27 +340,35 @@ function populateWhite(){
 function openWhiteDialog(){
  try{
   if(!state?.session){
-   throw new Error("No active or recently completed session is available for White Flag Review.");
+   throw new Error("No active or recently completed session is available for rule enforcement.");
   }
 
   populateWhite();
 
   const overlay=$("white-review-overlay");
   if(!overlay){
-   throw new Error("The White Flag Review panel is missing from control.html.");
+   throw new Error("The Issue Violation panel is missing from control.html.");
   }
 
   overlay.classList.remove("hidden");
   overlay.style.display="grid";
   document.body.classList.add("modal-open");
  }catch(error){
-  console.error("White Flag Review failed:",error);
-  alert(`White Flag Review could not open: ${error.message}`);
+  console.error("Issue Violation failed:",error);
+  alert(`Issue Violation could not open: ${error.message}`);
  }
+}
+
+function syncViolationForm(){
+ const disqualification=$("violation-type").value==="disqualification";
+ $("disqualification-options").classList.toggle("hidden",!disqualification);
+ $("violation-guidance").textContent=disqualification?"Ends the session and opens the official outcome workflow.":"Displays a white flag crossed with a folded yellow flag. The session continues.";
+ $("issue-violation-submit").textContent=disqualification?"Issue Disqualification":"Issue Infraction Warning";
 }
 
 async function resolveWhiteForm(){
  if(!requireAuthenticatedWrite())return;
+ const violationType=$("violation-type").value;
  const dq=$("dq-team").value;
  const responsible=$("responsible-party").value;
  const reason=$("dq-reason").value;
@@ -374,6 +381,15 @@ async function resolveWhiteForm(){
   responsible==="unknown"
    ?"Unknown / team responsibility"
    :"Unknown";
+
+ const violationId=`v${Date.now()}`;
+ if(violationType==="warning"){
+  if(state.systemState!=="session-live"){alert("Infraction warnings can only be issued during a live session.");return}
+  const detail=`Infraction warning for ${names[dq]}. Responsible party: ${responsibleName}. Reason: ${reason}.`;
+  const violation={type:"warning",team:dq,responsible,reason,detail,issuedAt:serverTimestamp()};
+  await update(stateRef,{activeFlag:"infraction-warning","session/violationReview":violation,[`event/violations/${violationId}`]:violation,updatedAt:serverTimestamp()});
+  $("white-review-overlay").classList.add("hidden");$("white-review-overlay").style.display="";document.body.classList.remove("modal-open");return;
+ }
 
  let winner=null;
  let nextState="white-termination";
@@ -407,9 +423,10 @@ async function resolveWhiteForm(){
 
  await update(stateRef,{
   systemState:nextState,
-  activeFlag:"white",
+  activeFlag:nextState==="standby"?"clear":"disqualification",
   "session/running":false,
-  "session/whiteReview":{
+  "session/violationReview":{
+   type:"disqualification",
    dq,
    responsible,
    reason,
@@ -421,6 +438,7 @@ async function resolveWhiteForm(){
   "session/provisionalReason":detail,
   "session/terminationType":"white",
   "session/terminationDetail":detail,
+  [`event/violations/${violationId}`]:{type:"disqualification",team:dq,responsible,reason,detail,issuedAt:serverTimestamp()},
   "event/pendingAdjustment":pendingAdjustment,
   updatedAt:serverTimestamp()
  });
@@ -541,9 +559,9 @@ function render(){
  showOnly(mode,{standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"safety-car-termination":E.termination,"white-termination":E.termination});
  E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(standby||(live&&!awaiting)));
  const flagsAllowed=standby||sprintLive||(live&&!awaiting);$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-status").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
- const permittedFlags=standby?new Set(["yellow","move-over","red","safety-car","white","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","white","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","white","checkered"]);
+ const permittedFlags=standby?new Set(["yellow","move-over","red","safety-car","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","checkered"]);
  document.querySelectorAll("[data-quick-flag]").forEach(button=>{button.disabled=!permittedFlags.has(button.dataset.quickFlag);button.classList.toggle("active",button.dataset.quickFlag===state.activeFlag)});
- $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
+ $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=whiteTerm?"DISQUALIFICATION":mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):live?fmt(state.session?.remainingMs||0):(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
  renderScore("scoreboard");renderCircuit("sidebar-circuit");$("sidebar-status").textContent=awaiting?"Hiding complete — confirmation required":live?`${state.session?.format?.replaceAll("-"," ")||"Session"} • Session ${state.session?.number||""}`:state.event?.courseLap?.status==="complete"?"✓ Course Lap Complete":"Ready for competition";
  renderReports();
@@ -561,7 +579,7 @@ function render(){
  if(safetyTerm||whiteTerm){
   $("termination-authorize-overtake").classList.toggle("hidden",!safetyTerm);
   $("termination-cancel-overtake").classList.toggle("hidden",!(safetyTerm&&state.event?.safetyCarOvertake?.active));
-  E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":"White Flag Termination";
+  E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":"Disqualification";
   E.terminationDetail.textContent=state.session?.terminationDetail||state.session?.provisionalReason||"Session terminated.";
  }
  if(sprintLive){
@@ -598,7 +616,7 @@ document.querySelectorAll("[data-sprint-flag]").forEach(b=>b.onclick=()=>issueFl
 document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.quickFlag));
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
-$("post-white").onclick=openWhiteDialog;$("close-white").onclick=()=>{$("white-review-overlay").classList.add("hidden");document.body.classList.remove("modal-open")};$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};
+$("post-white").onclick=openWhiteDialog;document.querySelectorAll("[data-violation-open]").forEach(button=>button.onclick=openWhiteDialog);$("close-white").onclick=()=>{$("white-review-overlay").classList.add("hidden");document.body.classList.remove("modal-open")};$("violation-type").onchange=syncViolationForm;$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};syncViolationForm();
 $("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
 
 

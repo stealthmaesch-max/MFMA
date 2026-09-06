@@ -3,7 +3,7 @@ import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
-import { signals } from "./signals.js?v=40";
+import { signals } from "./signals.js?v=56";
 import { getRenderMode } from "./display-state.js?v=44";
 
 const app=initializeApp(firebaseConfig);
@@ -62,7 +62,7 @@ function render(){
  const s=state.session;
  const names=s?.teamNames||event.teamNames||{};
  $("fan-event").textContent=event.name;
- $("fan-state").textContent=state.systemState.replaceAll("-"," ").toUpperCase();
+ $("fan-state").textContent=state.systemState==="white-termination"?"DISQUALIFICATION":state.systemState.replaceAll("-"," ").toUpperCase();
  const operationalFlag=["standby","sprint-live"].includes(state.systemState)?(state.activeFlag||"clear"):null;
  $("fan-flag").textContent=(operationalFlag==="clear"?(state.systemState==="sprint-live"?"CLEAR":"STANDBY"):operationalFlag?operationalFlag.replaceAll("-"," "):(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY")).toUpperCase();
 
@@ -81,7 +81,7 @@ function render(){
 
  if(mode==="standby"){const complete=event.courseLap?.status==="complete";$("fan-state").textContent=complete?"STANDBY • COURSE LAP COMPLETE":"STANDBY";return}
  if(mode==="awaiting-finding-start"){$("fan-session").textContent=`Session ${s.number}`;$("fan-roles").textContent="";return}
- if(mode==="safety-car-termination"||mode==="white-termination"){$("fan-phase").textContent=mode.replaceAll("-"," ").toUpperCase();$("fan-flag").textContent=mode==="white-termination"?"WHITE":"SAFETY CAR";return}
+ if(mode==="safety-car-termination"||mode==="white-termination"){$("fan-phase").textContent=mode==="white-termination"?"DISQUALIFICATION":"SAFETY CAR TERMINATION";$("fan-flag").textContent=mode==="white-termination"?"DISQUALIFIED":"SAFETY CAR";return}
 
  const scores=event.scores||{};
  const sorted=Object.keys(scores).map(key=>({key,name:names[key]||key.toUpperCase(),score:Number(scores[key]||0)})).sort((a,b)=>b.score-a.score);
