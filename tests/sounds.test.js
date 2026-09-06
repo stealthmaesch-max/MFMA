@@ -40,20 +40,21 @@ test("preview repetitions replace prior playback and clean up completely",async(
  await sounds.enableSounds();
 
  sounds.playSound("yellow");
- assert.deepEqual(sounds.getActiveSoundState(),{oscillators:6,gains:6,timeouts:0,intervals:0},"Yellow schedules exactly three two-tone cycles");
+ assert.deepEqual(sounds.getActiveSoundState(),{oscillators:12,gains:12,timeouts:0,intervals:1},"Yellow schedules a layered sequence and persistent reminder");
 
  sounds.playSound("red");
- assert.deepEqual(sounds.getActiveSoundState(),{oscillators:8,gains:8,timeouts:0,intervals:0},"Red replaces Yellow with exactly four two-tone cycles");
+ assert.deepEqual(sounds.getActiveSoundState(),{oscillators:12,gains:12,timeouts:0,intervals:1},"Red replaces Yellow with a layered persistent alarm");
 
  sounds.playSound("safetyCar");
- assert.deepEqual(sounds.getActiveSoundState(),{oscillators:10,gains:10,timeouts:0,intervals:0},"Safety Car replaces Red with exactly five cycles");
+ assert.deepEqual(sounds.getActiveSoundState(),{oscillators:20,gains:20,timeouts:0,intervals:1},"Safety Car replaces Red with a layered persistent command");
  sounds.stopSounds();
  assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0},"Stop Sound cancels Safety Car immediately");
 
  sounds.replayLastSound();
- assert.equal(sounds.getActiveSoundState().oscillators,10,"Replay reproduces the complete Safety Car sequence");
- FakeAudioContext.latest.oscillators.slice(-10).forEach(oscillator=>oscillator.finish());
- assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0},"Natural playback completion releases every tracked resource");
+ assert.equal(sounds.getActiveSoundState().oscillators,20,"Replay reproduces the complete Safety Car sequence");
+ FakeAudioContext.latest.oscillators.slice(-20).forEach(oscillator=>oscillator.finish());
+ assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:1},"Natural playback completion keeps only the reminder timer");
+ sounds.stopSounds();
 });
 
 test("urgent definitions expose the required repeat counts",async()=>{
@@ -61,11 +62,16 @@ test("urgent definitions expose the required repeat counts",async()=>{
  global.window={AudioContext:FakeAudioContext};
  const source=fs.readFileSync("sounds.js","utf8");
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// definitions").toString("base64")}`);
- assert.equal(sounds.getVolume(),.65,"missing volume storage uses the audible default");
+ assert.equal(sounds.getVolume(),.78,"missing volume storage uses the authoritative default");
  assert.equal(sounds.soundDefinitions.yellow.repetitions,3);
  assert.equal(sounds.soundDefinitions.moveOver.repetitions,3);
  assert.equal(sounds.soundDefinitions.red.repetitions,4);
  assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);
+ assert.equal(sounds.soundDefinitions.yellow.reminderMs,8000);
+ assert.equal(sounds.soundDefinitions.moveOver.reminderMs,5000);
+ assert.equal(sounds.soundDefinitions.red.reminderMs,4000);
+ assert.equal(sounds.soundDefinitions.safetyCar.reminderMs,6000);
+ assert.equal(sounds.soundDefinitions.white.reminderMs,8000);
 });
 
 test("production flag transitions play once and resume an enabled context",async()=>{
@@ -75,7 +81,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",2],["yellow",6],["move-over",6],["red",8],["safety-car",10],["white",2],["checkered",4]];
+ const cases=[["green",3],["yellow",12],["move-over",12],["red",12],["safety-car",20],["white",3],["checkered",4]];
  for(const [flag,oscillators] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
