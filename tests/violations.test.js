@@ -36,6 +36,14 @@ test("white begins a paused review before any disqualification decision",()=>{
  assert.doesNotMatch(control,/responsible-party|Responsible party|responsible,/);
 });
 
+test("post-session White remains available only before the proceed order",()=>{
+ const control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8");
+ assert.match(control,/new Set\(\["session-live","provisional","session-complete"\]\)/);
+ assert.match(control,/systemState:"next-session-staging",activeFlag:"proceed-to-start"/);
+ assert.match(control,/state\?\.systemState!=="next-session-staging"/);
+ assert.match(html,/Team Stopped Behind Line — Start Countdown/);
+});
+
 test("disqualification terminates through the official outcome workflow",()=>{
  const control=fs.readFileSync("control.js","utf8");
  assert.match(control,/activeFlag:nextState==="standby"\?"clear":"disqualification"/);

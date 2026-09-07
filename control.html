@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=58">
+<meta name="theme-color" content="#0a0d12"><title>MFMA Race Control</title><link rel="stylesheet" href="styles.css?v=62">
 </head><body class="control-page race-control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -155,8 +155,10 @@
 
 <section id="provisional-panel" class="panel dashboard-main hidden"><p class="eyebrow">Session Complete</p><h2 id="result-title">Provisional Checkered</h2><p id="provisional-detail"></p>
 <div id="between-scoreboard" class="scoreboard"></div><div id="circuit-progress" class="circuit-progress"></div>
-<div class="button-row"><button id="finalize-result" class="action primary-btn">Finalize Result</button><button id="next-session" class="action primary-btn hidden">Next Session</button><button id="show-scoreboard" class="action secondary-btn">Show Scoreboard</button><button id="post-white" class="action white-btn">Issue Violation</button><button id="return-standby" class="action secondary-btn">Standby</button></div>
+<div class="button-row"><button id="return-to-start-order" class="action yellow-btn">Return Everyone to Start</button><button id="finalize-result" class="action primary-btn">Finalize Result</button><button id="next-session" class="action primary-btn hidden">Proceed to Starting Line</button><button id="show-scoreboard" class="action secondary-btn">Show Scoreboard</button><button id="post-white" class="action white-btn">Issue Violation</button><button id="return-standby" class="action secondary-btn">Standby</button></div>
 </section>
+
+<section id="next-start-panel" class="panel dashboard-main hidden"><p class="eyebrow">Next Session</p><h2>Proceed to Starting Line</h2><p id="next-start-guidance">The folded green order has been issued. Wait until the hiding team is stopped behind the line.</p><div id="control-start-dots" class="start-countdown-dots" aria-label="10 second countdown"></div><button id="start-next-countdown" class="action primary-btn">Team Stopped Behind Line — Start Countdown</button></section>
 
 
 <section id="termination-panel" class="panel dashboard-main hidden">
@@ -209,4 +211,4 @@
 </form>
 </section>
 </div>
-<script type="module" src="control.js?v=61"></script></body></html>
+<script type="module" src="control.js?v=62"></script></body></html>

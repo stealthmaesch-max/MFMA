@@ -33,5 +33,5 @@ export function applyOfficialSessionResult(root){
  roles[session.evadingTeam].evadingCount+=1;
  const scores={...(root.event.scores||{})};
  if(session.provisionalWinner)scores[session.provisionalWinner]=(scores[session.provisionalWinner]||0)+1;
- return {...root,systemState:"session-complete",activeFlag:"checkered",session:{...session,running:false,resultOfficial:true},event:{...root.event,scores,circuit:{...(root.event.circuit||{}),roles}}};
+ return {...root,systemState:"session-complete",activeFlag:root.activeFlag==="return-to-start"?"return-to-start":"checkered",session:{...session,running:false,resultOfficial:true},event:{...root.event,scores,circuit:{...(root.event.circuit||{}),roles}}};
 }

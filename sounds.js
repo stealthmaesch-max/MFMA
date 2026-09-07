@@ -155,7 +155,7 @@ export function soundForStateTransition(previous,current){
  if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
  if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
  if(previous.activeFlag!==current.activeFlag){
-  const flagSounds={green:"green",yellow:"yellow","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered",clear:"clear"};
+  const flagSounds={green:"green",yellow:"yellow","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered",clear:"clear"};
   return flagSounds[current.activeFlag]||null;
  }
  return null;

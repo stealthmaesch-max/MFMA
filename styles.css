@@ -860,6 +860,13 @@ dialog form {
 
 .flag-red { background: linear-gradient(145deg, #e11414, #a90000); color: #fff; }
 .flag-white { background: linear-gradient(145deg, #fff, #e7ebef); color: #111; }
+.flag-return-to-start { background:linear-gradient(145deg,#ffe91a,#d7b900);color:#111; }
+.flag-proceed-to-start { background:linear-gradient(145deg,#10a648,#087a34);color:#fff; }
+.flag-return-to-start::before,.flag-proceed-to-start::before{content:"";position:absolute;left:50%;top:20%;width:clamp(52px,10vw,120px);height:clamp(52px,10vw,120px);border-radius:10% 48% 12% 48%;background:currentColor;box-shadow:0 8px 22px rgba(0,0,0,.35);transform-origin:0 100%;animation:foldedFlagTwirl 1.15s linear infinite}
+.flag-return-to-start::before{color:#111;background:#ffe600;border:clamp(5px,.7vw,9px) solid #111}.flag-proceed-to-start::before{color:#fff;background:#0ac24d;border:clamp(5px,.7vw,9px) solid #fff}
+@keyframes foldedFlagTwirl{to{transform:rotate(360deg)}}
+
+.start-countdown-dots,.dot-timer{display:flex;align-items:center;justify-content:center;gap:clamp(12px,3vw,30px);min-height:72px}.start-countdown-dots i,.dot-timer i{display:block;width:clamp(24px,5vw,58px);height:clamp(24px,5vw,58px);border-radius:50%;background:#effff3;box-shadow:0 0 18px rgba(255,255,255,.8);transition:opacity .18s,transform .18s}.start-countdown-dots i.out,.dot-timer i.out{opacity:.12;transform:scale(.7);box-shadow:none}
 
 .flag-checkered {
   color: #fff;

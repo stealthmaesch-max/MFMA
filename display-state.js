@@ -6,6 +6,8 @@ export const renderModes={
  "sprint-live":"sprint-live",
  provisional:"provisional",
  "session-complete":"session-complete",
+ "next-session-staging":"next-session-staging",
+ "next-session-countdown":"next-session-countdown",
  "safety-car-termination":"safety-car-termination",
  "violation-review":"violation-review",
  "white-termination":"white-termination"

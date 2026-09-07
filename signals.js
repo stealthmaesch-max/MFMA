@@ -9,4 +9,6 @@ export const signals = {
   "under-review":{className:"flag-white",label:"UNDER REVIEW",instruction:"RETURN TO STARTING ZONE • AWAIT RACE DIRECTOR",flash:true,theme:"#ffffff"},
   disqualification:{className:"flag-white",label:"DISQUALIFIED",instruction:"RETURN TO STARTING ZONE",flash:true,theme:"#ffffff"},
   checkered:{className:"flag-checkered",label:"CHECKERED",instruction:"SESSION COMPLETE",flash:false,theme:"#000000"}
+  ,"return-to-start":{className:"flag-return-to-start",label:"RETURN TO START",instruction:"FOLDED YELLOW • EVERYONE RETURN TO STARTING ZONE",flash:false,theme:"#ffe600"}
+  ,"proceed-to-start":{className:"flag-proceed-to-start",label:"PROCEED TO START",instruction:"FOLDED GREEN • NEXT HIDING TEAM TO STARTING LINE",flash:false,theme:"#0a9f3d"}
 };

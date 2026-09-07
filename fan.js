@@ -3,8 +3,8 @@ import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
-import { signals } from "./signals.js?v=61";
-import { getRenderMode } from "./display-state.js?v=60";
+import { signals } from "./signals.js?v=62";
+import { getRenderMode } from "./display-state.js?v=62";
 
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
@@ -41,7 +41,7 @@ function render(){
   "no-event":[],standby:[],"course-lap":[],"sprint-live":["fan-timer-panel"],
   "session-live":["fan-timer-panel","fan-score-panel","fan-circuit-panel","fan-assignments-panel"],
   "awaiting-finding-start":["fan-timer-panel"],provisional:["fan-score-panel","fan-circuit-panel"],
-  "session-complete":["fan-score-panel","fan-circuit-panel"],"safety-car-termination":[],"violation-review":[],"white-termination":[]
+  "session-complete":["fan-score-panel","fan-circuit-panel"],"next-session-staging":[],"next-session-countdown":[],"safety-car-termination":[],"violation-review":[],"white-termination":[]
  };
  ["fan-timer-panel","fan-score-panel","fan-circuit-panel","fan-assignments-panel"].forEach(id=>$(id).classList.toggle("hidden",!visibility[mode]?.includes(id)));
  if(mode==="no-event"){
@@ -81,6 +81,7 @@ function render(){
 
  if(mode==="standby"){const complete=event.courseLap?.status==="complete";$("fan-state").textContent=complete?"STANDBY • COURSE LAP COMPLETE":"STANDBY";return}
  if(mode==="awaiting-finding-start"){$("fan-session").textContent=`Session ${s.number}`;$("fan-roles").textContent="";return}
+ if(mode==="next-session-staging"||mode==="next-session-countdown"){$("fan-phase").textContent=mode==="next-session-countdown"?"START COUNTDOWN":"PROCEED TO STARTING LINE";$("fan-flag").textContent="FOLDED GREEN";return}
  if(mode==="violation-review"){$("fan-phase").textContent="UNDER REVIEW / INVESTIGATION";$("fan-flag").textContent="RETURN TO STARTING ZONE";return}
  if(mode==="safety-car-termination"||mode==="white-termination"){$("fan-phase").textContent=mode==="white-termination"?"DISQUALIFICATION":"SAFETY CAR TERMINATION";$("fan-flag").textContent=mode==="white-termination"?"DISQUALIFIED":"SAFETY CAR";return}
 

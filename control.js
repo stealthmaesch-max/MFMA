@@ -12,9 +12,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
-import { signals } from "./signals.js?v=61";
-import { getRenderMode, showOnly } from "./display-state.js?v=60";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=60";
+import { signals } from "./signals.js?v=62";
+import { getRenderMode, showOnly } from "./display-state.js?v=62";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=62";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 
@@ -26,9 +26,9 @@ const db=getDatabase(app);
 const stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
-let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null;
+let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null;
 
-const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),live:$("live-panel"),provisional:$("provisional-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
+const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),live:$("live-panel"),provisional:$("provisional-panel"),nextStart:$("next-start-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
 
 
 const authPanel=$("auth-panel");
@@ -390,9 +390,10 @@ async function resolveWhiteForm(){
  }
 
  if(violationType==="review"){
-  if(state.systemState!=="session-live"){alert("A review can only begin during a live session.");return}
+  if(!new Set(["session-live","provisional","session-complete"]).has(state.systemState)){alert("A review is only available before the Proceed to Starting Line order.");return}
+  const previousState=state.systemState,previousFlag=state.activeFlag||"checkered",wasRunning=Boolean(state.session.running);
   const detail=`${names[dq]} placed under review. Reason: ${reason}. Return to the starting zone and await the Race Director.`;
-  const violation={type:"review",team:dq,reason,detail,issuedAt:serverTimestamp()};
+  const violation={type:"review",team:dq,reason,detail,previousState,previousFlag,wasRunning,issuedAt:serverTimestamp()};
   await update(stateRef,{systemState:"violation-review",activeFlag:"under-review","session/running":false,"session/remainingMs":currentSessionRemaining(),"session/lastTickAt":null,"session/flag":"under-review","session/violationReview":violation,"session/terminationType":"review","session/terminationDetail":detail,[`event/violations/${violationId}`]:violation,updatedAt:serverTimestamp()});
   closeViolationDialog();return;
  }
@@ -449,7 +450,7 @@ async function resolveWhiteForm(){
  closeViolationDialog();
 }
 
-async function resumeViolationReview(){if(!requireAuthenticatedWrite()||state?.systemState!=="violation-review")return;await update(stateRef,{systemState:"session-live",activeFlag:"green","session/running":true,"session/flag":"green","session/lastTickAt":Date.now(),"session/terminationType":null,"session/terminationDetail":null,updatedAt:serverTimestamp()})}
+async function resumeViolationReview(){if(!requireAuthenticatedWrite()||state?.systemState!=="violation-review")return;const review=state.session?.violationReview||{},live=review.previousState==="session-live",flag=live?"green":review.previousFlag||"return-to-start";await update(stateRef,{systemState:review.previousState||"provisional",activeFlag:flag,"session/running":live&&review.wasRunning,"session/flag":flag,"session/lastTickAt":live&&review.wasRunning?Date.now():null,"session/terminationType":null,"session/terminationDetail":null,updatedAt:serverTimestamp()})}
 function openDisqualificationReview(){if(state?.systemState!=="violation-review")return;openWhiteDialog();$("violation-type").value="disqualification";syncViolationForm()}
 async function noResultViolationReview(){if(!requireAuthenticatedWrite()||state?.systemState!=="violation-review")return;const detail="No result following violation review.";await update(stateRef,{systemState:"provisional",activeFlag:"checkered","session/running":false,"session/provisionalWinner":null,"session/provisionalReason":detail,"session/terminationType":null,"session/terminationDetail":null,updatedAt:serverTimestamp()})}
 
@@ -467,16 +468,29 @@ async function finalizeResult(){
 }
 
 async function advanceNextSession(){
- if(!requireAuthenticatedWrite())return;
- roleIndex=(state.event.circuit.roleIndex||0)+1;
- await update(stateRef,{
-  systemState:"standby",
-  activeFlag:"clear",
-  session:null,
-  "event/sessionNumber":(state.event.sessionNumber||1)+1,
-  "event/circuit/roleIndex":roleIndex,
-  updatedAt:serverTimestamp()
- });
+ if(!requireAuthenticatedWrite()||state?.systemState!=="session-complete"||state.activeFlag!=="return-to-start")return;
+ const prior=state.session,setup=prior.setup||{},nextRoleIndex=(state.event.circuit?.roleIndex||0)+1;
+ const pursuit=nextRoleIndex%2===0?"a":"b",evading=pursuit==="a"?"b":"a";
+ let hide=prior.hideDurationMs,find=prior.findDurationMs;
+ const adjustment=state.event.pendingAdjustment;
+ if(adjustment?.remedy==="reduce-hide"&&evading===adjustment.benefitingTeam)hide=Math.max(1000,hide-adjustment.seconds*1000);
+ if(adjustment?.remedy==="increase-find"&&pursuit===adjustment.benefitingTeam)find+=adjustment.seconds*1000;
+ const vehicleIds=setup.vehicleIds||prior.pursuitVehicleIds||[];
+ const spotIds=prior.format==="vehicle-vehicle"?[vehicleIds[pursuit==="a"?0:1]].filter(Boolean):(setup.pursuitVehicleIds||prior.pursuitVehicleIds||[]);
+ const session={number:(state.event.sessionNumber||prior.number||1)+1,format:prior.format,teamNames:prior.teamNames,pursuitTeam:pursuit,evadingTeam:evading,setup,phase:"staging",remainingMs:hide,hideDurationMs:hide,findDurationMs:find,running:false,lastTickAt:null,flag:"proceed-to-start",spotStatus:Object.fromEntries(spotIds.map(id=>[id,false])),pursuitVehicleIds:spotIds,provisionalWinner:null,provisionalReason:null,resultOfficial:false,countdownEndsAt:null};
+ roleIndex=nextRoleIndex;
+ await update(stateRef,{systemState:"next-session-staging",activeFlag:"proceed-to-start",session,"event/sessionNumber":session.number,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
+}
+
+async function startNextCountdown(){if(!requireAuthenticatedWrite()||state?.systemState!=="next-session-staging")return;await update(stateRef,{systemState:"next-session-countdown","session/phase":"countdown","session/countdownEndsAt":Date.now()+10000,updatedAt:serverTimestamp()})}
+
+async function issueReturnToStart(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"return-to-start","session/postSessionStage":"return-to-start",updatedAt:serverTimestamp()})}
+function countdownDots(element,endsAt){if(!element)return;const remaining=Math.max(0,endsAt-Date.now()),lit=Math.ceil(remaining/2000);element.innerHTML=Array.from({length:5},(_,index)=>`<i class="${index<lit?"lit":"out"}"></i>`).join("")}
+function scheduleNextStart(){
+ if(nextStartTimer){clearTimeout(nextStartTimer);nextStartTimer=null}
+ if(state?.systemState!=="next-session-countdown"||!state.session?.countdownEndsAt)return;
+ const start=async()=>{if(!currentUser){nextStartTimer=setTimeout(start,500);return}if(state?.systemState!=="next-session-countdown")return;await update(stateRef,{systemState:"session-live",activeFlag:"green","session/phase":"hiding","session/running":true,"session/flag":"green","session/lastTickAt":Date.now(),"session/countdownEndsAt":null,updatedAt:serverTimestamp()})};
+ nextStartTimer=setTimeout(()=>start().catch(error=>console.error("Unable to start next session",error)),Math.max(0,state.session.countdownEndsAt-Date.now()));
 }
 
 async function startCourseLap(){
@@ -555,8 +569,8 @@ function renderReports(){
 function render(){
  const mode=getRenderMode(state),has=mode!=="no-event";document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
  E.eventName.textContent=state.event.name;E.eventMeta.textContent=state.event.circuit?.format?state.event.circuit.format.replace("-","–"):"Awaiting first session";
- const standby=mode==="standby",course=mode==="course-lap",sprintLive=mode==="sprint-live",live=mode==="session-live"||mode==="awaiting-finding-start",awaiting=mode==="awaiting-finding-start",prov=mode==="provisional",complete=mode==="session-complete",safetyTerm=mode==="safety-car-termination",review=mode==="violation-review",whiteTerm=mode==="white-termination";
- showOnly(mode,{standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"safety-car-termination":E.termination,"violation-review":E.termination,"white-termination":E.termination});
+ const standby=mode==="standby",course=mode==="course-lap",sprintLive=mode==="sprint-live",live=mode==="session-live"||mode==="awaiting-finding-start",awaiting=mode==="awaiting-finding-start",prov=mode==="provisional",complete=mode==="session-complete",staging=mode==="next-session-staging",countdown=mode==="next-session-countdown",safetyTerm=mode==="safety-car-termination",review=mode==="violation-review",whiteTerm=mode==="white-termination";
+ showOnly(mode,{standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"next-session-staging":E.nextStart,"next-session-countdown":E.nextStart,"safety-car-termination":E.termination,"violation-review":E.termination,"white-termination":E.termination});
  E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(standby||(live&&!awaiting)));
  const flagsAllowed=standby||sprintLive||(live&&!awaiting);$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-status").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  const permittedFlags=standby?new Set(["yellow","move-over","red","safety-car","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","checkered"]);
@@ -565,7 +579,7 @@ function render(){
  $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):live?fmt(state.session?.remainingMs||0):review?"HELD":(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
  renderScore("scoreboard");renderCircuit("sidebar-circuit");$("sidebar-status").textContent=awaiting?"Hiding complete — confirmation required":live?`${state.session?.format?.replaceAll("-"," ")||"Session"} • Session ${state.session?.number||""}`:state.event?.courseLap?.status==="complete"?"✓ Course Lap Complete":"Ready for competition";
  renderReports();
- const dedicatedTermination=safetyTerm||review||whiteTerm;$("standby-button").classList.toggle("hidden",sprintLive||course||live||prov||complete||dedicatedTermination);$("end-event").classList.toggle("hidden",sprintLive||course||live||dedicatedTermination);
+ const dedicatedTermination=safetyTerm||review||whiteTerm;$("standby-button").classList.toggle("hidden",sprintLive||course||live||prov||complete||staging||countdown||dedicatedTermination);$("end-event").classList.toggle("hidden",sprintLive||course||live||staging||countdown||dedicatedTermination);
  if(standby||course){
   const lap=state.event?.courseLap||{};
   $("standby-course-lap").classList.toggle("hidden",!standby||lap.required===false);
@@ -593,10 +607,13 @@ function render(){
   E.provisionalDetail.textContent=state.session.provisionalReason||"Session complete";
   E.resultTitle.textContent=complete?"Official Checkered":"Provisional Checkered";
   E.finalize.classList.toggle("hidden",complete);
-  E.next.classList.toggle("hidden",!complete);
+  $("return-to-start-order").classList.toggle("hidden",state.activeFlag==="return-to-start");
+  E.next.classList.toggle("hidden",!complete||state.activeFlag!=="return-to-start");
+  $("post-white").classList.remove("hidden");
   renderScore("between-scoreboard");
   renderCircuit("circuit-progress");
  }
+ if(staging||countdown){$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?"Countdown active. Green and the hiding timer begin when all five dots go out.":"The folded green order has been issued. Wait until the hiding team is stopped behind the line.";if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
 }
 
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-type]").forEach(x=>x.classList.remove("active"));b.classList.add("active");sessionType=b.dataset.type;$("vehicle-vehicle-setup").classList.toggle("hidden",sessionType!=="vehicle-vehicle");$("vehicle-foot-setup").classList.toggle("hidden",sessionType!=="vehicle-foot");if(sessionType==="vehicle-foot"){E.hide.value=120;E.find.value=300;renderVF()}else{E.hide.value=60;E.find.value=120;renderVVSelectors()}});
@@ -614,7 +631,7 @@ document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFla
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("post-white").onclick=openWhiteDialog;document.querySelectorAll("[data-violation-open]").forEach(button=>button.onclick=openWhiteDialog);$("close-white").onclick=closeViolationDialog;$("violation-type").onchange=syncViolationForm;$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};syncViolationForm();
-$("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
+$("return-to-start-order").onclick=issueReturnToStart;$("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("start-next-countdown").onclick=startNextCountdown;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
 
 
 $("start-course-lap").onclick=startCourseLap;
@@ -630,5 +647,5 @@ $("white-review-overlay").onclick=e=>{
  }
 };
 
-onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);scheduleWarningReturn();const newHazards=newOpenHazardIds(previous,state);if(newHazards.length){try{playSound("hazard")}catch{}if(new Set(["clear","green","move-over"]).has(state.activeFlag||"clear"))issueFlag("yellow").catch(error=>console.error("Unable to call immediate yellow",error))}setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
-renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick()},250);
+onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);scheduleWarningReturn();scheduleNextStart();const newHazards=newOpenHazardIds(previous,state);if(newHazards.length){try{playSound("hazard")}catch{}if(new Set(["clear","green","move-over"]).has(state.activeFlag||"clear"))issueFlag("yellow").catch(error=>console.error("Unable to call immediate yellow",error))}setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
+renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick();if(state?.systemState==="next-session-countdown")countdownDots($("control-start-dots"),state.session.countdownEndsAt)},250);
