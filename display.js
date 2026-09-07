@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebas
 import { getDatabase, ref, onValue, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { signals } from "./signals.js?v=60";
+import { signals } from "./signals.js?v=61";
 import { getRenderMode } from "./display-state.js?v=60";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=60";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
@@ -34,7 +34,7 @@ function showLive(){const sig=signals[state.activeFlag]||signals.clear,s=state.s
 function showStandbyFlag(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear;
  if(flag==="clear"){showStatus("STANDBY","Event active. No session is live.",state.event.name);return}
- const copy={yellow:["CAUTION","OPERATIONAL SIGNAL"],"move-over":["MOVE OVER","ALLOW FASTER VEHICLE TO PASS"],red:["STOP","AWAIT RACE CONTROL INSTRUCTIONS"],"safety-car":["SAFETY CAR","FOLLOW OFFICIAL VEHICLE"],"infraction-warning":["INFRACTION WARNING","WHITE + FOLDED YELLOW"],disqualification:["DISQUALIFIED","RETURN TO STARTING ZONE"],checkered:["CHECKERED","OPERATIONAL SIGNAL"]}[flag]||[sig.label,sig.instruction];
+ const copy={yellow:["CAUTION","OPERATIONAL SIGNAL"],"move-over":["MOVE OVER","ALLOW FASTER VEHICLE TO PASS"],red:["STOP","AWAIT RACE CONTROL INSTRUCTIONS"],"safety-car":["SAFETY CAR","FOLLOW SAFETY CAR • NO OVERTAKING"],"infraction-warning":["INFRACTION WARNING","WHITE + FOLDED YELLOW"],disqualification:["DISQUALIFIED","RETURN TO STARTING ZONE"],checkered:["CHECKERED","OPERATIONAL SIGNAL"]}[flag]||[sig.label,sig.instruction];
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`standby:${flag}`);
  label.textContent=copy[0];instruction.textContent=copy[1];sessionLine.textContent=`${state.event.name} • STANDBY`;timer.textContent="--:--";theme.content=sig.theme;
 }
@@ -42,25 +42,19 @@ function showSprint(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear,s=state.sprint||{};
  const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW","move-over":"MOVE OVER",red:"RED","safety-car":"SAFETY CAR","infraction-warning":"INFRACTION WARNING",disqualification:"DISQUALIFIED",checkered:"CHECKERED"};
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`sprint:${flag}`);
- label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent="MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
+ label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent=flag==="safety-car"?"FOLLOW SAFETY CAR • NO OVERTAKING":"MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
 }
 function render(){const mode=getRenderMode(state);if(mode==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="course-lap"){
- const overtake=state.event?.safetyCarOvertake;
- if(overtake?.active){
-  showStatus("OVERTAKE SAFETY CAR","AUTHORIZED BY RACE DIRECTOR • PROCEED WITH CAUTION",state.event.name);
- }else{
-  showStatus("SAFETY CAR","COURSE FAMILIARIZATION LAP • FOLLOW OFFICIAL VEHICLE • NO OVERTAKING",state.event.name);
- }
- applyDisplayClass(`display flag-safety-car${overtake?.active?" overtake-flash":""}`,`course-lap:${Boolean(overtake?.active)}`);
+ showStatus("SAFETY CAR","COURSE FAMILIARIZATION LAP • FOLLOW SAFETY CAR • NO OVERTAKING",state.event.name);
+ applyDisplayClass("display flag-safety-car","course-lap");
  return
 }
 if(mode==="session-live"||mode==="awaiting-finding-start"){showLive();return}
 if(mode==="safety-car-termination"){
- const overtake=state.event?.safetyCarOvertake;
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
- applyDisplayClass("display flag-safety-car flash",`safety-car-termination:${Boolean(overtake?.active)}`);
- label.textContent=overtake?.active?"OVERTAKE SAFETY CAR":"SAFETY CAR";
- instruction.textContent=overtake?.active?"AUTHORIZED BY RACE DIRECTOR • PROCEED WITH CAUTION":"SESSION TERMINATED • FOLLOW OFFICIAL VEHICLE • DO NOT OVERTAKE";
+ applyDisplayClass("display flag-safety-car","safety-car-termination");
+ label.textContent="SAFETY CAR";
+ instruction.textContent="SESSION TERMINATED • FOLLOW SAFETY CAR • NO OVERTAKING";
  sessionLine.textContent=`SESSION ${state.session?.number||""} • TERMINATED`;
  timer.textContent="ENDED";theme.content="#050505";return
 }

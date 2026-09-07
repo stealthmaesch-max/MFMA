@@ -3,7 +3,7 @@ export const signals = {
   green:{className:"flag-green",label:"GO",instruction:"SESSION ACTIVE",flash:false,theme:"#0a9f3d"},
   yellow:{className:"flag-yellow",label:"CAUTION",instruction:"TIMER AT HALF SPEED",flash:true,theme:"#ffe600"},
   "move-over":{className:"flag-move-over",label:"MOVE OVER",instruction:"ALLOW FASTER VEHICLE TO PASS",flash:true,theme:"#0756a5"},
-  "safety-car":{className:"flag-safety-car",label:"SAFETY CAR",instruction:"FOLLOW OFFICIAL VEHICLE",flash:true,theme:"#050505"},
+  "safety-car":{className:"flag-safety-car",label:"SAFETY CAR",instruction:"FOLLOW SAFETY CAR • NO OVERTAKING",flash:false,theme:"#050505"},
   red:{className:"flag-red",label:"STOP",instruction:"AWAIT RD INSTRUCTIONS",flash:true,theme:"#d40000"},
   "infraction-warning":{className:"flag-infraction-warning",label:"INFRACTION WARNING",instruction:"WHITE + FOLDED YELLOW • CONTINUE WITH CAUTION",flash:true,theme:"#f4f4f4"},
   "under-review":{className:"flag-white",label:"UNDER REVIEW",instruction:"RETURN TO STARTING ZONE • AWAIT RACE DIRECTOR",flash:true,theme:"#ffffff"},

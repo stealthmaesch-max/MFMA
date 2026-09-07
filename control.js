@@ -12,7 +12,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
-import { signals } from "./signals.js?v=60";
+import { signals } from "./signals.js?v=61";
 import { getRenderMode, showOnly } from "./display-state.js?v=60";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=60";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
@@ -182,7 +182,7 @@ function validate(){
 
 async function createEvent(){
  if(!requireAuthenticatedWrite())return;
- await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:$("new-event-name").value||"MFMA Event",scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:true,status:"pending"},safetyCarOvertake:null},session:null,sprint:null,updatedAt:serverTimestamp()});
+ await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:$("new-event-name").value||"MFMA Event",scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:true,status:"pending"}},session:null,sprint:null,updatedAt:serverTimestamp()});
  $("event-dialog").close();
 }
 
@@ -486,7 +486,6 @@ async function startCourseLap(){
   systemState:"course-lap",
   activeFlag:"safety-car",
   "event/courseLap/status":"active",
-  "event/safetyCarOvertake":null,
   updatedAt:serverTimestamp()
  });
 }
@@ -496,23 +495,10 @@ async function completeCourseLap(){
   systemState:"standby",
   activeFlag:"clear",
   "event/courseLap/status":"complete",
-  "event/safetyCarOvertake":null,
   updatedAt:serverTimestamp()
  });
 }
 
-function openOvertakeDialog(){
- const overlay=$("overtake-overlay");
- overlay.classList.remove("hidden");overlay.style.display="grid";document.body.classList.add("modal-open");
-}
-async function authorizeOvertake(){
- if(!requireAuthenticatedWrite())return;
- const reason=$("overtake-reason").value||"Race Director authorization";
- await update(stateRef,{"event/safetyCarOvertake":{active:true,reason,authorizedAt:Date.now()},updatedAt:serverTimestamp()});
- $("overtake-overlay").classList.add("hidden");$("overtake-overlay").style.display="";document.body.classList.remove("modal-open");
-}
-async function cancelOvertake(){
- if(!requireAuthenticatedWrite())return;await update(stateRef,{"event/safetyCarOvertake":null,updatedAt:serverTimestamp()});}
 async function returnFromTermination(){
  if(!requireAuthenticatedWrite())return;
  await update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});
@@ -581,18 +567,14 @@ function render(){
  renderReports();
  const dedicatedTermination=safetyTerm||review||whiteTerm;$("standby-button").classList.toggle("hidden",sprintLive||course||live||prov||complete||dedicatedTermination);$("end-event").classList.toggle("hidden",sprintLive||course||live||dedicatedTermination);
  if(standby||course){
-  const lap=state.event?.courseLap||{},overtake=state.event?.safetyCarOvertake||null;
+  const lap=state.event?.courseLap||{};
   $("standby-course-lap").classList.toggle("hidden",!standby||lap.required===false);
   $("standby-course-lap-status").textContent=lap.status==="complete"?"Course Lap Complete":"Course Lap Required";
   $("start-course-lap").classList.toggle("hidden",!standby||lap.status==="active"||lap.status==="complete");
   $("complete-course-lap").classList.toggle("hidden",lap.status!=="active");
-  $("authorize-overtake").classList.toggle("hidden",lap.status!=="active");
-  $("cancel-overtake").classList.toggle("hidden",!overtake?.active);
-  E.courseLapStatus.textContent=overtake?.active?"Safety Car overtake authorized for all drivers.":"Course lap in progress.";
+  E.courseLapStatus.textContent="Course lap in progress. Follow the Safety Car; no overtaking.";
  }
  if(safetyTerm||review||whiteTerm){
-  $("termination-authorize-overtake").classList.toggle("hidden",!safetyTerm);
-  $("termination-cancel-overtake").classList.toggle("hidden",!(safetyTerm&&state.event?.safetyCarOvertake?.active));
   $("review-resume").classList.toggle("hidden",!review);$("review-disqualify").classList.toggle("hidden",!review);$("review-no-result").classList.toggle("hidden",!review);$("termination-standby").classList.toggle("hidden",review);$("termination-restart").classList.toggle("hidden",review);
   E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":review?"Under Review / Investigation":"Disqualification";
   E.terminationDetail.textContent=state.session?.terminationDetail||state.session?.provisionalReason||"Session terminated.";
@@ -637,11 +619,7 @@ $("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNex
 
 $("start-course-lap").onclick=startCourseLap;
 $("complete-course-lap").onclick=completeCourseLap;
-$("authorize-overtake").onclick=openOvertakeDialog;
-$("cancel-overtake").onclick=cancelOvertake;
-$("close-overtake").onclick=()=>{$("overtake-overlay").classList.add("hidden");$("overtake-overlay").style.display="";document.body.classList.remove("modal-open")};
-$("overtake-form").onsubmit=e=>{e.preventDefault();authorizeOvertake()};$("overtake-overlay").onclick=e=>{if(e.target===$("overtake-overlay")){$("overtake-overlay").classList.add("hidden");$("overtake-overlay").style.display="";document.body.classList.remove("modal-open")}};
-$("termination-authorize-overtake").onclick=openOvertakeDialog;$("termination-cancel-overtake").onclick=cancelOvertake;$("termination-standby").onclick=returnFromTermination;
+$("termination-standby").onclick=returnFromTermination;
 $("termination-restart").onclick=restartTerminatedSession;
 $("review-resume").onclick=resumeViolationReview;$("review-disqualify").onclick=openDisqualificationReview;$("review-no-result").onclick=noResultViolationReview;
 

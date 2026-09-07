@@ -49,13 +49,16 @@ test("hazard receipt calls immediate yellow but leaves requested final flag to R
  assert.match(control,/canApplyFlag=new Set\(\["standby","sprint-live","session-live"\]\)/);
 });
 
-test("Safety Car termination initializes display state before rendering",()=>{
+test("Safety Car uses a persistent crossed-flag display with no overtaking",()=>{
  const display=fs.readFileSync("display.js","utf8");
  const branch=display.match(/if\(mode==="safety-car-termination"\)\{([\s\S]*?)\n\}/)?.[1]||"";
- assert(branch.indexOf("const overtake=")>=0,"Safety Car branch initializes overtake state");
- assert(branch.indexOf("const overtake=")<branch.indexOf("Boolean(overtake?.active)"),"Safety Car render cannot access overtake before initialization");
- assert.match(branch,/label\.textContent=.*"SAFETY CAR"/);
+ const html=fs.readFileSync("display.html","utf8"),css=fs.readFileSync("styles.css","utf8"),control=fs.readFileSync("control.js","utf8");
+ assert.match(branch,/label\.textContent="SAFETY CAR"/);
+ assert.match(branch,/NO OVERTAKING/);
  assert.match(branch,/timer\.textContent="ENDED"/);
+ assert.match(html,/safety-car-emblem[\s\S]*safety-yellow[\s\S]*safety-red/);
+ assert.match(css,/safetyCarBorderPulse/);
+ assert.doesNotMatch(`${html}\n${control}\n${display}`,/authorize-overtake|cancel-overtake|safetyCarOvertake|OVERTAKE SAFETY CAR/i);
 });
 
 test("Race Director acknowledgement, resolution, and one-time sound wiring exist",async()=>{

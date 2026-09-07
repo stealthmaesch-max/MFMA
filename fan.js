@@ -3,7 +3,7 @@ import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
-import { signals } from "./signals.js?v=60";
+import { signals } from "./signals.js?v=61";
 import { getRenderMode } from "./display-state.js?v=60";
 
 const app=initializeApp(firebaseConfig);
