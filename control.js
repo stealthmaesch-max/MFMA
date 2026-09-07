@@ -469,7 +469,7 @@ async function finalizeResult(){
 
 async function advanceNextSession(){
  if(!requireAuthenticatedWrite()||state?.systemState!=="session-complete"||state.activeFlag!=="return-to-start")return;
- const prior=state.session,setup=prior.setup||{},nextRoleIndex=(state.event.circuit?.roleIndex||0)+1;
+ const prior=state.session,setup=prior.setup||{},nextRoleIndex=(state.event.circuit?.roleIndex||0)+1+(state.event.circuit?.nextRolesSwapped?1:0);
  const pursuit=nextRoleIndex%2===0?"a":"b",evading=pursuit==="a"?"b":"a";
  let hide=prior.hideDurationMs,find=prior.findDurationMs;
  const adjustment=state.event.pendingAdjustment;
@@ -479,12 +479,13 @@ async function advanceNextSession(){
  const spotIds=prior.format==="vehicle-vehicle"?[vehicleIds[pursuit==="a"?0:1]].filter(Boolean):(setup.pursuitVehicleIds||prior.pursuitVehicleIds||[]);
  const session={number:(state.event.sessionNumber||prior.number||1)+1,format:prior.format,teamNames:prior.teamNames,pursuitTeam:pursuit,evadingTeam:evading,setup,phase:"staging",remainingMs:hide,hideDurationMs:hide,findDurationMs:find,running:false,lastTickAt:null,flag:"proceed-to-start",spotStatus:Object.fromEntries(spotIds.map(id=>[id,false])),pursuitVehicleIds:spotIds,provisionalWinner:null,provisionalReason:null,resultOfficial:false,countdownEndsAt:null};
  roleIndex=nextRoleIndex;
- await update(stateRef,{systemState:"next-session-staging",activeFlag:"proceed-to-start",session,"event/sessionNumber":session.number,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
+ await update(stateRef,{systemState:"next-session-staging",activeFlag:"proceed-to-start",session,"event/sessionNumber":session.number,"event/circuit/roleIndex":roleIndex,"event/circuit/nextRolesSwapped":null,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
 }
 
 async function startNextCountdown(){if(!requireAuthenticatedWrite()||state?.systemState!=="next-session-staging")return;await update(stateRef,{systemState:"next-session-countdown","session/phase":"countdown","session/countdownEndsAt":Date.now()+10000,updatedAt:serverTimestamp()})}
 
 async function issueReturnToStart(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"return-to-start","session/postSessionStage":"return-to-start",updatedAt:serverTimestamp()})}
+async function swapNextRoles(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{"event/circuit/nextRolesSwapped":!state.event.circuit?.nextRolesSwapped,updatedAt:serverTimestamp()})}
 function countdownDots(element,endsAt){if(!element)return;const elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;element.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
 function scheduleNextStart(){
  if(nextStartTimer){clearTimeout(nextStartTimer);nextStartTimer=null}
@@ -610,6 +611,8 @@ function render(){
   $("return-to-start-order").classList.toggle("hidden",state.activeFlag==="return-to-start");
   E.next.classList.toggle("hidden",!complete||state.activeFlag!=="return-to-start");
   $("post-white").classList.remove("hidden");
+  const nextIndex=(state.event.circuit?.roleIndex||0)+1+(state.event.circuit?.nextRolesSwapped?1:0),nextPursuit=nextIndex%2===0?"a":"b",nextEvading=nextPursuit==="a"?"b":"a",names=state.session.teamNames||{};
+  $("next-role-preview").textContent=`Next session: ${names[nextEvading]||nextEvading} hides • ${names[nextPursuit]||nextPursuit} finds`;
   renderScore("between-scoreboard");
   renderCircuit("circuit-progress");
  }
@@ -631,7 +634,7 @@ document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFla
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("post-white").onclick=openWhiteDialog;document.querySelectorAll("[data-violation-open]").forEach(button=>button.onclick=openWhiteDialog);$("close-white").onclick=closeViolationDialog;$("violation-type").onchange=syncViolationForm;$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};syncViolationForm();
-$("return-to-start-order").onclick=issueReturnToStart;$("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("start-next-countdown").onclick=startNextCountdown;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
+$("swap-next-roles").onclick=swapNextRoles;$("return-to-start-order").onclick=issueReturnToStart;$("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("start-next-countdown").onclick=startNextCountdown;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
 
 
 $("start-course-lap").onclick=startCourseLap;
