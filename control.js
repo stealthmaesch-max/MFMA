@@ -12,9 +12,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
-import { signals } from "./signals.js?v=62";
-import { getRenderMode, showOnly } from "./display-state.js?v=62";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=62";
+import { signals } from "./signals.js?v=63";
+import { getRenderMode, showOnly } from "./display-state.js?v=63";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=63";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 
@@ -485,7 +485,7 @@ async function advanceNextSession(){
 async function startNextCountdown(){if(!requireAuthenticatedWrite()||state?.systemState!=="next-session-staging")return;await update(stateRef,{systemState:"next-session-countdown","session/phase":"countdown","session/countdownEndsAt":Date.now()+10000,updatedAt:serverTimestamp()})}
 
 async function issueReturnToStart(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"return-to-start","session/postSessionStage":"return-to-start",updatedAt:serverTimestamp()})}
-function countdownDots(element,endsAt){if(!element)return;const remaining=Math.max(0,endsAt-Date.now()),lit=Math.ceil(remaining/2000);element.innerHTML=Array.from({length:5},(_,index)=>`<i class="${index<lit?"lit":"out"}"></i>`).join("")}
+function countdownDots(element,endsAt){if(!element)return;const elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<4500?1:elapsed<9300?2:0;element.innerHTML=Array.from({length:2},(_,index)=>`<i class="${index<lit?"lit":"out"}"></i>`).join("")}
 function scheduleNextStart(){
  if(nextStartTimer){clearTimeout(nextStartTimer);nextStartTimer=null}
  if(state?.systemState!=="next-session-countdown"||!state.session?.countdownEndsAt)return;
@@ -613,7 +613,7 @@ function render(){
   renderScore("between-scoreboard");
   renderCircuit("circuit-progress");
  }
- if(staging||countdown){$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?"Countdown active. Green and the hiding timer begin when all five dots go out.":"The folded green order has been issued. Wait until the hiding team is stopped behind the line.";if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
+ if(staging||countdown){$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?"Start sequence active. Green and the hiding timer begin when both lights go out.":"The folded green order has been issued. Wait until the hiding team is stopped behind the line.";if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
 }
 
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-type]").forEach(x=>x.classList.remove("active"));b.classList.add("active");sessionType=b.dataset.type;$("vehicle-vehicle-setup").classList.toggle("hidden",sessionType!=="vehicle-vehicle");$("vehicle-foot-setup").classList.toggle("hidden",sessionType!=="vehicle-foot");if(sessionType==="vehicle-foot"){E.hide.value=120;E.find.value=300;renderVF()}else{E.hide.value=60;E.find.value=120;renderVVSelectors()}});
