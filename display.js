@@ -44,7 +44,7 @@ function showSprint(){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`sprint:${flag}`);
  label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent=flag==="safety-car"?"FOLLOW SAFETY CAR • NO OVERTAKING":"MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
 }
-function renderStartDots(){const endsAt=state.session?.countdownEndsAt||Date.now(),elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<4500?1:elapsed<9300?2:0;timer.innerHTML=Array.from({length:2},(_,index)=>`<i class="${index<lit?"lit":"out"}"></i>`).join("")}
+function renderStartDots(){const endsAt=state.session?.countdownEndsAt||Date.now(),elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;timer.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
 function render(){const mode=getRenderMode(state);timer.classList.toggle("dot-timer",mode==="next-session-countdown");if(mode==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="course-lap"){
  showStatus("SAFETY CAR","COURSE FAMILIARIZATION LAP • FOLLOW SAFETY CAR • NO OVERTAKING",state.event.name);
  applyDisplayClass("display flag-safety-car","course-lap");
@@ -52,7 +52,7 @@ function render(){const mode=getRenderMode(state);timer.classList.toggle("dot-ti
 }
 if(mode==="session-live"||mode==="awaiting-finding-start"){showLive();return}
 if(mode==="next-session-staging"||mode==="next-session-countdown"){
- const sig=signals["proceed-to-start"];statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}`,mode);label.textContent=sig.label;instruction.textContent=mode==="next-session-countdown"?"TEAM SET • GREEN WHEN BOTH LIGHTS GO OUT":sig.instruction;sessionLine.textContent=`SESSION ${state.session?.number||""} • NEXT HIDING TEAM`;if(mode==="next-session-countdown")renderStartDots();else timer.textContent="WAIT";theme.content=sig.theme;return
+ const sig=signals["proceed-to-start"];statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}`,mode);label.textContent=sig.label;instruction.textContent=mode==="next-session-countdown"?"TEAM SET • GREEN WHEN ALL RED LIGHTS GO OUT":sig.instruction;sessionLine.textContent=`SESSION ${state.session?.number||""} • NEXT HIDING TEAM`;if(mode==="next-session-countdown")renderStartDots();else timer.textContent="WAIT";theme.content=sig.theme;return
 }
 if(mode==="safety-car-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");

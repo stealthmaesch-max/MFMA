@@ -42,8 +42,9 @@ test("post-session White remains available only before the proceed order",()=>{
  assert.match(control,/systemState:"next-session-staging",activeFlag:"proceed-to-start"/);
  assert.match(control,/state\?\.systemState!=="next-session-staging"/);
  assert.match(html,/Team Stopped Behind Line — Start Countdown/);
- assert.match(control,/Array\.from\(\{length:2\}/);
- assert.doesNotMatch(control,/Array\.from\(\{length:5\}/);
+ assert.match(control,/Array\.from\(\{length:5\}/);
+ assert.match(control,/systemState:"next-session-countdown",activeFlag:"proceed-to-start",session/);
+ assert.match(control,/phase:"countdown"[\s\S]*countdownEndsAt:Date\.now\(\)\+10000/);
 });
 
 test("disqualification terminates through the official outcome workflow",()=>{

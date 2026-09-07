@@ -191,16 +191,16 @@ async function startSession(){
  if(state?.systemState!=="standby"||state?.sprint?.active)return;
  if(state.event?.courseLap?.required&&state.event.courseLap.status!=="complete"){alert("Complete the Safety Car familiarization lap before Session 1.");return}
  const v=validate();if(!v.ok)return;
- const r=v.setup.role,now=Date.now();let hide=Number(E.hide.value)*1000,find=Number(E.find.value)*1000;
+ const r=v.setup.role;let hide=Number(E.hide.value)*1000,find=Number(E.find.value)*1000;
  const adj=state.event.pendingAdjustment;
  if(adj){
   if(adj.remedy==="reduce-hide"&&r.evading===adj.benefitingTeam)hide=Math.max(1000,hide-adj.seconds*1000);
   if(adj.remedy==="increase-find"&&r.pursuit===adj.benefitingTeam)find+=adj.seconds*1000;
  }
  const spotIds=v.setup.pursuitVehicleIds||[];
- const session={number:state.event.sessionNumber||1,format:sessionType,teamNames:v.setup.teamNames,pursuitTeam:r.pursuit,evadingTeam:r.evading,setup:v.setup,phase:"hiding",remainingMs:hide,hideDurationMs:hide,findDurationMs:find,running:true,lastTickAt:now,flag:"green",spotStatus:Object.fromEntries(spotIds.map(id=>[id,false])),pursuitVehicleIds:spotIds,provisionalWinner:null,provisionalReason:null};
+ const session={number:state.event.sessionNumber||1,format:sessionType,teamNames:v.setup.teamNames,pursuitTeam:r.pursuit,evadingTeam:r.evading,setup:v.setup,phase:"countdown",remainingMs:hide,hideDurationMs:hide,findDurationMs:find,running:false,lastTickAt:null,flag:"proceed-to-start",spotStatus:Object.fromEntries(spotIds.map(id=>[id,false])),pursuitVehicleIds:spotIds,provisionalWinner:null,provisionalReason:null,countdownEndsAt:Date.now()+10000};
  const scores={...(state.event.scores||{})};for(const k of Object.keys(v.setup.teamNames))if(scores[k]===undefined)scores[k]=0;
- await update(stateRef,{systemState:"session-live",activeFlag:"green",session,"event/scores":scores,"event/teamNames":v.setup.teamNames,"event/circuit/format":sessionType,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
+ await update(stateRef,{systemState:"next-session-countdown",activeFlag:"proceed-to-start",session,"event/scores":scores,"event/teamNames":v.setup.teamNames,"event/circuit/format":sessionType,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
 }
 
 async function startSprint(){
@@ -485,7 +485,7 @@ async function advanceNextSession(){
 async function startNextCountdown(){if(!requireAuthenticatedWrite()||state?.systemState!=="next-session-staging")return;await update(stateRef,{systemState:"next-session-countdown","session/phase":"countdown","session/countdownEndsAt":Date.now()+10000,updatedAt:serverTimestamp()})}
 
 async function issueReturnToStart(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"return-to-start","session/postSessionStage":"return-to-start",updatedAt:serverTimestamp()})}
-function countdownDots(element,endsAt){if(!element)return;const elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<4500?1:elapsed<9300?2:0;element.innerHTML=Array.from({length:2},(_,index)=>`<i class="${index<lit?"lit":"out"}"></i>`).join("")}
+function countdownDots(element,endsAt){if(!element)return;const elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;element.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
 function scheduleNextStart(){
  if(nextStartTimer){clearTimeout(nextStartTimer);nextStartTimer=null}
  if(state?.systemState!=="next-session-countdown"||!state.session?.countdownEndsAt)return;
@@ -613,7 +613,7 @@ function render(){
   renderScore("between-scoreboard");
   renderCircuit("circuit-progress");
  }
- if(staging||countdown){$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?"Start sequence active. Green and the hiding timer begin when both lights go out.":"The folded green order has been issued. Wait until the hiding team is stopped behind the line.";if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
+ if(staging||countdown){$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?"Start sequence active. Green and the hiding timer begin when all red lights go out.":"The folded green order has been issued. Wait until the hiding team is stopped behind the line.";if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
 }
 
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-type]").forEach(x=>x.classList.remove("active"));b.classList.add("active");sessionType=b.dataset.type;$("vehicle-vehicle-setup").classList.toggle("hidden",sessionType!=="vehicle-vehicle");$("vehicle-foot-setup").classList.toggle("hidden",sessionType!=="vehicle-foot");if(sessionType==="vehicle-foot"){E.hide.value=120;E.find.value=300;renderVF()}else{E.hide.value=60;E.find.value=120;renderVVSelectors()}});
