@@ -17,6 +17,7 @@ import { getRenderMode, showOnly } from "./display-state.js?v=63";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=70";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
 import { newOpenHazardIds } from "./report-model.js?v=57";
+import { DEFAULT_POINTS, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, normalizeMraNumber, normalizeName, slugify, sortedStandings } from "./competition-model.js?v=75";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -24,9 +25,10 @@ const githubProvider=new GithubAuthProvider();
 const googleProvider=new GoogleAuthProvider();
 const db=getDatabase(app);
 const stateRef=ref(db,"mfma/state");
+const competitionRef=ref(db,"mfma/competition"),requestsRef=ref(db,"mfma/requests");
 const $=id=>document.getElementById(id);
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
-let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null;
+let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null,competition={},requests={},requestsUnsubscribe=null;
 const safetyManagementFlags=new Set(["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
 
 const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),live:$("live-panel"),provisional:$("provisional-panel"),nextStart:$("next-start-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
@@ -114,9 +116,11 @@ onAuthStateChanged(auth,user=>{
   authStatus.textContent="Signed in";
   accountName.textContent=`${displayUserName(user)} • ${providerLabel(user)}`;
   setAuthError("");
+  if(!requestsUnsubscribe)requestsUnsubscribe=onValue(requestsRef,snapshot=>{requests=snapshot.val()||{};renderManagement()},error=>console.error("Unable to load MRA approval queue",error));
  }else{
   authStatus.textContent="Choose a sign-in method";
   accountName.textContent="Signed out";
+  if(requestsUnsubscribe){requestsUnsubscribe();requestsUnsubscribe=null}requests={};
  }
 });
 
@@ -139,11 +143,13 @@ function sprintTimerPatch(s=state?.sprint,now=Date.now()){
  return s.timerMode==="count-up"?{"sprint/elapsedMs":value,"sprint/lastTickAt":s.running?now:null}:{"sprint/remainingMs":value,"sprint/lastTickAt":s.running?now:null};
 }
 function setConn(kind,text){E.connection.className=`pill ${kind||""}`;E.connection.querySelector("span:last-child").textContent=text}
-function availableVehicles(){return ["ranger","shelly","gator"].filter(v=>$(`available-${v}`).checked)}
+function vehicleCatalog(){return approvedVehicles(competition.vehicles)}
+function vehicleLabel(id){return vehicleCatalog()[id]?.name||vehicles[id]?.name||id}
+function availableVehicles(){return [...document.querySelectorAll("[data-available-vehicle]:checked")].map(input=>input.value)}
 function currentTeams(){
  if(sessionType==="vehicle-vehicle"){
   const a=$("vv-team-1").value,b=$("vv-team-2").value;
-  return {a,b,names:{a:vehicles[a]?.name+" Team",b:vehicles[b]?.name+" Team"}}
+  return {a,b,names:{a:vehicleLabel(a)+" Team",b:vehicleLabel(b)+" Team"}}
  }
  return {a:"a",b:"b",names:{a:$("vf-team-a").value||"Team A",b:$("vf-team-b").value||"Team B"}}
 }
@@ -152,15 +158,17 @@ function rolePair(){const t=currentTeams();return roleIndex%2===0?{pursuit:"a",e
 function renderVVSelectors(){
  const ids=availableVehicles();
  for(const id of ["vv-team-1","vv-team-2"]){
-  const s=$(id),prev=s.value;s.innerHTML=ids.map(v=>`<option value="${v}">${vehicles[v].name}</option>`).join("");
+  const s=$(id),prev=s.value;s.innerHTML=ids.map(v=>`<option value="${v}">${escapeHtml(vehicleLabel(v))}</option>`).join("");
   if(prev&&ids.includes(prev))s.value=prev;
  }
  if(ids.length>1&&$("vv-team-1").value===$("vv-team-2").value)$("vv-team-2").value=ids[1];
  updateRoleSummary();
 }
 function renderVF(){
+ const ids=availableVehicles(),select=$("vf-vehicle"),prior=select.value;select.innerHTML=ids.map(id=>`<option value="${id}">${escapeHtml(vehicleLabel(id))}</option>`).join("");if(ids.includes(prior))select.value=prior;
  updateRoleSummary();
 }
+function renderVehicleSetup(){const catalog=vehicleCatalog(),ids=Object.keys(catalog),selected=new Set(availableVehicles());if(!selected.size){selected.add(ids[0]);selected.add(ids[1])}$("available-vehicles").innerHTML=ids.map(id=>`<label class="chip"><input data-available-vehicle type="checkbox" value="${escapeHtml(id)}" ${selected.has(id)?"checked":""}> ${escapeHtml(catalog[id].name||id)}</label>`).join("");document.querySelectorAll("[data-available-vehicle]").forEach(input=>input.onchange=()=>{renderVVSelectors();renderVF()});renderVVSelectors();renderVF()}
 function updateRoleSummary(){const r=rolePair();E.roleSummary.textContent=`${r.names[r.pursuit]} pursuing • ${r.names[r.evading]} evading`}
 
 function collectSetup(){
@@ -183,7 +191,8 @@ function validate(){
 
 async function createEvent(){
  if(!requireAuthenticatedWrite())return;
- await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:$("new-event-name").value||"MFMA Event",scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:true,status:"pending"}},session:null,sprint:null,updatedAt:serverTimestamp()});
+ const seasonId=String($("new-event-season").value||currentSeasonId()).slice(0,4);
+ await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:$("new-event-name").value||"MFMA Event",seasonId,scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:true,status:"pending"}},session:null,sprint:null,updatedAt:serverTimestamp()});
  $("event-dialog").close();
 }
 
@@ -201,7 +210,7 @@ async function startSession(){
  const spotIds=v.setup.pursuitVehicleIds||[];
  const session={number:state.event.sessionNumber||1,format:sessionType,teamNames:v.setup.teamNames,pursuitTeam:r.pursuit,evadingTeam:r.evading,setup:v.setup,phase:"countdown",remainingMs:hide,hideDurationMs:hide,findDurationMs:find,running:false,lastTickAt:null,flag:"proceed-to-start",spotStatus:Object.fromEntries(spotIds.map(id=>[id,false])),pursuitVehicleIds:spotIds,provisionalWinner:null,provisionalReason:null,countdownEndsAt:Date.now()+10000};
  const scores={...(state.event.scores||{})};for(const k of Object.keys(v.setup.teamNames))if(scores[k]===undefined)scores[k]=0;
- await update(stateRef,{systemState:"next-session-countdown",activeFlag:"proceed-to-start",session,"event/scores":scores,"event/teamNames":v.setup.teamNames,"event/circuit/format":sessionType,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
+ await update(stateRef,{systemState:"next-session-countdown",activeFlag:"proceed-to-start",session,"event/scores":scores,"event/teamNames":v.setup.teamNames,"event/lastVehicleIds":v.setup.vehicleIds||v.setup.pursuitVehicleIds||[],"event/circuit/format":sessionType,"event/circuit/roleIndex":roleIndex,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
 }
 
 async function startSprint(){
@@ -558,6 +567,23 @@ async function restartTerminatedSession(){
  });
 }
 
+function pendingEntries(group={}){return Object.entries(group||{}).filter(([,item])=>item?.status==="pending")}
+function renderManagement(){
+ const registrations=pendingEntries(requests.registrations),access=pendingEntries(requests.access),vehicleRequests=Object.entries(requests.vehicles||{}).flatMap(([uid,items])=>pendingEntries(items).map(([id,item])=>[`${uid}/${id}`,item]));
+ const total=registrations.length+access.length+vehicleRequests.length;$("mra-request-count").textContent=`${total} pending`;
+ $("registration-requests").innerHTML=`<h3>Driver Registrations</h3>`+(registrations.map(([uid,item])=>`<article class="management-card"><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.teamName)} • Requested ${escapeHtml(item.requestedMraNumber||"number assignment")}</span></div><label>MRA Number<input data-registration-number="${escapeHtml(uid)}" value="${escapeHtml(item.requestedMraNumber||"")}" maxlength="20"></label><div class="button-row"><button class="action primary-btn" data-approve-registration="${escapeHtml(uid)}">Approve</button><button class="action secondary-btn" data-reject-request="registrations/${escapeHtml(uid)}">Reject</button></div></article>`).join("")||"<p class="empty-state">No pending driver registrations.</p>");
+ $("access-requests").innerHTML=`<h3>Device Access</h3>`+(access.map(([uid,item])=>`<article class="management-card"><div><strong>${escapeHtml(item.driverName)}</strong><span>${escapeHtml(item.mraNumber)} • New device</span></div><div class="button-row"><button class="action primary-btn" data-approve-access="${escapeHtml(uid)}">Approve Device</button><button class="action secondary-btn" data-reject-request="access/${escapeHtml(uid)}">Reject</button></div></article>`).join("")||"<p class="empty-state">No pending device requests.</p>");
+ $("vehicle-requests").innerHTML=`<h3>Vehicle Submissions</h3>`+(vehicleRequests.map(([key,item])=>`<article class="management-card"><div><strong>${escapeHtml(item.name)}</strong><span>${escapeHtml(item.makeModel)}${item.competitionNumber?` • #${escapeHtml(item.competitionNumber)}`:""} • ${escapeHtml(item.driverName)}</span></div><div class="button-row"><button class="action primary-btn" data-approve-vehicle="${escapeHtml(key)}">Approve Vehicle</button><button class="action secondary-btn" data-reject-request="vehicles/${escapeHtml(key)}">Reject</button></div></article>`).join("")||"<p class="empty-state">No pending vehicle submissions.</p>");
+ document.querySelectorAll("[data-approve-registration]").forEach(button=>button.onclick=()=>approveRegistration(button.dataset.approveRegistration));document.querySelectorAll("[data-approve-access]").forEach(button=>button.onclick=()=>approveAccess(button.dataset.approveAccess));document.querySelectorAll("[data-approve-vehicle]").forEach(button=>button.onclick=()=>approveVehicle(button.dataset.approveVehicle));document.querySelectorAll("[data-reject-request]").forEach(button=>button.onclick=()=>update(ref(db,`mfma/requests/${button.dataset.rejectRequest}`),{status:"rejected",reviewedAt:serverTimestamp()}));
+ const seasons=new Set([currentSeasonId(),...Object.keys(competition.seasons||{}),...Object.keys(competition.archives||{})]),seasonSelect=$("standings-season"),prior=seasonSelect.value;seasonSelect.innerHTML=`<option value="career">Career</option>`+[...seasons].sort().reverse().map(id=>`<option>${escapeHtml(id)}</option>`).join("");if(prior==="career"||[...seasons].includes(prior))seasonSelect.value=prior;else seasonSelect.value=currentSeasonId();renderStandings();renderArchives();
+}
+async function approveRegistration(uid){if(!requireAuthenticatedWrite())return;const item=requests.registrations?.[uid],mraNumber=normalizeMraNumber(document.querySelector(`[data-registration-number="${CSS.escape(uid)}"]`)?.value);if(!item||!mraNumber){alert("Assign an MRA number before approval.");return}const driverId=`mra-${slugify(mraNumber)}`,teamId=slugify(item.teamName)||"independent";if(competition.drivers?.[driverId]&&competition.drivers[driverId].name!==normalizeName(item.name)){alert("That MRA number is already assigned to another driver.");return}await update(ref(db,"mfma"),{[`competition/drivers/${driverId}`]:{name:normalizeName(item.name),mraNumber,teamId,teamName:normalizeName(item.teamName),status:"approved",approvedAt:serverTimestamp()},[`competition/teams/${teamId}`]:{name:normalizeName(item.teamName),status:"approved"},[`driverAccess/${uid}`]:{driverId,status:"approved",approvedAt:serverTimestamp()},[`requests/registrations/${uid}/status`]:"approved",[`requests/registrations/${uid}/approvedAt`]:serverTimestamp()})}
+async function approveAccess(uid){if(!requireAuthenticatedWrite())return;const item=requests.access?.[uid];if(!item||competition.drivers?.[item.driverId]?.status!=="approved")return;await update(ref(db,"mfma"),{[`driverAccess/${uid}`]:{driverId:item.driverId,status:"approved",approvedAt:serverTimestamp()},[`requests/access/${uid}/status`]:"approved",[`requests/access/${uid}/approvedAt`]:serverTimestamp()})}
+async function approveVehicle(key){if(!requireAuthenticatedWrite())return;const [uid,id]=key.split("/"),item=requests.vehicles?.[uid]?.[id];if(!item)return;let vehicleId=slugify(item.name)||`vehicle-${id.slice(-6)}`;if(competition.vehicles?.[vehicleId])vehicleId=`${vehicleId}-${id.slice(-4)}`;await update(ref(db,"mfma"),{[`competition/vehicles/${vehicleId}`]:{name:normalizeName(item.name),makeModel:normalizeName(item.makeModel),competitionNumber:normalizeName(item.competitionNumber),ownerDriverId:item.driverId,status:"approved",approvedAt:serverTimestamp()},[`requests/vehicles/${uid}/${id}/status`]:"approved",[`requests/vehicles/${uid}/${id}/approvedAt`]:serverTimestamp()})}
+function renderStandings(){const season=$("standings-season").value||currentSeasonId(),type=$("standings-type").value,allArchives=Object.values(competition.archives||{}).flatMap(value=>Object.entries(value||{})),source=season==="career"?rebuildStandings(Object.fromEntries(allArchives)):competition.standings?.[season],rows=sortedStandings(source?.[type]);$("standings-list").innerHTML=`<div class="standings-table"><div class="standings-head"><span>Pos</span><span>${type[0].toUpperCase()+type.slice(1)}</span><span>Wins</span><span>Points</span></div>${rows.map((row,index)=>`<article><b>${index+1}</b><span>${escapeHtml(row.name)}</span><span>${row.wins||0}</span><strong>${row.points||0}</strong></article>`).join("")||"<p class=\"empty-state\">No archived results for this view.</p>"}</div>`}
+function renderArchives(){const events=Object.values(competition.archives||{}).flatMap(season=>Object.values(season||{})).sort((a,b)=>(b.endedAt||0)-(a.endedAt||0));$("race-archive-list").innerHTML=events.map(event=>`<article class="archive-card"><div><strong>${escapeHtml(event.name)}</strong><span>${escapeHtml(event.date)} • ${escapeHtml(event.seasonId)}</span></div><ol>${(event.classification||[]).map(row=>`<li><span>${escapeHtml(row.driverName||row.vehicleName||"Unassigned")}</span><b>${row.points} pts</b></li>`).join("")}</ol></article>`).join("")||"<p class=\"empty-state\">No races have been archived.</p>"}
+async function archiveAndEndEvent(){if(!requireAuthenticatedWrite()||state?.systemState==="sprint-live"||!state?.event)return;if(!confirm("Archive this event, award championship points, and end it?"))return;const seasonId=state.event.seasonId||currentSeasonId(),eventId=`${new Date().toISOString().slice(0,10)}-${slugify(state.event.name)}-${Date.now().toString(36)}`,archive=buildEventArchive(state,competition,{seasonId}),archives={...(competition.archives?.[seasonId]||{}),[eventId]:archive},standings=rebuildStandings(archives),endedState={systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null,updatedAt:serverTimestamp()};try{await update(ref(db,"mfma"),{[`competition/seasons/${seasonId}/name`]:`${seasonId} Season`,[`competition/seasons/${seasonId}/points`]:competition.seasons?.[seasonId]?.points||DEFAULT_POINTS,[`competition/archives/${seasonId}/${eventId}`]:archive,[`competition/standings/${seasonId}`]:standings,state:endedState})}catch(error){console.error("Unable to archive event",error);if(confirm("The championship archive is not active yet. End this event without awarding points?"))await set(stateRef,endedState)}}
+
 
 function renderScore(id){
  const scores=state?.event?.scores||{},names=state?.session?.teamNames||currentTeams().names||{};
@@ -580,10 +606,10 @@ async function resolveHazard(id){
 }
 function renderReports(){
  const reports=state?.event?.vehicleReports||{};
- $("occupant-panel").classList.toggle("hidden",!Object.keys(reports).length);$("occupant-list").innerHTML=Object.entries(reports).map(([vehicleId,r])=>`<article><strong>${escapeHtml(vehicles[vehicleId]?.name||vehicleId)}</strong><span>Driver: ${escapeHtml(r.driverName||"—")}</span><span>Passenger: ${escapeHtml(r.passengerName||"—")}</span><small>${relativeTime(r.submittedAt)}</small></article>`).join("");
+ $("occupant-panel").classList.toggle("hidden",!Object.keys(reports).length);$("occupant-list").innerHTML=Object.entries(reports).map(([vehicleId,r])=>`<article><strong>${escapeHtml(vehicleLabel(vehicleId))}</strong><span>Driver: ${escapeHtml(r.driverName||"—")}${r.mraNumber?` • ${escapeHtml(r.mraNumber)}`:""}</span><span>Passenger: ${escapeHtml(r.passengerName||"—")}</span><small>${relativeTime(r.submittedAt)}</small></article>`).join("");
  const hazards=Object.entries(state?.event?.hazards||{}).map(([id,hazard])=>({id,...hazard})).filter(h=>h.status!=="resolved").sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
  const canApplyFlag=new Set(["standby","sprint-live","session-live"]).has(state?.systemState);
- $("hazard-panel").classList.toggle("hidden",!hazards.length);$("hazard-list").innerHTML=hazards.map(h=>`<article class="hazard-alert ${escapeHtml(h.status)}"><div class="hazard-alert-head"><b>REQUEST • ${escapeHtml((vehicles[h.vehicleId]?.name||h.vehicleId).toUpperCase())}</b><span>${h.status==="open"?"NEW":"ACKNOWLEDGED"}</span></div><strong>${h.requestSafetyCar?"Safety Car requested":"Red Flag requested"}</strong><div class="hazard-requests">${h.requestStopClock?"<b>RED FLAG</b>":""}${h.requestSafetyCar?"<b>SAFETY CAR</b>":""}</div>${canApplyFlag?"":"<small>Session action unavailable in the current state.</small>"}<div class="button-row">${h.status==="open"?`<button class="mini-btn" data-hazard-ack="${h.id}">Acknowledge</button>`:""}${h.status!=="resolved"?`<button class="mini-btn" data-hazard-resolve="${h.id}">Resolve</button>`:""}${canApplyFlag&&h.requestStopClock?`<button class="mini-btn" data-hazard-red="${h.id}">Red Flag</button>`:""}${canApplyFlag&&h.requestSafetyCar?`<button class="mini-btn" data-hazard-safety="${h.id}">Safety Car</button>`:""}</div></article>`).join("");
+ $("hazard-panel").classList.toggle("hidden",!hazards.length);$("hazard-list").innerHTML=hazards.map(h=>`<article class="hazard-alert ${escapeHtml(h.status)}"><div class="hazard-alert-head"><b>REQUEST • ${escapeHtml(vehicleLabel(h.vehicleId).toUpperCase())}</b><span>${h.status==="open"?"NEW":"ACKNOWLEDGED"}</span></div><strong>${h.requestSafetyCar?"Safety Car requested":"Red Flag requested"}</strong>${h.mraNumber?`<small>${escapeHtml(h.mraNumber)}</small>`:""}<div class="hazard-requests">${h.requestStopClock?"<b>RED FLAG</b>":""}${h.requestSafetyCar?"<b>SAFETY CAR</b>":""}</div>${canApplyFlag?"":"<small>Session action unavailable in the current state.</small>"}<div class="button-row">${h.status==="open"?`<button class="mini-btn" data-hazard-ack="${h.id}">Acknowledge</button>`:""}${h.status!=="resolved"?`<button class="mini-btn" data-hazard-resolve="${h.id}">Resolve</button>`:""}${canApplyFlag&&h.requestStopClock?`<button class="mini-btn" data-hazard-red="${h.id}">Red Flag</button>`:""}${canApplyFlag&&h.requestSafetyCar?`<button class="mini-btn" data-hazard-safety="${h.id}">Safety Car</button>`:""}</div></article>`).join("");
  document.querySelectorAll("[data-hazard-ack]").forEach(b=>b.onclick=()=>update(stateRef,{[`event/hazards/${b.dataset.hazardAck}/status`]:"acknowledged",[`event/hazards/${b.dataset.hazardAck}/acknowledgedAt`]:serverTimestamp()}));
  document.querySelectorAll("[data-hazard-resolve]").forEach(b=>b.onclick=()=>resolveHazard(b.dataset.hazardResolve));
  document.querySelectorAll("[data-hazard-red]").forEach(b=>b.onclick=()=>issueFlag("red"));document.querySelectorAll("[data-hazard-safety]").forEach(b=>b.onclick=()=>issueFlag("safety-car"));
@@ -624,7 +650,7 @@ function render(){
   $("sprint-active-flag").textContent=`FLAG: ${flag}`;
   $("sprint-duration").value=Math.max(0,(s.configuredMs||0)/1000);
  }
- if(live){const s=state.session,spotsEnabled=s.phase==="finding";E.phase.textContent=s.phase==="hiding"?"HIDING":awaiting?"HIDING COMPLETE":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=awaiting?"AWAITING RACE DIRECTOR":s.running?"SESSION LIVE":"SESSION PAUSED";E.findingStart.classList.toggle("hidden",!awaiting);$("live-signal-panel").classList.toggle("hidden",awaiting);$("live-flag-panel").classList.toggle("hidden",awaiting);$("live-spots-panel").classList.toggle("hidden",awaiting);E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]||!spotsEnabled?"disabled":""}><span>${vehicles[v].name}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":spotsEnabled?"CONFIRM VALID RADIO SPOT":"FINDING NOT STARTED"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
+ if(live){const s=state.session,spotsEnabled=s.phase==="finding";E.phase.textContent=s.phase==="hiding"?"HIDING":awaiting?"HIDING COMPLETE":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=awaiting?"AWAITING RACE DIRECTOR":s.running?"SESSION LIVE":"SESSION PAUSED";E.findingStart.classList.toggle("hidden",!awaiting);$("live-signal-panel").classList.toggle("hidden",awaiting);$("live-flag-panel").classList.toggle("hidden",awaiting);$("live-spots-panel").classList.toggle("hidden",awaiting);E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]||!spotsEnabled?"disabled":""}><span>${escapeHtml(vehicleLabel(v))}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":spotsEnabled?"CONFIRM VALID RADIO SPOT":"FINDING NOT STARTED"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
  if(live)$("restart-at-line").classList.toggle("hidden",state.activeFlag!=="red");
  if(prov||complete){
   E.provisionalDetail.textContent=state.session.provisionalReason||"Session complete";
@@ -646,7 +672,7 @@ document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.quer
 $("vv-team-1").onchange=updateRoleSummary;$("vv-team-2").onchange=updateRoleSummary;
 $("vf-team-a").oninput=updateRoleSummary;$("vf-team-b").oninput=updateRoleSummary;$("vf-vehicle").onchange=renderVF;$("swap-teams").onclick=()=>{roleIndex=roleIndex%2===0?1:0;updateRoleSummary()};
 $("create-event").onclick=()=>$("event-dialog").showModal();$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};
-$("end-event").onclick=async()=>{if(!requireAuthenticatedWrite()||state?.systemState==="sprint-live")return;if(confirm("End the event?"))await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null,updatedAt:serverTimestamp()})};
+$("end-event").onclick=archiveAndEndEvent;
 $("standby-button").onclick=()=>{if(state?.systemState!=="sprint-live")update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()})};$("start-session").onclick=startSession;
 $("start-sprint").onclick=startSprint;$("terminate-sprint").onclick=()=>{if(confirm("Terminate MFMA Sprint and return to Standby?"))terminateSprint()};
 $("sprint-timer-mode").onchange=setSprintTimerMode;$("sprint-duration").onchange=configureSprintDuration;$("sprint-start-timer").onclick=startSprintTimer;$("sprint-pause-timer").onclick=pauseSprintTimer;$("sprint-reset-timer").onclick=resetSprintTimer;
@@ -666,6 +692,7 @@ $("termination-standby").onclick=returnFromTermination;
 $("termination-restart").onclick=restartTerminatedSession;
 $("review-resume").onclick=resumeViolationReview;$("review-disqualify").onclick=openDisqualificationReview;$("review-no-result").onclick=noResultViolationReview;
 $("safety-message-open").onclick=openSafetyMessage;$("close-safety-message").onclick=()=>$("safety-message-dialog").close();$("safety-message-form").onsubmit=e=>{e.preventDefault();saveSafetyMessage($("safety-message-input").value)};$("clear-safety-message").onclick=()=>saveSafetyMessage("");document.querySelectorAll("[data-safety-preset]").forEach(button=>button.onclick=()=>{$("safety-message-input").value=button.dataset.safetyPreset;$("safety-message-input").focus()});
+document.querySelectorAll("[data-management-tab]").forEach(button=>button.onclick=()=>{document.querySelectorAll("[data-management-tab]").forEach(item=>item.classList.toggle("active",item===button));document.querySelectorAll(".management-view").forEach(view=>view.classList.toggle("hidden",view.id!==`management-${button.dataset.managementTab}`))});$("standings-season").onchange=renderStandings;$("standings-type").onchange=renderStandings;
 
 $("white-review-overlay").onclick=e=>{
  if(e.target===$("white-review-overlay")){
@@ -675,4 +702,4 @@ $("white-review-overlay").onclick=e=>{
 };
 
 onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);scheduleWarningReturn();scheduleNextStart();const newHazards=newOpenHazardIds(previous,state);if(newHazards.length){try{playSound("hazard")}catch{}if(new Set(["clear","green","move-over"]).has(state.activeFlag||"clear"))issueFlag("yellow").catch(error=>console.error("Unable to call immediate yellow",error))}setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
-renderVVSelectors();renderVF();setInterval(()=>{tick();sprintTick();if(state?.systemState==="next-session-countdown")countdownDots($("control-start-dots"),state.session.countdownEndsAt)},250);
+onValue(competitionRef,snapshot=>{competition=snapshot.val()||{};renderVehicleSetup();renderManagement()});$("new-event-season").value=currentSeasonId();renderVehicleSetup();renderManagement();setInterval(()=>{tick();sprintTick();if(state?.systemState==="next-session-countdown")countdownDots($("control-start-dots"),state.session.countdownEndsAt)},250);

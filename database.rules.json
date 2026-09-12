@@ -3,14 +3,55 @@
     ".read": false,
     ".write": false,
     "mfma": {
+      "competition": {
+        ".read": true,
+        ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')"
+      },
+      "driverAccess": {
+        ".read": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+        "$uid": {
+          ".read": "auth != null && (auth.uid === $uid || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+          ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')"
+        }
+      },
+      "requests": {
+        ".read": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+        "registrations": {
+          "$uid": {
+            ".read": "auth != null && (auth.uid === $uid || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+            ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && (!data.exists() || data.child('status').val() !== 'approved') && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending') || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+            ".validate": "newData.hasChildren(['uid','name','teamName','requestedMraNumber','status','requestedAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('teamName').isString() && newData.child('teamName').val().length > 0 && newData.child('teamName').val().length <= 50 && newData.child('requestedMraNumber').isString() && newData.child('requestedMraNumber').val().length <= 20"
+          }
+        },
+        "access": {
+          "$uid": {
+            ".read": "auth != null && (auth.uid === $uid || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+            ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && (!data.exists() || data.child('status').val() !== 'approved') && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending' && root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('status').val() === 'approved' && newData.child('driverName').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('name').val() && newData.child('mraNumber').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('mraNumber').val()) || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+            ".validate": "newData.hasChildren(['uid','driverId','driverName','mraNumber','status','requestedAt'])"
+          }
+        },
+        "vehicles": {
+          "$uid": {
+            "$requestId": {
+              ".read": "auth != null && (auth.uid === $uid || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+              ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && (!data.exists() || data.child('status').val() === 'pending') && newData.child('uid').val() === auth.uid && newData.child('driverId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val() && newData.child('driverName').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('name').val() && newData.child('status').val() === 'pending') || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+              ".validate": "newData.hasChildren(['uid','driverId','driverName','name','makeModel','competitionNumber','status','requestedAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('makeModel').isString() && newData.child('makeModel').val().length > 0 && newData.child('makeModel').val().length <= 60 && newData.child('competitionNumber').isString() && newData.child('competitionNumber').val().length <= 12"
+            }
+          }
+        }
+      },
       "state": {
         ".read": true,
         ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
         "event": {
           "vehicleReports": {
             "$vehicleId": {
-              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && ($vehicleId === 'ranger' || $vehicleId === 'shelly' || $vehicleId === 'gator')",
-              ".validate": "newData.hasChildren(['driverName', 'passengerName', 'submittedAt'])",
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && newData.child('driverId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val() && newData.child('driverName').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('name').val() && newData.child('mraNumber').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('mraNumber').val() && newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('teamId').val() && (($vehicleId === 'ranger' || $vehicleId === 'shelly' || $vehicleId === 'gator') || root.child('mfma').child('competition').child('vehicles').child($vehicleId).child('status').val() === 'approved')",
+              ".validate": "newData.hasChildren(['driverId','mraNumber','teamId','teamName','driverName','passengerName','submittedAt'])",
+              "driverId": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+              "mraNumber": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20" },
+              "teamId": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+              "teamName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50" },
               "driverName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50" },
               "passengerName": { ".validate": "newData.isString() && newData.val().length <= 50" },
               "submittedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
@@ -19,9 +60,11 @@
           },
           "hazards": {
             "$hazardId": {
-              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists() && newData.child('status').val() === 'open' && !newData.hasChild('acknowledgedAt') && !newData.hasChild('resolvedAt') && !newData.hasChild('rdNotes')",
-              ".validate": "newData.hasChildren(['vehicleId', 'description', 'category', 'requestStopClock', 'requestSafetyCar', 'status', 'createdAt'])",
-              "vehicleId": { ".validate": "newData.isString() && (newData.val() === 'ranger' || newData.val() === 'shelly' || newData.val() === 'gator')" },
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && !data.exists() && newData.child('driverId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val() && newData.child('mraNumber').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('mraNumber').val() && newData.child('status').val() === 'open' && !newData.hasChild('acknowledgedAt') && !newData.hasChild('resolvedAt') && !newData.hasChild('rdNotes') && ((newData.child('vehicleId').val() === 'ranger' || newData.child('vehicleId').val() === 'shelly' || newData.child('vehicleId').val() === 'gator') || root.child('mfma').child('competition').child('vehicles').child(newData.child('vehicleId').val()).child('status').val() === 'approved')",
+              ".validate": "newData.hasChildren(['driverId','mraNumber','vehicleId','description','category','requestStopClock','requestSafetyCar','status','createdAt'])",
+              "driverId": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
+              "mraNumber": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 20" },
+              "vehicleId": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64" },
               "description": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 240" },
               "category": { ".validate": "newData.isString() && (newData.val() === '' || newData.val() === 'Debris' || newData.val() === 'Track' || newData.val() === 'Vehicle' || newData.val() === 'Other')" },
               "requestStopClock": { ".validate": "newData.isBoolean()" },

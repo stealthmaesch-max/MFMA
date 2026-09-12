@@ -1,7 +1,7 @@
 {
   "private": true,
   "scripts": {
-    "test": "node --test tests/assignment-removal.test.js tests/move-over-flag.test.js tests/reports-and-circuits.test.js tests/sounds.test.js tests/sprint-state-transitions.test.js tests/violations.test.js",
+    "test": "node --test tests/assignment-removal.test.js tests/competition-model.test.js tests/move-over-flag.test.js tests/reports-and-circuits.test.js tests/sounds.test.js tests/sprint-state-transitions.test.js tests/violations.test.js",
     "test:rules": "firebase emulators:exec --only database 'node --test tests/database-rules.test.js'",
     "test:ui": "node --test tests/mobile-driver-ui.test.js"
   },

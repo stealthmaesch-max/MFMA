@@ -3,7 +3,7 @@
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0d1117"><meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>MFMA Driver Portal</title>
-<link rel="stylesheet" href="styles.css?v=74"></head>
+<link rel="stylesheet" href="styles.css?v=75"></head>
 <body class="display-body"><section id="display" class="display flag-clear">
 <div class="display-top"><div class="display-brand"><img id="display-brand-logo" src="assets/branding/mfma-logo.png" alt="MFMA"></div><div class="display-tools"><button id="display-sound" class="display-sound" type="button">Enable Sound</button><div id="display-status" class="display-status"><span class="dot"></span><span>Connecting</span></div></div></div>
 <div id="status-view" class="status-view"><div class="safety-car-emblem" aria-hidden="true"><i class="safety-yellow"></i><i class="safety-red"></i></div><div id="status-kicker" class="status-kicker">MFMA DIGITAL FLAG NETWORK</div><div id="status-title" class="status-title">NO ACTIVE EVENT</div><div id="status-detail" class="status-detail">Race Control has not opened an event.</div><div id="standby-leaderboard" class="driver-leaderboard hidden"></div></div>
@@ -17,15 +17,17 @@
 </div>
 <div id="driver-hazard-status" class="driver-hazard-status" aria-live="polite"></div>
 <section class="crew-compact">
-<button id="crew-toggle" class="crew-summary" type="button" aria-expanded="false"><span><strong>Signed In</strong><small id="crew-names">Driver profile</small></span><b id="crew-action">Edit</b></button>
+<button id="crew-toggle" class="crew-summary" type="button" aria-expanded="false"><span><strong id="portal-driver-name">Signed In</strong><small id="crew-names">Driver profile</small></span><b id="crew-action">Manage</b></button>
 <button id="driver-sign-out" class="driver-sign-out" type="button">Sign Out</button>
 <form id="occupant-form" class="driver-report-form hidden">
-<label>Driver<input id="driver-name" autocomplete="name" required maxlength="50"></label>
+<div class="portal-profile-line"><span>MRA Number</span><strong id="portal-mra-number">—</strong></div>
 <label>Passenger <small>(optional)</small><input id="passenger-name" autocomplete="name" maxlength="50"></label>
-<div class="button-row"><button id="crew-cancel" class="action secondary-btn" type="button">Cancel</button><button id="crew-submit" class="action primary-btn" type="submit">Submit</button></div>
+<div class="portal-actions"><button id="view-driver-stats" class="action secondary-btn" type="button">Stats &amp; History</button><button id="open-vehicle-request" class="action secondary-btn" type="button">Submit Vehicle</button></div>
+<div class="button-row"><button id="crew-cancel" class="action secondary-btn" type="button">Cancel</button><button id="crew-submit" class="action primary-btn" type="submit">Save Crew</button></div>
 </form><p id="occupant-status" class="report-status" role="status"></p>
 </section>
 </section>
-<section id="driver-signin" class="driver-signin" aria-label="Driver Portal sign in"><form id="driver-signin-form" class="driver-signin-card"><img src="assets/branding/mfma-driver-portal-logo.png" alt="MFMA Driver Portal"><div><p class="eyebrow">Driver Access</p><h1>Sign In</h1><p>Choose your vehicle and identify its occupants for Race Control.</p></div><label>Vehicle<select id="signin-vehicle"><option value="ranger">Ranger</option><option value="shelly">Shelly</option><option value="gator">Gator</option></select></label><label>Driver<input id="signin-driver" autocomplete="name" required maxlength="50"></label><label>Passenger <small>(optional)</small><input id="signin-passenger" autocomplete="name" maxlength="50"></label><button id="driver-signin-submit" class="action primary-btn" type="submit">Enter Driver Portal</button><p id="driver-signin-status" class="report-status" role="status"></p></form></section>
+<section id="driver-signin" class="driver-signin" aria-label="Driver Portal sign in"><div class="driver-signin-card"><img src="assets/branding/mfma-driver-portal-logo.png" alt="MFMA Driver Portal"><form id="driver-signin-form" class="portal-auth-form"><div><p class="eyebrow">Driver Access</p><h1>Sign In</h1><p>Use your registered name and MRA number. New devices require MRA approval.</p></div><label>Full Name<input id="signin-driver" autocomplete="name" required maxlength="50"></label><label>MRA Number<input id="signin-mra" autocomplete="off" required maxlength="20" autocapitalize="characters"></label><button id="driver-signin-submit" class="action primary-btn" type="submit">Continue</button><button id="show-registration" class="portal-link" type="button">New driver? Register with MRA</button><p id="driver-signin-status" class="report-status" role="status"></p></form><form id="driver-registration-form" class="portal-auth-form hidden"><div><p class="eyebrow">MRA Registration</p><h1>Register</h1><p>Submit your information. Race Management must approve it before you can enter the portal.</p></div><label>Full Name<input id="registration-name" autocomplete="name" required maxlength="50"></label><label>Requested MRA Number <small>(optional)</small><input id="registration-number" maxlength="20" autocapitalize="characters"></label><label>Team Affiliation<input id="registration-team" required maxlength="50"></label><button class="action primary-btn" type="submit">Send Registration</button><button id="show-signin" class="portal-link" type="button">Back to sign in</button><p id="registration-status" class="report-status" role="status"></p></form></div></section>
+<div id="portal-sheet" class="driver-sheet hidden" role="dialog" aria-modal="true"><section class="driver-sheet-card"><div class="driver-sheet-head"><div><p class="eyebrow">MFMA Driver Portal</p><h2 id="portal-sheet-title">Driver Record</h2></div><button id="close-portal-sheet" type="button" aria-label="Close">×</button></div><div id="portal-sheet-content"></div></section></div>
 <div class="display-footer"><span>MFMA DRIVER PORTAL</span><span>MRA SAFETY MANAGEMENT</span></div>
-</section><script type="module" src="display.js?v=74"></script></body></html>
+</section><script type="module" src="display.js?v=75"></script></body></html>

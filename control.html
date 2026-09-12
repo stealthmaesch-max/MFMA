@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#07090d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>MRA Race Control</title><link rel="stylesheet" href="styles.css?v=73">
+<meta name="theme-color" content="#07090d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>MRA Race Control</title><link rel="stylesheet" href="styles.css?v=75">
 </head><body class="control-page race-control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -42,6 +42,8 @@
   </header>
 
 <section id="no-event" class="panel"><p class="eyebrow">System Status</p><h2>No Active Event</h2><p>The display network is online. No event has been opened.</p><button id="create-event" class="action primary-btn">Start Event</button></section>
+
+<details id="mra-management" class="panel mra-management"><summary><span><b>MRA Portal</b><small>Drivers, vehicles, standings and race archive</small></span><strong id="mra-request-count">0 pending</strong></summary><div class="mra-management-body"><div class="section-head compact"><div><p class="eyebrow">Competition Administration</p><h2>Registry &amp; Championship</h2></div><img class="management-logo" src="assets/branding/mra-logo.png" alt="MFMA Race Authority"></div><nav class="management-tabs"><button class="active" data-management-tab="requests" type="button">Approvals</button><button data-management-tab="standings" type="button">Standings</button><button data-management-tab="archive" type="button">Prior Races</button></nav><section id="management-requests" class="management-view"><div id="registration-requests"></div><div id="access-requests"></div><div id="vehicle-requests"></div></section><section id="management-standings" class="management-view hidden"><div class="management-filter"><label>Season<select id="standings-season"></select></label><label>View<select id="standings-type"><option value="drivers">Drivers</option><option value="teams">Teams</option><option value="vehicles">Vehicles</option></select></label></div><div id="standings-list"></div></section><section id="management-archive" class="management-view hidden"><div id="race-archive-list"></div></section></div></details>
 
 <section id="event-area" class="hidden dashboard-grid">
 <section class="panel event-head dashboard-event"><div><p class="eyebrow">Active Event</p><h2 id="event-name">MFMA Event</h2><p id="event-meta"></p></div>
@@ -116,18 +118,14 @@
 </div>
 
 <div id="vehicle-vehicle-setup">
-<div class="subsection"><p class="eyebrow">Available Vehicle Teams</p><div class="chips">
-<label class="chip"><input id="available-ranger" type="checkbox" checked> Ranger</label>
-<label class="chip"><input id="available-shelly" type="checkbox" checked> Shelly</label>
-<label class="chip"><input id="available-gator" type="checkbox"> Gator</label>
-</div></div>
+<div class="subsection"><p class="eyebrow">Approved Vehicles</p><div id="available-vehicles" class="chips"></div></div>
 <div class="form-grid two"><label>Vehicle Team 1<select id="vv-team-1"></select></label><label>Vehicle Team 2<select id="vv-team-2"></select></label></div>
 </div>
 
 <div id="vehicle-foot-setup" class="hidden">
 <div class="form-grid two"><label>Personnel Team A<input id="vf-team-a" value="Team A"></label><label>Personnel Team B<input id="vf-team-b" value="Team B"></label></div>
 <div class="subsection"><p class="eyebrow">Pursuit Vehicle</p><div class="form-grid">
-<label>Vehicle<select id="vf-vehicle"><option value="ranger">Ranger</option><option value="shelly">Shelly</option><option value="gator">Gator</option></select></label>
+<label>Vehicle<select id="vf-vehicle"></select></label>
 </div></div>
 </div>
 
@@ -179,7 +177,7 @@
 </section></div></main>
 
 <dialog id="event-dialog"><form id="event-form"><div class="dialog-head"><div><p class="eyebrow">New Event</p><h2>Start Event</h2></div><button type="button" id="close-dialog">×</button></div>
-<label>Event Name<input id="new-event-name" value="MFMA Event" required></label><button class="action primary-btn wide" type="submit">Start Event</button></form></dialog>
+<label>Event Name<input id="new-event-name" value="MFMA Event" required></label><label>Season<input id="new-event-season" inputmode="numeric" maxlength="4"></label><button class="action primary-btn wide" type="submit">Start Event</button></form></dialog>
 
 <div id="white-review-overlay" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="white-review-title">
 <section class="modal-card">
@@ -214,4 +212,4 @@
 </section>
 </div>
 <dialog id="safety-message-dialog" class="safety-message-dialog"><form id="safety-message-form"><div class="dialog-head"><div><img class="dialog-mra-logo" src="assets/branding/mra-logo.png" alt="MFMA Race Authority"><p class="eyebrow">Safety Communication</p><h2>Additional Driver Information</h2></div><button type="button" id="close-safety-message" aria-label="Close">×</button></div><p class="modal-copy">The active safety signal takes effect immediately. This optional message adds concise instructions for drivers.</p><label>Driver message<textarea id="safety-message-input" maxlength="100" rows="3" placeholder="Example: Debris near the north gate"></textarea></label><div class="safety-message-presets" aria-label="Message presets"><button type="button" data-safety-preset="Hazard ahead — reduce speed">Hazard ahead</button><button type="button" data-safety-preset="Hold position and await instructions">Hold position</button><button type="button" data-safety-preset="Return to the starting zone">Return to start</button></div><div class="button-row"><button class="action primary-btn" type="submit">Present Information</button><button id="clear-safety-message" class="action secondary-btn" type="button">Clear Information</button></div><p id="safety-message-status" class="auth-status" role="status"></p></form></dialog>
-<script type="module" src="control.js?v=73"></script></body></html>
+<script type="module" src="control.js?v=75"></script></body></html>
