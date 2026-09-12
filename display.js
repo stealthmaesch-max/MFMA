@@ -12,7 +12,7 @@ const $=id=>document.getElementById(id);let state=null,wake=null;
 const display=$("display"),status=$("display-status"),statusText=status.querySelector("span:last-child"),statusView=$("status-view"),liveView=$("live-view"),title=$("status-title"),detail=$("status-detail"),kicker=$("status-kicker"),sessionLine=$("display-session"),timer=$("display-timer"),label=$("label"),instruction=$("instruction"),theme=document.querySelector('meta[name="theme-color"]'),standbyLeaderboard=$("standby-leaderboard");
 const soundButton=$("display-sound");
 const vehicleSelect=$("driver-vehicle"),tools=$("driver-tools"),PROFILE_KEY="mfma-driver-profile";
-function readDriverProfile(){try{const profile=JSON.parse(localStorage.getItem(PROFILE_KEY)||"null");return profile?.driverName&&profile?.vehicleId?profile:null}catch{return null}}
+function readDriverProfile(){try{const profile=JSON.parse(localStorage.getItem(PROFILE_KEY)||"null");return profile?.driverId&&profile?.mraNumber&&profile?.driverName&&profile?.vehicleId?profile:null}catch{return null}}
 let driverProfile=readDriverProfile(),selectedVehicle=driverProfile?.vehicleId||localStorage.getItem("mfma-driver-vehicle")||"ranger",competition={};
 let driverUser=null,driverAuthPromise=null,crewEditing=false,lastReportKey="",resolvedTimer=null,accessUnsubscribe=null,currentBinding=null;
 const safetyManagementFlags=new Set(["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);

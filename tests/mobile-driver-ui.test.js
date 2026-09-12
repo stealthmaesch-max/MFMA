@@ -6,7 +6,7 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
-async function signedDriverPage(browser,viewport){const page=await browser.newPage({viewport});await page.addInitScript(()=>localStorage.setItem("mfma-driver-profile",JSON.stringify({vehicleId:"ranger",driverName:"Test Driver",passengerName:""})));return page}
+async function signedDriverPage(browser,viewport){const page=await browser.newPage({viewport});await page.addInitScript(()=>localStorage.setItem("mfma-driver-profile",JSON.stringify({driverId:"test-driver",mraNumber:"MRA100",teamId:"test-team",teamName:"Test Team",vehicleId:"ranger",driverName:"Test Driver",passengerName:""})));return page}
 before(async()=>{
  server=http.createServer((request,response)=>{
   const pathname=new URL(request.url,"http://localhost").pathname;
