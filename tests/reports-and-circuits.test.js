@@ -74,6 +74,16 @@ test("operational signals flash while Green and infractions remain steady",async
  assert.doesNotMatch(css,/\.flag-checkered \.signal-label[\s\S]*animation: none/);
 });
 
+test("MRA safety information is scoped to the currently active management signal",()=>{
+ const control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("control.html","utf8"),driverHtml=fs.readFileSync("display.html","utf8");
+ assert.match(html,/id="safety-message-dialog"/);assert.match(html,/maxlength="100"/);assert.match(html,/data-safety-preset/);
+ assert.match(control,/safetyManagementFlags=new Set\(\["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"\]\)/);
+ assert.match(control,/safetyMessage:clean\?\{text:clean,flag:state\.activeFlag,updatedAt:Date\.now\(\)\}:null/);
+ assert.match(display,/state\.safetyMessage\?\.flag===state\.activeFlag/);
+ assert.match(display,/textContent=message\|\|"OFFICIAL SAFETY CONTROL"/);
+ assert.match(driverHtml,/id="safety-management"[\s\S]*mra-logo\.png[\s\S]*id="safety-message"/);
+});
+
 test("a stopped session can return to the line and restart through the full light sequence",()=>{
  const html=fs.readFileSync("control.html","utf8"),control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8");
  assert.match(html,/id="restart-at-line"[\s\S]*Return to Starting Line/);

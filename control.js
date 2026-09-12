@@ -27,6 +27,7 @@ const stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
 let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null;
+const safetyManagementFlags=new Set(["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
 
 const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),live:$("live-panel"),provisional:$("provisional-panel"),nextStart:$("next-start-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
 
@@ -283,6 +284,19 @@ async function issueFlag(flag){
  if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,updatedAt:serverTimestamp()});return}
  if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",updatedAt:serverTimestamp()});return}
  if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered(null,"Manual Checkered");
+}
+
+function safetyManagementActive(){return Boolean(state?.event&&safetyManagementFlags.has(state.activeFlag))}
+function openSafetyMessage(){
+ if(!safetyManagementActive())return;
+ const current=state.safetyMessage?.flag===state.activeFlag?state.safetyMessage.text||"":"";
+ $("safety-message-input").value=current;$("safety-message-status").textContent=`Current signal: ${(signals[state.activeFlag]?.label||state.activeFlag).toUpperCase()}`;$("safety-message-dialog").showModal();
+}
+async function saveSafetyMessage(text){
+ if(!requireAuthenticatedWrite()||!safetyManagementActive())return;
+ const clean=String(text||"").trim().slice(0,100);
+ await update(stateRef,{safetyMessage:clean?{text:clean,flag:state.activeFlag,updatedAt:Date.now()}:null,updatedAt:serverTimestamp()});
+ $("safety-message-dialog").close();
 }
 
 async function confirmSpot(id){
@@ -575,7 +589,7 @@ function renderReports(){
  document.querySelectorAll("[data-hazard-red]").forEach(b=>b.onclick=()=>issueFlag("red"));document.querySelectorAll("[data-hazard-safety]").forEach(b=>b.onclick=()=>issueFlag("safety-car"));
 }
 function render(){
- const mode=getRenderMode(state),has=mode!=="no-event";document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has)return;
+ const mode=getRenderMode(state),has=mode!=="no-event";document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);const safetyActive=safetyManagementActive(),currentSafetyMessage=safetyActive&&state.safetyMessage?.flag===state.activeFlag?state.safetyMessage.text||"":"";$("safety-message-open").classList.toggle("hidden",!safetyActive);$("safety-message-open").textContent=currentSafetyMessage?"Safety Info • Live":"Safety Info";if(!has)return;
  E.eventName.textContent=state.event.name;E.eventMeta.textContent=state.event.circuit?.format?state.event.circuit.format.replace("-","–"):"Awaiting first session";
  const standby=mode==="standby",course=mode==="course-lap",sprintLive=mode==="sprint-live",live=mode==="session-live"||mode==="awaiting-finding-start",awaiting=mode==="awaiting-finding-start",prov=mode==="provisional",complete=mode==="session-complete",staging=mode==="next-session-staging",countdown=mode==="next-session-countdown",safetyTerm=mode==="safety-car-termination",review=mode==="violation-review",whiteTerm=mode==="white-termination";
  showOnly(mode,{standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"next-session-staging":E.nextStart,"next-session-countdown":E.nextStart,"safety-car-termination":E.termination,"violation-review":E.termination,"white-termination":E.termination});
@@ -651,6 +665,7 @@ $("complete-course-lap").onclick=completeCourseLap;
 $("termination-standby").onclick=returnFromTermination;
 $("termination-restart").onclick=restartTerminatedSession;
 $("review-resume").onclick=resumeViolationReview;$("review-disqualify").onclick=openDisqualificationReview;$("review-no-result").onclick=noResultViolationReview;
+$("safety-message-open").onclick=openSafetyMessage;$("close-safety-message").onclick=()=>$("safety-message-dialog").close();$("safety-message-form").onsubmit=e=>{e.preventDefault();saveSafetyMessage($("safety-message-input").value)};$("clear-safety-message").onclick=()=>saveSafetyMessage("");document.querySelectorAll("[data-safety-preset]").forEach(button=>button.onclick=()=>{$("safety-message-input").value=button.dataset.safetyPreset;$("safety-message-input").focus()});
 
 $("white-review-overlay").onclick=e=>{
  if(e.target===$("white-review-overlay")){

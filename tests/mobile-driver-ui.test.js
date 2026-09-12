@@ -18,7 +18,7 @@ before(async()=>{
 });
 after(()=>new Promise(resolve=>server.close(resolve)));
 
-for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,height:852},{width:430,height:932}]){
+for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,height:852},{width:402,height:874},{width:430,height:932}]){
  test(`Driver layout fits ${viewport.width}x${viewport.height}`,async()=>{
   const browser=await chromium.launch({headless:true});
   const page=await browser.newPage({viewport});
@@ -116,5 +116,15 @@ test("branded shells and MRA steward review fit iPhone portrait",async()=>{
  const display=await browser.newPage({viewport:{width:390,height:844}});await display.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
  const review=await display.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className="display flag-white";document.querySelector("#steward-brand").classList.remove("hidden");document.querySelector("#label").textContent="MRA STEWARD";document.querySelector("#instruction").textContent="INCIDENT UNDER INVESTIGATION";const logo=document.querySelector("#steward-brand").getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,logo:{left:logo.left,right:logo.right,top:logo.top,bottom:logo.bottom},toolsTop:tools.top,label:document.querySelector("#label").textContent,instruction:document.querySelector("#instruction").textContent}});
  assert.equal(review.scrollWidth,390);assert(review.logo.left>=0&&review.logo.right<=390&&review.logo.bottom<review.toolsTop,"MRA review logo remains visible above Driver controls");assert.equal(`${review.label} — ${review.instruction}`,"MRA STEWARD — INCIDENT UNDER INVESTIGATION");
+ await browser.close();
+});
+
+test("MRA safety information remains readable on iPhone 15 and later",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:393,height:852},{width:402,height:874},{width:430,height:932}]){
+  const page=await browser.newPage({viewport});await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+  const result=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className="display flag-yellow flash";document.querySelector("#label").textContent="CAUTION";document.querySelector("#instruction").textContent="TIMER AT HALF SPEED";document.querySelector("#display-timer").textContent="01:42";const panel=document.querySelector("#safety-management");panel.classList.remove("hidden");panel.classList.add("has-message");document.querySelector("#safety-message").textContent="Debris near the north gate — reduce speed";const box=panel.getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,panel:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},toolsTop:tools.top,fontSize:parseFloat(getComputedStyle(document.querySelector("#safety-message")).fontSize)}});
+  assert.equal(result.scrollWidth,viewport.width);assert(result.panel.left>=0&&result.panel.right<=viewport.width,"safety information fits horizontally");assert(result.panel.bottom<result.toolsTop,"safety information remains above Driver controls");assert(result.fontSize>=14,"safety message remains legible");await page.close();
+ }
  await browser.close();
 });
