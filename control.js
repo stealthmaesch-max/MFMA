@@ -107,8 +107,8 @@ setPersistence(auth,browserLocalPersistence).catch(error=>{
 });
 
 onAuthStateChanged(auth,user=>{
- currentUser=user||null;
- const signedIn=Boolean(user);
+ const signedIn=Boolean(user&&!user.isAnonymous);
+ currentUser=signedIn?user:null;
  authPanel.classList.toggle("hidden",signedIn);
  securedControl.classList.toggle("hidden",!signedIn);
 
@@ -668,7 +668,6 @@ function render(){
 }
 
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-type]").forEach(x=>x.classList.remove("active"));b.classList.add("active");sessionType=b.dataset.type;$("vehicle-vehicle-setup").classList.toggle("hidden",sessionType!=="vehicle-vehicle");$("vehicle-foot-setup").classList.toggle("hidden",sessionType!=="vehicle-foot");if(sessionType==="vehicle-foot"){E.hide.value=120;E.find.value=300;renderVF()}else{E.hide.value=60;E.find.value=120;renderVVSelectors()}});
-["ranger","shelly","gator"].forEach(v=>$(`available-${v}`).onchange=renderVVSelectors);
 $("vv-team-1").onchange=updateRoleSummary;$("vv-team-2").onchange=updateRoleSummary;
 $("vf-team-a").oninput=updateRoleSummary;$("vf-team-b").oninput=updateRoleSummary;$("vf-vehicle").onchange=renderVF;$("swap-teams").onclick=()=>{roleIndex=roleIndex%2===0?1:0;updateRoleSummary()};
 $("create-event").onclick=()=>$("event-dialog").showModal();$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};
