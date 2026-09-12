@@ -63,8 +63,8 @@ test("infraction warning has the physical white and folded-yellow display",async
  const {signals}=await import(new URL("../signals.js",`file://${__filename}`));
  assert.equal(signals["infraction-warning"].className,"flag-infraction-warning");
  assert.match(signals["infraction-warning"].instruction,/WHITE \+ FOLDED YELLOW/);
- assert.equal(signals["under-review"].label,"UNDER REVIEW");
- assert.match(signals["under-review"].instruction,/RETURN TO STARTING ZONE/);
+ assert.equal(signals["under-review"].label,"MRA STEWARD");
+ assert.equal(signals["under-review"].instruction,"INCIDENT UNDER INVESTIGATION");
  const css=fs.readFileSync("styles.css","utf8");
  assert.match(css,/\.violation,\.flag-infraction-warning/);
 });

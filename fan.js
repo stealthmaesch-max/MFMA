@@ -62,7 +62,7 @@ function render(){
  const s=state.session;
  const names=s?.teamNames||event.teamNames||{};
  $("fan-event").textContent=event.name;
- $("fan-state").textContent=state.systemState==="white-termination"?"DISQUALIFICATION":state.systemState==="violation-review"?"UNDER REVIEW":state.systemState.replaceAll("-"," ").toUpperCase();
+ $("fan-state").textContent=state.systemState==="white-termination"?"DISQUALIFICATION":state.systemState==="violation-review"?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":state.systemState.replaceAll("-"," ").toUpperCase();
  const operationalFlag=["standby","sprint-live"].includes(state.systemState)?(state.activeFlag||"clear"):null;
  $("fan-flag").textContent=(operationalFlag==="clear"?(state.systemState==="sprint-live"?"CLEAR":"STANDBY"):operationalFlag?operationalFlag.replaceAll("-"," "):(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY")).toUpperCase();
 
@@ -82,7 +82,7 @@ function render(){
  if(mode==="standby"){const complete=event.courseLap?.status==="complete";$("fan-state").textContent=complete?"STANDBY • COURSE LAP COMPLETE":"STANDBY";return}
  if(mode==="awaiting-finding-start"){$("fan-session").textContent=`Session ${s.number}`;$("fan-roles").textContent="";return}
  if(mode==="next-session-staging"||mode==="next-session-countdown"){$("fan-phase").textContent=mode==="next-session-countdown"?"START COUNTDOWN":"PROCEED TO STARTING LINE";$("fan-flag").textContent="FOLDED GREEN";return}
- if(mode==="violation-review"){$("fan-phase").textContent="UNDER REVIEW / INVESTIGATION";$("fan-flag").textContent="RETURN TO STARTING ZONE";return}
+ if(mode==="violation-review"){$("fan-phase").textContent="MRA STEWARD — INCIDENT UNDER INVESTIGATION";$("fan-flag").textContent="RETURN TO STARTING ZONE";return}
  if(mode==="safety-car-termination"||mode==="white-termination"){$("fan-phase").textContent=mode==="white-termination"?"DISQUALIFICATION":"SAFETY CAR TERMINATION";$("fan-flag").textContent=mode==="white-termination"?"DISQUALIFIED":"SAFETY CAR";return}
 
  const scores=event.scores||{};

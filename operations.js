@@ -16,14 +16,14 @@ function render(){
  const c=$("ops-connection");c.className="pill connected";c.querySelector("span:last-child").textContent="Connected";
  const mode=getRenderMode(state);setVisible(mode);
  if(mode==="no-event"){$("ops-event").textContent="No Active Event";$("ops-state").textContent="Waiting for Race Control.";return}
- $("ops-event").textContent=state.event.name;$("ops-state").textContent=mode==="white-termination"?"DISQUALIFICATION":mode==="violation-review"?"UNDER REVIEW":mode.replaceAll("-"," ").toUpperCase();
+ $("ops-event").textContent=state.event.name;$("ops-state").textContent=mode==="white-termination"?"DISQUALIFICATION":mode==="violation-review"?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":mode.replaceAll("-"," ").toUpperCase();
  const s=state.session;
  if(mode==="standby"){$("ops-state").textContent=state.event.courseLap?.status==="complete"?"STANDBY • COURSE LAP COMPLETE":"STANDBY";return}
  if(mode==="course-lap"){$("ops-special-title").textContent="Safety Car Familiarization Lap";$("ops-special-detail").textContent="Follow the Safety Car. No overtaking.";return}
  if(mode==="sprint-live"){$("ops-phase").textContent=`MFMA SPRINT • ${(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase()}`;$("ops-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());$("ops-session").textContent="";$("ops-roles").textContent="";return}
  if(mode==="awaiting-finding-start"){$("ops-special-title").textContent="Awaiting Finding Start";$("ops-special-detail").textContent="Hiding complete. Waiting for Race Director confirmation.";return}
  if(mode==="next-session-staging"||mode==="next-session-countdown"){$("ops-special-title").textContent=mode==="next-session-countdown"?"Start Countdown":"Proceed to Starting Line";$("ops-special-detail").textContent=mode==="next-session-countdown"?"The hiding timer starts when all five dots go out.":"Next hiding team to the starting line.";return}
- if(mode==="violation-review"){$("ops-special-title").textContent="Under Review / Investigation";$("ops-special-detail").textContent=s?.terminationDetail||"Return to the starting zone and await the Race Director.";return}
+ if(mode==="violation-review"){$("ops-special-title").textContent="MRA Steward — Incident Under Investigation";$("ops-special-detail").textContent=s?.terminationDetail||"Return to the starting zone and await the MRA Steward.";return}
  if(mode==="safety-car-termination"||mode==="white-termination"){$("ops-special-title").textContent=mode==="white-termination"?"Disqualification":"Safety Car Termination";$("ops-special-detail").textContent=s?.terminationDetail||s?.provisionalReason||"Session terminated.";return}
  if(mode==="session-live"){$("ops-phase").textContent=`${s.phase.toUpperCase()} • ${(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase()}`;$("ops-timer").textContent=fmt(s.remainingMs);$("ops-session").textContent=`Session ${s.number}`;$("ops-roles").textContent=`PURSUIT: ${s.teamNames?.[s.pursuitTeam]||"—"} • EVADING: ${s.teamNames?.[s.evadingTeam]||"—"}`}
  const names=s?.teamNames||state.event.teamNames||{},scores=state.event.scores||{},circuit=getCircuitStatus(state.event.circuit,Object.keys(names)),roles=circuit.roles;

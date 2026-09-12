@@ -45,7 +45,7 @@ function showSprint(){
  label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent=flag==="safety-car"?"FOLLOW SAFETY CAR • NO OVERTAKING":"MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
 }
 function renderStartDots(){const endsAt=state.session?.countdownEndsAt||Date.now(),elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;timer.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
-function render(){const mode=getRenderMode(state);timer.classList.toggle("dot-timer",mode==="next-session-countdown");if(mode==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="course-lap"){
+function render(){const mode=getRenderMode(state);timer.classList.toggle("dot-timer",mode==="next-session-countdown");$("steward-brand").classList.toggle("hidden",mode!=="violation-review");if(mode==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="course-lap"){
  showStatus("SAFETY CAR","COURSE FAMILIARIZATION LAP • FOLLOW SAFETY CAR • NO OVERTAKING",state.event.name);
  applyDisplayClass("display flag-safety-car flash","course-lap");
  return
@@ -65,8 +65,8 @@ if(mode==="safety-car-termination"){
 if(mode==="violation-review"||mode==="white-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
  applyDisplayClass("display flag-white",mode);
- label.textContent=mode==="violation-review"?"UNDER REVIEW":"DISQUALIFIED";
- instruction.textContent=mode==="violation-review"?"RETURN TO STARTING ZONE • AWAIT RACE DIRECTOR":state.session?.provisionalReason||"RETURN TO STARTING ZONE";
+ label.textContent=mode==="violation-review"?"MRA STEWARD":"DISQUALIFIED";
+ instruction.textContent=mode==="violation-review"?"INCIDENT UNDER INVESTIGATION":state.session?.provisionalReason||"RETURN TO STARTING ZONE";
  sessionLine.textContent=`SESSION ${state.session?.number||""}`;
  timer.textContent="ENDED";theme.content="#ffffff";return
 }

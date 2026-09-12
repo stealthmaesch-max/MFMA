@@ -105,3 +105,16 @@ test("Race Control keeps Driver reports visible during a mobile live session",as
  assert.notEqual(display,"none","live-session CSS does not hide Driver reports");
  await browser.close();
 });
+
+test("branded shells and MRA steward review fit iPhone portrait",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const pageName of ["index.html","control.html","fan.html","operations.html"]){
+  const page=await browser.newPage({viewport:{width:390,height:844}});await page.goto(`${baseUrl}/${pageName}`,{waitUntil:"domcontentloaded"});
+  const result=await page.evaluate(()=>{const logo=document.querySelector(".brand-logo"),box=logo?.getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,logo:box&&{left:box.left,right:box.right,top:box.top,bottom:box.bottom},loaded:logo?.complete&&logo?.naturalWidth>0}});
+  assert.equal(result.scrollWidth,390,`${pageName} has no horizontal overflow`);assert(result.loaded,`${pageName} loads its MFMA logo`);assert(result.logo.left>=0&&result.logo.right<=390,`${pageName} logo is contained`);await page.close();
+ }
+ const display=await browser.newPage({viewport:{width:390,height:844}});await display.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const review=await display.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className="display flag-white";document.querySelector("#steward-brand").classList.remove("hidden");document.querySelector("#label").textContent="MRA STEWARD";document.querySelector("#instruction").textContent="INCIDENT UNDER INVESTIGATION";const logo=document.querySelector("#steward-brand").getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,logo:{left:logo.left,right:logo.right,top:logo.top,bottom:logo.bottom},toolsTop:tools.top,label:document.querySelector("#label").textContent,instruction:document.querySelector("#instruction").textContent}});
+ assert.equal(review.scrollWidth,390);assert(review.logo.left>=0&&review.logo.right<=390&&review.logo.bottom<review.toolsTop,"MRA review logo remains visible above Driver controls");assert.equal(`${review.label} — ${review.instruction}`,"MRA STEWARD — INCIDENT UNDER INVESTIGATION");
+ await browser.close();
+});
