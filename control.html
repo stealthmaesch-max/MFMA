@@ -147,6 +147,7 @@
 <button class="flag move-over" data-flag="move-over"><b>BLUE + YELLOW</b><strong>Move Over</strong><small>Timer continues normally</small></button>
 <button class="flag safety-car" data-flag="safety-car"><b>YELLOW + RED</b><strong>Safety Car</strong><small>Terminate session</small></button>
 <button class="flag red" data-flag="red"><b>RED</b><strong>Stop</strong><small>Pause session</small></button>
+<button id="restart-at-line" class="flag restart hidden"><b>RESTART</b><strong>Return to Starting Line</strong><small>Restart this session with start lights</small></button>
 <button class="flag violation" data-violation-open><b>VIOLATION</b><strong>Issue Violation</strong><small>Warning or disqualification</small></button>
 <button class="flag checkered" data-flag="checkered"><b>CHECKERED</b><strong>Complete Session</strong><small>Manual fallback</small></button>
 </div>
@@ -170,7 +171,7 @@
 <button id="review-disqualify" class="action white-btn hidden">Disqualify Team</button>
 <button id="review-no-result" class="action secondary-btn hidden">No Result</button>
 <button id="termination-standby" class="action primary-btn">Return to Standby</button>
-<button id="termination-restart" class="action secondary-btn">Restart Session</button>
+<button id="termination-restart" class="action secondary-btn">Return to Start for Restart</button>
 </div>
 </section>
 <aside id="event-score-panel" class="panel dashboard-right"><details class="secondary-details"><summary>Scores &amp; session details</summary><div class="section-head compact"><div><p class="eyebrow">Event Score</p><h2>Session Victories</h2></div></div><div id="scoreboard" class="scoreboard"></div><div class="sidebar-divider"></div><p class="eyebrow">Circuit Progress</p><div id="sidebar-circuit" class="circuit-progress"></div><div class="sidebar-divider"></div><p class="eyebrow">Quick Status</p><div id="sidebar-status" class="status-note"></div></details></aside>
@@ -211,4 +212,4 @@
 </form>
 </section>
 </div>
-<script type="module" src="control.js?v=68"></script></body></html>
+<script type="module" src="control.js?v=69"></script></body></html>

@@ -836,7 +836,6 @@ dialog form {
     radial-gradient(circle at center, rgba(255,233,25,.1), transparent 34rem),
     #050505;
   color: #ffe919;
-  animation: safetyCarBorderPulse 1.5s ease-in-out infinite;
 }
 
 .safety-car-emblem {
@@ -848,15 +847,10 @@ dialog form {
   filter: drop-shadow(0 8px 12px rgba(0,0,0,.55));
 }
 
-.flag-safety-car .safety-car-emblem { display: block; }
+.flag-safety-car .safety-car-emblem { display: none; }
 .safety-car-emblem i { position: absolute; inset: 50% auto auto 50%; display: block; width: 82%; height: 42%; border: clamp(3px,.45vw,7px) solid #fff; border-radius: 5px; transform-origin: center; }
 .safety-car-emblem .safety-yellow { background: #ffe600; transform: translate(-50%,-50%) rotate(90deg); }
 .safety-car-emblem .safety-red { background: #d40000; transform: translate(-50%,-50%); }
-
-@keyframes safetyCarBorderPulse {
-  0%,100% { box-shadow: inset 0 0 0 clamp(8px,1.2vw,18px) rgba(212,0,0,.5); }
-  50% { box-shadow: inset 0 0 0 clamp(13px,2vw,30px) rgba(255,25,25,.95), inset 0 0 60px rgba(212,0,0,.38); }
-}
 
 .flag-red { background: linear-gradient(145deg, #e11414, #a90000); color: #fff; }
 .flag-white { background: linear-gradient(145deg, #fff, #e7ebef); color: #111; }

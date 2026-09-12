@@ -526,15 +526,17 @@ async function returnFromTermination(){
 async function restartTerminatedSession(){
  if(!requireAuthenticatedWrite())return;
  if(!state.session)return;
- const s=state.session,now=Date.now();
+ const s=state.session;
  await update(stateRef,{
-  systemState:"session-live",
-  activeFlag:"green",
-  "session/phase":"hiding",
+  systemState:"next-session-staging",
+  activeFlag:"proceed-to-start",
+  "session/phase":"restart-staging",
   "session/remainingMs":s.hideDurationMs,
-  "session/running":true,
-  "session/lastTickAt":now,
-  "session/flag":"green",
+  "session/running":false,
+  "session/lastTickAt":null,
+  "session/flag":"proceed-to-start",
+  "session/restart":true,
+  "session/countdownEndsAt":null,
   "session/terminationType":null,
   "session/terminationDetail":null,
   "session/spotStatus":Object.fromEntries((s.pursuitVehicleIds||[]).map(v=>[v,false])),
@@ -609,6 +611,7 @@ function render(){
   $("sprint-duration").value=Math.max(0,(s.configuredMs||0)/1000);
  }
  if(live){const s=state.session,spotsEnabled=s.phase==="finding";E.phase.textContent=s.phase==="hiding"?"HIDING":awaiting?"HIDING COMPLETE":"FINDING";E.timer.textContent=fmt(s.remainingMs);E.sessionLabel.textContent=`Session ${s.number}`;E.roles.textContent=`${s.teamNames[s.pursuitTeam]} pursuing • ${s.teamNames[s.evadingTeam]} evading`;E.active.textContent=signals[state.activeFlag]?.label||state.activeFlag;E.badge.textContent=awaiting?"AWAITING RACE DIRECTOR":s.running?"SESSION LIVE":"SESSION PAUSED";E.findingStart.classList.toggle("hidden",!awaiting);$("live-signal-panel").classList.toggle("hidden",awaiting);$("live-flag-panel").classList.toggle("hidden",awaiting);$("live-spots-panel").classList.toggle("hidden",awaiting);E.spots.innerHTML=(s.pursuitVehicleIds||[]).map(v=>`<button class="spot ${s.spotStatus?.[v]?"confirmed":""}" data-spot="${v}" ${s.spotStatus?.[v]||!spotsEnabled?"disabled":""}><span>${vehicles[v].name}</span><strong>${s.spotStatus?.[v]?"SPOT CONFIRMED":spotsEnabled?"CONFIRM VALID RADIO SPOT":"FINDING NOT STARTED"}</strong></button>`).join("");E.spots.querySelectorAll("[data-spot]").forEach(b=>b.onclick=()=>confirmSpot(b.dataset.spot))}
+ if(live)$("restart-at-line").classList.toggle("hidden",state.activeFlag!=="red");
  if(prov||complete){
   E.provisionalDetail.textContent=state.session.provisionalReason||"Session complete";
   E.resultTitle.textContent=complete?"Official Checkered":"Provisional Checkered";
@@ -621,7 +624,7 @@ function render(){
   renderScore("between-scoreboard");
   renderCircuit("circuit-progress");
  }
- if(staging||countdown){$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?"Start sequence active. Green and the hiding timer begin when all red lights go out.":"The folded green order has been issued. Wait until the hiding team is stopped behind the line.";if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
+ if(staging||countdown){const restart=Boolean(state.session?.restart);$("next-start-panel").querySelector("h2").textContent=restart?"Restart at Starting Line":"Proceed to Starting Line";$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?`${restart?"Restart":"Start"} sequence active. Green and the hiding timer begin when all red lights go out.`:`${restart?"Restart ordered":"The folded green order has been issued"}. Wait until the hiding team is stopped behind the line.`;if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
 }
 
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-type]").forEach(x=>x.classList.remove("active"));b.classList.add("active");sessionType=b.dataset.type;$("vehicle-vehicle-setup").classList.toggle("hidden",sessionType!=="vehicle-vehicle");$("vehicle-foot-setup").classList.toggle("hidden",sessionType!=="vehicle-foot");if(sessionType==="vehicle-foot"){E.hide.value=120;E.find.value=300;renderVF()}else{E.hide.value=60;E.find.value=120;renderVVSelectors()}});
@@ -638,6 +641,7 @@ document.querySelectorAll("[data-sprint-flag]").forEach(b=>b.onclick=()=>issueFl
 document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.quickFlag));
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
+$("restart-at-line").onclick=restartTerminatedSession;
 $("post-white").onclick=openWhiteDialog;document.querySelectorAll("[data-violation-open]").forEach(button=>button.onclick=openWhiteDialog);$("close-white").onclick=closeViolationDialog;$("violation-type").onchange=syncViolationForm;$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};syncViolationForm();
 $("swap-next-roles").onclick=swapNextRoles;$("return-to-start-order").onclick=issueReturnToStart;$("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("start-next-countdown").onclick=startNextCountdown;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
 

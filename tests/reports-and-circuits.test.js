@@ -49,16 +49,26 @@ test("hazard receipt calls immediate yellow but leaves requested final flag to R
  assert.match(control,/canApplyFlag=new Set\(\["standby","sprint-live","session-live"\]\)/);
 });
 
-test("Safety Car uses a persistent crossed-flag display with no overtaking",()=>{
+test("Safety Car uses the original persistent high-contrast display with no overtaking",()=>{
  const display=fs.readFileSync("display.js","utf8");
  const branch=display.match(/if\(mode==="safety-car-termination"\)\{([\s\S]*?)\n\}/)?.[1]||"";
  const html=fs.readFileSync("display.html","utf8"),css=fs.readFileSync("styles.css","utf8"),control=fs.readFileSync("control.js","utf8");
  assert.match(branch,/label\.textContent="SAFETY CAR"/);
  assert.match(branch,/NO OVERTAKING/);
  assert.match(branch,/timer\.textContent="ENDED"/);
- assert.match(html,/safety-car-emblem[\s\S]*safety-yellow[\s\S]*safety-red/);
- assert.match(css,/safetyCarBorderPulse/);
+ assert.match(css,/\.flag-safety-car[\s\S]*#050505[\s\S]*#ffe919/);
+ assert.match(css,/\.flag-safety-car \.safety-car-emblem \{ display: none; \}/);
+ assert.doesNotMatch(css,/safetyCarBorderPulse/);
  assert.doesNotMatch(`${html}\n${control}\n${display}`,/authorize-overtake|cancel-overtake|safetyCarOvertake|OVERTAKE SAFETY CAR/i);
+});
+
+test("a stopped session can return to the line and restart through the full light sequence",()=>{
+ const html=fs.readFileSync("control.html","utf8"),control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8");
+ assert.match(html,/id="restart-at-line"[\s\S]*Return to Starting Line/);
+ assert.match(control,/state\.activeFlag!=="red"/);
+ assert.match(control,/systemState:"next-session-staging"[\s\S]*"session\/restart":true[\s\S]*"session\/countdownEndsAt":null/);
+ assert.match(control,/state\?\.systemState!=="next-session-staging"[\s\S]*systemState:"next-session-countdown"/);
+ assert.match(display,/restart\?"RESTART":"NEXT HIDING TEAM"/);
 });
 
 test("Race Director acknowledgement, resolution, and one-time sound wiring exist",async()=>{

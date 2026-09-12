@@ -52,7 +52,7 @@ function render(){const mode=getRenderMode(state);timer.classList.toggle("dot-ti
 }
 if(mode==="session-live"||mode==="awaiting-finding-start"){showLive();return}
 if(mode==="next-session-staging"||mode==="next-session-countdown"){
- const sig=signals["proceed-to-start"];statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${mode==="next-session-countdown"?"flag-start-lights":sig.className}`,mode);label.textContent=sig.label;instruction.textContent=mode==="next-session-countdown"?"TEAM SET • GREEN WHEN ALL RED LIGHTS GO OUT":sig.instruction;sessionLine.textContent=`SESSION ${state.session?.number||""} • NEXT HIDING TEAM`;if(mode==="next-session-countdown")renderStartDots();else timer.textContent="WAIT";theme.content=mode==="next-session-countdown"?"#171a1f":sig.theme;return
+ const sig=signals["proceed-to-start"],restart=Boolean(state.session?.restart);statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${mode==="next-session-countdown"?"flag-start-lights":sig.className}`,mode);label.textContent=restart?"RESTART":sig.label;instruction.textContent=mode==="next-session-countdown"?"TEAM SET • GREEN WHEN ALL RED LIGHTS GO OUT":restart?"RETURN TO STARTING LINE • PREPARE TO RESTART":sig.instruction;sessionLine.textContent=`SESSION ${state.session?.number||""} • ${restart?"RESTART":"NEXT HIDING TEAM"}`;if(mode==="next-session-countdown")renderStartDots();else timer.textContent="WAIT";theme.content=mode==="next-session-countdown"?"#171a1f":sig.theme;return
 }
 if(mode==="safety-car-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
