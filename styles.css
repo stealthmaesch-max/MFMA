@@ -1053,14 +1053,9 @@ dialog[open]{
   opacity: 1 !important;
 }
 
-.flash .signal-label {
+.flash .signal-label,
+.flash .status-title {
   animation: signalFlash .5s steps(1,end) infinite !important;
-}
-
-.flag-checkered .signal-label,
-.flag-checkered .signal-instruction {
-  animation: none !important;
-  opacity: 1 !important;
 }
 
 .auth-shell{

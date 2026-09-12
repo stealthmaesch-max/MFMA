@@ -59,7 +59,19 @@ test("Safety Car uses the original persistent high-contrast display with no over
  assert.match(css,/\.flag-safety-car[\s\S]*#050505[\s\S]*#ffe919/);
  assert.match(css,/\.flag-safety-car \.safety-car-emblem \{ display: none; \}/);
  assert.doesNotMatch(css,/safetyCarBorderPulse/);
+ assert.match(branch,/flag-safety-car flash/);
  assert.doesNotMatch(`${html}\n${control}\n${display}`,/authorize-overtake|cancel-overtake|safetyCarOvertake|OVERTAKE SAFETY CAR/i);
+});
+
+test("operational signals flash while Green and infractions remain steady",async()=>{
+ const {signals}=await importModule("signals.js");
+ for(const name of ["yellow","move-over","safety-car","red","checkered","return-to-start"])assert.equal(signals[name].flash,true,`${name} flashes`);
+ for(const name of ["green","proceed-to-start","infraction-warning","under-review","disqualification"])assert.equal(signals[name].flash,false,`${name} remains steady`);
+ const display=fs.readFileSync("display.js","utf8"),css=fs.readFileSync("styles.css","utf8");
+ assert.match(display,/flag-safety-car flash/);
+ assert.match(display,/applyDisplayClass\("display flag-white",mode\)/);
+ assert.match(css,/\.flash \.signal-label,[\s\S]*\.flash \.status-title/);
+ assert.doesNotMatch(css,/\.flag-checkered \.signal-label[\s\S]*animation: none/);
 });
 
 test("a stopped session can return to the line and restart through the full light sequence",()=>{

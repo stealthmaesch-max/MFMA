@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebas
 import { getDatabase, ref, onValue, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { signals } from "./signals.js?v=63";
+import { signals } from "./signals.js?v=71";
 import { getRenderMode } from "./display-state.js?v=63";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=70";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
@@ -47,7 +47,7 @@ function showSprint(){
 function renderStartDots(){const endsAt=state.session?.countdownEndsAt||Date.now(),elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;timer.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
 function render(){const mode=getRenderMode(state);timer.classList.toggle("dot-timer",mode==="next-session-countdown");if(mode==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="course-lap"){
  showStatus("SAFETY CAR","COURSE FAMILIARIZATION LAP • FOLLOW SAFETY CAR • NO OVERTAKING",state.event.name);
- applyDisplayClass("display flag-safety-car","course-lap");
+ applyDisplayClass("display flag-safety-car flash","course-lap");
  return
 }
 if(mode==="session-live"||mode==="awaiting-finding-start"){showLive();return}
@@ -56,7 +56,7 @@ if(mode==="next-session-staging"||mode==="next-session-countdown"){
 }
 if(mode==="safety-car-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
- applyDisplayClass("display flag-safety-car","safety-car-termination");
+ applyDisplayClass("display flag-safety-car flash","safety-car-termination");
  label.textContent="SAFETY CAR";
  instruction.textContent="SESSION TERMINATED • FOLLOW SAFETY CAR • NO OVERTAKING";
  sessionLine.textContent=`SESSION ${state.session?.number||""} • TERMINATED`;
@@ -64,7 +64,7 @@ if(mode==="safety-car-termination"){
 }
 if(mode==="violation-review"||mode==="white-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
- applyDisplayClass("display flag-white flash",mode);
+ applyDisplayClass("display flag-white",mode);
  label.textContent=mode==="violation-review"?"UNDER REVIEW":"DISQUALIFIED";
  instruction.textContent=mode==="violation-review"?"RETURN TO STARTING ZONE • AWAIT RACE DIRECTOR":state.session?.provisionalReason||"RETURN TO STARTING ZONE";
  sessionLine.textContent=`SESSION ${state.session?.number||""}`;

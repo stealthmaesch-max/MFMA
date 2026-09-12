@@ -71,7 +71,7 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.moveOver.reminderMs,4500);
  assert.equal(sounds.soundDefinitions.red.reminderMs,4000);
  assert.equal(sounds.soundDefinitions.safetyCar.reminderMs,5000);
- assert.equal(sounds.soundDefinitions.white.reminderMs,8000);
+ assert.equal(sounds.soundDefinitions.white.reminderMs,7000);
  await sounds.enableSounds();
  sounds.playSound("startLights");
  assert.equal(sounds.getActiveSoundState().oscillators,5,"the five red-light pairs each receive one synchronized tone");
@@ -85,7 +85,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",3],["yellow",6],["return-to-start",6,"yellow"],["proceed-to-start",3,"green"],["move-over",6],["red",8],["safety-car",10],["infraction-warning",2,"white"],["under-review",2,"white"],["disqualification",2,"white"],["checkered",4]];
+ const cases=[["green",3],["yellow",6],["return-to-start",6,"yellow"],["proceed-to-start",3,"green"],["move-over",6],["red",8],["safety-car",10],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",3,"white"],["checkered",4]];
  for(const [flag,oscillators,expectedSound] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
