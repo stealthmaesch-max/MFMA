@@ -48,11 +48,34 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
    assert(metrics[key].top>=0&&metrics[key].bottom<=viewport.height,`${key} is visible without scrolling`);
   }
   assert(metrics.label.bottom<metrics.tools.top,"race condition does not overlap Driver controls");
+  for(const key of ["hazard","crew"]){
+   assert(metrics[key].left>=metrics.tools.left&&metrics[key].right<=metrics.tools.right,`${key} is contained by Driver controls`);
+   assert(metrics[key].top>=metrics.tools.top&&metrics[key].bottom<=metrics.tools.bottom,`${key} stays vertically contained`);
+  }
   assert.equal(await page.locator("[data-hazard-request]").count(),2,"two one-tap hazard requests are visible");
   for(const button of await page.locator("[data-hazard-request]").all())assert((await button.boundingBox()).height>=44,"hazard request has a 44px touch target");
   await browser.close();
  });
 }
+
+test("expanded team controls stay contained on compact iPhone portrait",async()=>{
+ const browser=await chromium.launch({headless:true});
+ const page=await browser.newPage({viewport:{width:375,height:667}});
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ await page.evaluate(()=>{
+  document.querySelector("#status-view").classList.add("hidden");
+  document.querySelector("#live-view").classList.remove("hidden");
+  document.querySelector("#occupant-form").classList.remove("hidden");
+  document.querySelector("#driver-name").value="A very long driver name used to verify containment";
+  document.querySelector("#passenger-name").value="A very long passenger name used to verify containment";
+ });
+ const metrics=await page.evaluate(()=>{const tools=document.querySelector("#driver-tools").getBoundingClientRect(),form=document.querySelector("#occupant-form").getBoundingClientRect();return {pageWidth:document.documentElement.scrollWidth,tools:{left:tools.left,right:tools.right,top:tools.top,bottom:tools.bottom},form:{left:form.left,right:form.right,top:form.top,bottom:form.bottom},overflowY:getComputedStyle(document.querySelector("#driver-tools")).overflowY}});
+ assert.equal(metrics.pageWidth,375,"expanded controls do not create horizontal scrolling");
+ assert(metrics.tools.left>=0&&metrics.tools.right<=375&&metrics.tools.top>=0&&metrics.tools.bottom<=667,"Driver controls remain inside the viewport");
+ assert(metrics.form.left>=metrics.tools.left&&metrics.form.right<=metrics.tools.right,"expanded team form stays horizontally contained");
+ assert.equal(metrics.overflowY,"auto","expanded controls scroll inside their container when needed");
+ await browser.close();
+});
 
 test("Race Control keeps Driver reports visible during a mobile live session",async()=>{
  const browser=await chromium.launch({headless:true});
