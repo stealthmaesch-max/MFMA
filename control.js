@@ -14,7 +14,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { signals } from "./signals.js?v=63";
 import { getRenderMode, showOnly } from "./display-state.js?v=63";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=68";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=70";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=52";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 

@@ -7,7 +7,7 @@ export const soundLabels={
 };
 
 let context=null;
-let volume=readNumber(VOLUME_KEY,.72);
+let volume=readNumber(VOLUME_KEY,.85);
 let lastSound=null;
 const activeOscillators=new Set();
 const activeGains=new Set();
@@ -63,7 +63,7 @@ export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endF
  oscillator.type=type;
  oscillator.frequency.setValueAtTime(frequency,begins);
  if(endFrequency)oscillator.frequency.exponentialRampToValueAtTime(endFrequency,ends);
- const peak=Math.max(MIN_GAIN,Math.min(.24,gain)*volume);
+ const peak=Math.max(MIN_GAIN,Math.min(.32,gain)*volume);
  gainNode.gain.setValueAtTime(MIN_GAIN,begins);
  gainNode.gain.exponentialRampToValueAtTime(peak,begins+Math.min(attack,duration/3));
  gainNode.gain.setValueAtTime(peak,Math.max(begins,ends-release));
@@ -91,29 +91,29 @@ export function repeatPattern(pattern,repetitions,cycleDuration,offset=0){
 }
 
 const yellowCaution=[
- {frequency:659,start:0,duration:.18,type:"sine",gain:.15,attack:.015,release:.06},
- {frequency:880,start:.24,duration:.2,type:"sine",gain:.16,attack:.015,release:.07}
+ {frequency:988,start:0,duration:.22,type:"triangle",gain:.28,attack:.008,release:.055},
+ {frequency:1319,start:.27,duration:.24,type:"triangle",gain:.3,attack:.008,release:.06}
 ];
 const redAlarm=[
  {frequency:440,start:0,duration:.25,type:"triangle",gain:.18,attack:.01,release:.07},
  {frequency:330,start:.3,duration:.28,type:"triangle",gain:.18,attack:.01,release:.08}
 ];
 const safetyCarWarning=[
- {frequency:784,start:0,duration:.24,type:"sine",gain:.16,attack:.015,release:.08},
- {frequency:523,start:.31,duration:.3,type:"sine",gain:.17,attack:.015,release:.09}
+ {frequency:1175,start:0,duration:.27,type:"triangle",gain:.3,attack:.008,release:.06},
+ {frequency:784,start:.33,duration:.32,type:"triangle",gain:.3,attack:.008,release:.07}
 ];
 const moveOverCommand=[
- {frequency:988,start:0,duration:.18,type:"sine",gain:.17,endFrequency:880,attack:.012,release:.06},
- {frequency:659,start:.23,duration:.24,type:"sine",gain:.17,endFrequency:587,attack:.012,release:.08}
+ {frequency:1397,start:0,duration:.2,type:"triangle",gain:.3,endFrequency:1175,attack:.008,release:.05},
+ {frequency:988,start:.25,duration:.27,type:"triangle",gain:.3,endFrequency:880,attack:.008,release:.065}
 ];
 
 export const soundDefinitions={
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
- green:{description:"clean rising start cue",play:()=>schedulePattern([{frequency:523,start:0,duration:.16,type:"sine",gain:.14},{frequency:659,start:.13,duration:.18,type:"sine",gain:.15},{frequency:784,start:.27,duration:.24,type:"sine",gain:.16}])},
- yellow:{description:"clear persistent caution",repetitions:3,reminderMs:8000,play:()=>repeatPattern(yellowCaution,3,.82)},
- moveOver:{description:"clear persistent passing command",repetitions:3,reminderMs:5000,play:()=>repeatPattern(moveOverCommand,3,.62)},
+ green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
+ yellow:{description:"engine-cutting persistent caution",repetitions:3,reminderMs:6500,play:()=>repeatPattern(yellowCaution,3,.9)},
+ moveOver:{description:"engine-cutting persistent passing command",repetitions:3,reminderMs:4500,play:()=>repeatPattern(moveOverCommand,3,.7)},
  red:{description:"firm persistent stop command",repetitions:4,reminderMs:4000,play:()=>repeatPattern(redAlarm,4,.72)},
- safetyCar:{description:"clear persistent Safety Car command",repetitions:5,reminderMs:6000,play:()=>repeatPattern(safetyCarWarning,5,.82)},
+ safetyCar:{description:"engine-cutting persistent Safety Car command",repetitions:5,reminderMs:5000,play:()=>repeatPattern(safetyCarWarning,5,.92)},
  white:{description:"persistent disqualification command",reminderMs:8000,play:()=>schedulePattern([{frequency:880,start:0,duration:.18,type:"sine",gain:.16},{frequency:659,start:.23,duration:.26,type:"sine",gain:.17}])},
  checkered:{description:"finish flourish",play:()=>schedulePattern([523,659,784,1047].map((frequency,index)=>({frequency,start:index*.09,duration:.2,type:"triangle",gain:.13})))},
  clear:{description:"soft reset",play:()=>schedulePattern([{frequency:392,start:0,duration:.12,type:"sine",gain:.09},{frequency:294,start:.11,duration:.23,type:"sine",gain:.08}])},
