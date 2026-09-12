@@ -77,6 +77,21 @@ test("expanded team controls stay contained on compact iPhone portrait",async()=
  await browser.close();
 });
 
+test("start lights are the sole central focus on iPhone portrait",async()=>{
+ const browser=await chromium.launch({headless:true});
+ const page=await browser.newPage({viewport:{width:390,height:844}});
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const result=await page.evaluate(()=>{
+  const display=document.querySelector("#display"),live=document.querySelector("#live-view"),timer=document.querySelector("#display-timer");
+  document.querySelector("#status-view").classList.add("hidden");live.classList.remove("hidden");display.className="display flag-start-lights";timer.classList.add("dot-timer");timer.innerHTML=Array.from({length:5},()=>'<span class="lit"><i></i><i></i></span>').join("");
+  const board=timer.getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();
+  return {label:getComputedStyle(document.querySelector("#label")).display,instruction:getComputedStyle(document.querySelector("#instruction")).display,session:getComputedStyle(document.querySelector("#display-session")).display,lights:timer.querySelectorAll("i").length,board:{left:board.left,right:board.right,top:board.top,bottom:board.bottom},toolsTop:tools.top};
+ });
+ assert.equal(result.label,"none");assert.equal(result.instruction,"none");assert.equal(result.session,"none");assert.equal(result.lights,10,"five paired columns show ten red lamps");
+ assert(result.board.left>=0&&result.board.right<=390&&result.board.top>=0&&result.board.bottom<result.toolsTop,"start board is centered, contained, and clear of Driver controls");
+ await browser.close();
+});
+
 test("Race Control keeps Driver reports visible during a mobile live session",async()=>{
  const browser=await chromium.launch({headless:true});
  const page=await browser.newPage({viewport:{width:390,height:844}});

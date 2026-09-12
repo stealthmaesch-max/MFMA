@@ -72,6 +72,10 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.red.reminderMs,4000);
  assert.equal(sounds.soundDefinitions.safetyCar.reminderMs,6000);
  assert.equal(sounds.soundDefinitions.white.reminderMs,8000);
+ await sounds.enableSounds();
+ sounds.playSound("startLights");
+ assert.equal(sounds.getActiveSoundState().oscillators,5,"the five red-light pairs each receive one synchronized tone");
+ sounds.stopSounds();
 });
 
 test("production flag transitions play once and resume an enabled context",async()=>{
@@ -117,6 +121,8 @@ test("Firebase state transitions resolve to authoritative signals",async()=>{
  assert.equal(transition({systemState:"standby",activeFlag:"clear"},{systemState:"session-live",activeFlag:"green"}),"green");
  assert.equal(transition({systemState:"session-live",activeFlag:"green"},{systemState:"session-live",activeFlag:"yellow"}),"yellow");
  assert.equal(transition({systemState:"standby"},{systemState:"course-lap",activeFlag:"safety-car"}),"courseLapStart");
+ assert.equal(transition({systemState:"next-session-staging",activeFlag:"proceed-to-start"},{systemState:"next-session-countdown",activeFlag:"proceed-to-start"}),"startLights");
+ assert.equal(transition({systemState:"standby",activeFlag:"clear"},{systemState:"next-session-countdown",activeFlag:"proceed-to-start"}),"startLights","Session 1 uses the same start-light sound");
  assert.equal(transition({systemState:"session-live",session:{phase:"hiding"}},{systemState:"session-live",session:{phase:"awaiting-finding-start"}}),"awaitingFinding");
  assert.equal(transition({systemState:"session-live",session:{phase:"awaiting-finding-start"}},{systemState:"session-live",session:{phase:"finding"}}),"findingStart");
  assert.equal(transition({systemState:"session-live"},{systemState:"provisional",activeFlag:"checkered",session:{provisionalReason:"Finding period expired"}}),"timerExpired");

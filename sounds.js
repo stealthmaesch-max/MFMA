@@ -3,7 +3,7 @@ const VOLUME_KEY="mfma-sounds-volume";
 const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
@@ -117,6 +117,7 @@ export const soundDefinitions={
  white:{description:"persistent disqualification command",reminderMs:8000,play:()=>schedulePattern([{frequency:880,start:0,duration:.18,type:"sine",gain:.16},{frequency:659,start:.23,duration:.26,type:"sine",gain:.17}])},
  checkered:{description:"finish flourish",play:()=>schedulePattern([523,659,784,1047].map((frequency,index)=>({frequency,start:index*.09,duration:.2,type:"triangle",gain:.13})))},
  clear:{description:"soft reset",play:()=>schedulePattern([{frequency:392,start:0,duration:.12,type:"sine",gain:.09},{frequency:294,start:.11,duration:.23,type:"sine",gain:.08}])},
+ startLights:{description:"five synchronized start-light tones",play:()=>schedulePattern(Array.from({length:5},(_,index)=>({frequency:440,start:index*1.5,duration:.2,type:"triangle",gain:.17,attack:.008,release:.06})))},
  courseLapStart:{description:"formal start",play:()=>schedulePattern([{frequency:262,start:0,duration:.22,type:"triangle",gain:.13},{frequency:262,start:.3,duration:.12,type:"triangle",gain:.12},{frequency:392,start:.46,duration:.25,type:"triangle",gain:.14}])},
  awaitingFinding:{description:"confirmation prompt",play:()=>schedulePattern([{frequency:440,start:0,duration:.13,type:"sine",gain:.09},{frequency:554,start:.19,duration:.2,type:"sine",gain:.1}])},
  findingStart:{description:"sharp start cue",play:()=>schedulePattern([{frequency:1175,start:0,duration:.07,type:"square",gain:.12,attack:.004},{frequency:880,start:.08,duration:.16,type:"square",gain:.14,attack:.004}])},
@@ -149,6 +150,7 @@ export function soundForStateTransition(previous,current){
  if(previousMode!=="sprint-live"&&currentMode==="sprint-live")return "sprintStart";
  if(currentMode==="sprint-live"&&previous.sprint?.timerMode==="count-down"&&(previous.sprint?.remainingMs||0)>0&&(current.sprint?.remainingMs||0)<=0)return "sprintTimerZero";
  if(previousMode!=="course-lap"&&currentMode==="course-lap")return "courseLapStart";
+ if(previousMode!=="next-session-countdown"&&currentMode==="next-session-countdown")return "startLights";
  const previousPhase=previous.session?.phase;
  const currentPhase=current.session?.phase;
  if(previousPhase!=="awaiting-finding-start"&&currentPhase==="awaiting-finding-start")return "awaitingFinding";

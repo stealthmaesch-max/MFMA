@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gsta
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=63";
 import { getRenderMode } from "./display-state.js?v=63";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=63";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=68";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null,wake=null;
@@ -52,7 +52,7 @@ function render(){const mode=getRenderMode(state);timer.classList.toggle("dot-ti
 }
 if(mode==="session-live"||mode==="awaiting-finding-start"){showLive();return}
 if(mode==="next-session-staging"||mode==="next-session-countdown"){
- const sig=signals["proceed-to-start"];statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}`,mode);label.textContent=sig.label;instruction.textContent=mode==="next-session-countdown"?"TEAM SET • GREEN WHEN ALL RED LIGHTS GO OUT":sig.instruction;sessionLine.textContent=`SESSION ${state.session?.number||""} • NEXT HIDING TEAM`;if(mode==="next-session-countdown")renderStartDots();else timer.textContent="WAIT";theme.content=sig.theme;return
+ const sig=signals["proceed-to-start"];statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${mode==="next-session-countdown"?"flag-start-lights":sig.className}`,mode);label.textContent=sig.label;instruction.textContent=mode==="next-session-countdown"?"TEAM SET • GREEN WHEN ALL RED LIGHTS GO OUT":sig.instruction;sessionLine.textContent=`SESSION ${state.session?.number||""} • NEXT HIDING TEAM`;if(mode==="next-session-countdown")renderStartDots();else timer.textContent="WAIT";theme.content=mode==="next-session-countdown"?"#171a1f":sig.theme;return
 }
 if(mode==="safety-car-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
