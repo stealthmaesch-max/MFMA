@@ -81,3 +81,22 @@ test("Unapproved devices cannot submit race reports",async()=>{
  await assertFails(set(ref(driver,"mfma/state/event/vehicleReports/ranger"),{driverId:"d1",mraNumber:"MRA101",teamId:"team-one",teamName:"Team One",driverName:"Stealth",passengerName:"",submittedAt:100}));
  await assertFails(set(ref(driver,"mfma/state/event/hazards/h1"),openHazard));
 });
+
+test("Approved drivers can register only themselves and only fixed vehicles for an open event",async()=>{
+ await authorizeDriver();
+ await set(ref(rd,"mfma/competition/events/round-1"),{name:"Round 1",seasonId:"2026",date:"2026-09-20",status:"scheduled",registrationStatus:"open"});
+ const entry={driverId:"d1",driverName:"Stealth",mraNumber:"MRA101",teamId:"team-one",teamName:"Team One",vehicleId:"ranger",vehicleName:"Ranger",status:"registered",registeredAt:100};
+ await assertSucceeds(set(ref(driver,"mfma/competition/eventRegistrations/round-1/d1"),entry));
+ await assertFails(set(ref(driver,"mfma/competition/eventRegistrations/round-1/d2"),{...entry,driverId:"d2"}));
+ await assertFails(set(ref(driver,"mfma/competition/eventRegistrations/round-1/d1"),{...entry,vehicleId:"fourth-car",vehicleName:"Fourth Car"}));
+ await assertFails(set(ref(driver,"mfma/competition/eventRegistrations/round-1/d1"),{...entry,teamId:"other-team",teamName:"Other Team"}));
+});
+
+test("Drivers cannot register for a closed event or create championship events",async()=>{
+ await authorizeDriver();
+ await set(ref(rd,"mfma/competition/events/round-1"),{name:"Round 1",seasonId:"2026",date:"2026-09-20",status:"scheduled",registrationStatus:"closed"});
+ const entry={driverId:"d1",driverName:"Stealth",mraNumber:"MRA101",teamId:"team-one",teamName:"Team One",vehicleId:"shelly",vehicleName:"Shelly",status:"registered",registeredAt:100};
+ await assertFails(set(ref(driver,"mfma/competition/eventRegistrations/round-1/d1"),entry));
+ await assertFails(set(ref(driver,"mfma/competition/events/round-2"),{name:"Round 2",registrationStatus:"open"}));
+ await assertSucceeds(set(ref(rd,"mfma/competition/events/round-2"),{name:"Round 2",registrationStatus:"open"}));
+});

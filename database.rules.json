@@ -5,7 +5,25 @@
     "mfma": {
       "competition": {
         ".read": true,
-        ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')"
+        ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+        "eventRegistrations": {
+          "$eventId": {
+            "$driverId": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val() === $driverId && root.child('mfma').child('competition').child('events').child($eventId).child('registrationStatus').val() === 'open' && newData.child('driverId').val() === $driverId && newData.child('driverName').val() === root.child('mfma').child('competition').child('drivers').child($driverId).child('name').val() && newData.child('mraNumber').val() === root.child('mfma').child('competition').child('drivers').child($driverId).child('mraNumber').val() && newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child($driverId).child('teamId').val() && newData.child('teamName').val() === root.child('mfma').child('competition').child('drivers').child($driverId).child('teamName').val() && (newData.child('vehicleId').val() === 'ranger' || newData.child('vehicleId').val() === 'shelly' || newData.child('vehicleId').val() === 'gator') && newData.child('status').val() === 'registered'",
+              ".validate": "newData.hasChildren(['driverId','driverName','mraNumber','teamId','teamName','vehicleId','vehicleName','status','registeredAt']) && newData.child('driverName').isString() && newData.child('driverName').val().length <= 50 && newData.child('mraNumber').isString() && newData.child('mraNumber').val().length <= 20 && newData.child('teamId').isString() && newData.child('teamId').val().length <= 64 && newData.child('teamName').isString() && newData.child('teamName').val().length <= 50 && newData.child('vehicleName').isString() && newData.child('vehicleName').val().length <= 20 && newData.child('registeredAt').isNumber() && newData.child('registeredAt').val() <= now + 60000",
+              "driverId": { ".validate": "newData.isString()" },
+              "driverName": { ".validate": "newData.isString()" },
+              "mraNumber": { ".validate": "newData.isString()" },
+              "teamId": { ".validate": "newData.isString()" },
+              "teamName": { ".validate": "newData.isString()" },
+              "vehicleId": { ".validate": "newData.isString()" },
+              "vehicleName": { ".validate": "newData.isString()" },
+              "status": { ".validate": "newData.isString()" },
+              "registeredAt": { ".validate": "newData.isNumber()" },
+              "$other": { ".validate": false }
+            }
+          }
+        }
       },
       "driverAccess": {
         ".read": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",

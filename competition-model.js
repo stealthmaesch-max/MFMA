@@ -5,11 +5,18 @@ export const LEGACY_VEHICLES={
 };
 
 export const DEFAULT_POINTS=[10,6,4,3,2,1];
+export const TEAM_BRANDING={
+ "monarch-mfma-team":{accent:"#7758ff",emblem:"assets/branding/monarch-team-emblem.png",logo:"assets/branding/monarch-mfma-team-logo-dignified.png"},
+ "parakeet-mfma-team":{accent:"#139ff2",emblem:"assets/branding/parakeet-team-emblem-v2.png",logo:"assets/branding/parakeet-mfma-team-logo-v2.png"}
+};
 
 export function normalizeMraNumber(value){return String(value??"").trim().toUpperCase().replace(/\s+/g,"")}
 export function normalizeName(value){return String(value??"").trim().replace(/\s+/g," ")}
 export function slugify(value){return normalizeName(value).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"").slice(0,48)}
 export function currentSeasonId(date=new Date()){return String(date.getFullYear())}
+export function teamBranding(teamId){return TEAM_BRANDING[teamId]||{accent:"#f11524",emblem:null,logo:null}}
+export function eventRegistrationId(driverId){return String(driverId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64)}
+export function registeredVehicleId(driverId,vehicleName){return `${eventRegistrationId(driverId)}-${slugify(vehicleName)}`.slice(0,64)}
 
 export function approvedVehicles(registry={}){
  const merged={...LEGACY_VEHICLES,...registry};
