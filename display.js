@@ -75,7 +75,7 @@ if(mode==="provisional"||mode==="session-complete"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
  applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`${mode}:${state.activeFlag}`);
  label.textContent=sig.label;
- instruction.textContent=state.activeFlag==="return-to-start"?sig.instruction:mode==="session-complete"?"OFFICIAL SESSION RESULT":(s?.provisionalReason||sig.instruction);
+ instruction.textContent=new Set(["return-to-start","infraction-warning"]).has(state.activeFlag)?sig.instruction:mode==="session-complete"?"OFFICIAL SESSION RESULT":(s?.provisionalReason||sig.instruction);
  sessionLine.textContent=`SESSION ${s?.number||""} • PURSUIT: ${s?.teamNames?.[s.pursuitTeam]||"—"} • EVADING: ${s?.teamNames?.[s.evadingTeam]||"—"}`;
  timer.textContent="ENDED";theme.content=sig.theme;return
 }}

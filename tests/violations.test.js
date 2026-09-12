@@ -13,16 +13,17 @@ test("Issue Violation replaces legacy White Flag controls",()=>{
  assert.doesNotMatch(html,/data-(?:quick-flag|sprint-flag|flag)="white"|Issue White Flag|White Flag Review/);
 });
 
-test("infraction warning records enforcement and returns to green after ten seconds",()=>{
+test("infraction warning works inside or outside sessions and restores safely after ten seconds",()=>{
  const control=fs.readFileSync("control.js","utf8");
  const warning=control.match(/if\(violationType==="warning"\)\{([\s\S]*?)\n \}/)?.[1]||"";
  assert.match(warning,/activeFlag:"infraction-warning"/);
  assert.match(warning,/event\/violations/);
- assert.match(warning,/session\/violationReview/);
+ assert.match(warning,/event\/activeWarning/);
  assert.match(warning,/Date\.now\(\)\+10000/);
- assert.doesNotMatch(warning,/session\/running|systemState:/);
+ assert.doesNotMatch(warning,/warnings can only be issued during a live session/i);
  assert.match(control,/function scheduleWarningReturn\(\)/);
- assert.match(control,/activeFlag:"green"/);
+ assert.match(control,/restoredFlag=live\?"green":warning\.previousFlag\|\|"clear"/);
+ assert.match(control,/state\?\.session\?\.teamNames\|\|state\?\.event\?\.teamNames/);
 });
 
 test("white begins a paused review before any disqualification decision",()=>{

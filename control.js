@@ -320,12 +320,11 @@ function sprintTick(){
 }
 
 function populateWhite(){
- const session=state?.session||{};
- const names=session.teamNames||{};
+ const names=state?.session?.teamNames||state?.event?.teamNames||(state?.systemState==="standby"||state?.systemState==="sprint-live"?currentTeams().names:{});
  const teamEntries=Object.entries(names);
 
  if(!teamEntries.length){
-  throw new Error("No session team information is available. Return to Standby and start a new session.");
+  throw new Error("No team information is available. Configure the teams before issuing a warning.");
  }
 
  const teamOptions=teamEntries
@@ -338,11 +337,14 @@ function populateWhite(){
 }
 function openWhiteDialog(){
  try{
-  if(!state?.session){
-   throw new Error("No active or recently completed session is available for rule enforcement.");
-  }
+  if(!state?.event)throw new Error("Open an event before issuing a violation.");
+  if(new Set(["next-session-staging","next-session-countdown"]).has(state.systemState))throw new Error("Violations are locked after the Proceed to Starting Line order.");
 
   populateWhite();
+  const reviewOption=$("violation-type").querySelector('option[value="review"]');
+  reviewOption.disabled=!state.session;
+  if(!state.session&&$("violation-type").value!=="warning")$("violation-type").value="warning";
+  syncViolationForm();
 
   const overlay=$("white-review-overlay");
   if(!overlay){
@@ -362,7 +364,7 @@ function syncViolationForm(){
  const type=$("violation-type").value;
  const disqualification=type==="disqualification";
  $("disqualification-options").classList.toggle("hidden",!disqualification);
- $("violation-guidance").textContent=disqualification?"Records the Race Director's decision and opens the official outcome workflow.":type==="review"?"Displays White, pauses the session, and directs everyone to the starting zone for review.":"Displays white crossed with folded yellow for 10 seconds, then automatically returns to Green.";
+ $("violation-guidance").textContent=disqualification?"Records the Race Director's decision and opens the official outcome workflow.":type==="review"?"Displays White, pauses the session, and directs everyone to the starting zone for review.":"Displays white crossed with folded yellow for 10 seconds, then returns to Green during a session or the prior signal outside one.";
  $("issue-violation-submit").textContent=disqualification?"Issue Disqualification":type==="review"?"Begin Review":"Issue 10-Second Warning";
 }
 
@@ -376,16 +378,19 @@ async function resolveWhiteForm(){
  const reason=$("dq-reason").value;
  const additionalPenalty=$("penalty-type").value;
  const outcome=$("white-outcome").value;
- const names=state.session.teamNames;
+ const names=state?.session?.teamNames||state?.event?.teamNames||currentTeams().names;
  const opponent=Object.keys(names).find(key=>key!==dq);
 
  const violationId=`v${Date.now()}`;
  if(violationType==="warning"){
-  if(state.systemState!=="session-live"){alert("Infraction warnings can only be issued during a live session.");return}
   const expiresAt=Date.now()+10000;
+  const activeWarning=state.event?.activeWarning;
+  const previousFlag=state.activeFlag==="infraction-warning"&&activeWarning?.previousFlag?activeWarning.previousFlag:state.systemState==="session-live"?"green":state.activeFlag||"clear";
   const detail=`Infraction warning for ${names[dq]}. Reason: ${reason}.`;
-  const violation={type:"warning",team:dq,reason,detail,issuedAt:serverTimestamp(),expiresAt};
-  await update(stateRef,{activeFlag:"infraction-warning","session/flag":"infraction-warning","session/remainingMs":currentSessionRemaining(),"session/lastTickAt":state.session.running?Date.now():null,"session/violationReview":violation,[`event/violations/${violationId}`]:violation,updatedAt:serverTimestamp()});
+  const violation={type:"warning",team:dq,reason,detail,previousFlag,previousState:state.systemState,issuedAt:serverTimestamp(),expiresAt};
+  const updates={activeFlag:"infraction-warning","event/activeWarning":violation,[`event/violations/${violationId}`]:violation,updatedAt:serverTimestamp()};
+  if(state.systemState==="session-live"&&state.session){updates["session/flag"]="infraction-warning";updates["session/remainingMs"]=currentSessionRemaining();updates["session/lastTickAt"]=state.session.running?Date.now():null;updates["session/violationReview"]=violation}
+  await update(stateRef,updates);
   closeViolationDialog();return;
  }
 
@@ -456,9 +461,9 @@ async function noResultViolationReview(){if(!requireAuthenticatedWrite()||state?
 
 function scheduleWarningReturn(){
  if(warningTimer){clearTimeout(warningTimer);warningTimer=null}
- const warning=state?.session?.violationReview;
- if(state?.systemState!=="session-live"||state?.activeFlag!=="infraction-warning"||warning?.type!=="warning"||!warning.expiresAt)return;
- const restore=async()=>{if(!currentUser){warningTimer=setTimeout(restore,500);return}if(state?.systemState!=="session-live"||state?.activeFlag!=="infraction-warning")return;await update(stateRef,{activeFlag:"green","session/flag":"green","session/remainingMs":currentSessionRemaining(),"session/lastTickAt":state.session.running?Date.now():null,updatedAt:serverTimestamp()})};
+ const warning=state?.event?.activeWarning||state?.session?.violationReview;
+ if(state?.activeFlag!=="infraction-warning"||warning?.type!=="warning"||!warning.expiresAt)return;
+ const restore=async()=>{if(!currentUser){warningTimer=setTimeout(restore,500);return}if(state?.activeFlag!=="infraction-warning")return;const live=state.systemState==="session-live"&&state.session,restoredFlag=live?"green":warning.previousFlag||"clear",updates={activeFlag:restoredFlag,"event/activeWarning":null,updatedAt:serverTimestamp()};if(live){updates["session/flag"]="green";updates["session/remainingMs"]=currentSessionRemaining();updates["session/lastTickAt"]=state.session.running?Date.now():null}await update(stateRef,updates)};
  warningTimer=setTimeout(()=>restore().catch(error=>console.error("Unable to clear infraction warning",error)),Math.max(0,warning.expiresAt-Date.now()));
 }
 
