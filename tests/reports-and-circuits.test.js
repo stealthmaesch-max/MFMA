@@ -85,13 +85,14 @@ test("MRA safety information is scoped to the currently active management signal
  assert.match(driverHtml,/id="safety-management"[\s\S]*mra-logo\.png[\s\S]*id="safety-message"/);
 });
 
-test("Driver Portal keeps an approved identity and syncs it through narrow anonymous writes",()=>{
+test("Driver Portal keeps an approved team device and switches registered drivers",()=>{
  const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8");
  assert.match(html,/mfma-driver-portal-logo\.png/);assert.match(html,/id="driver-signin-form"/);assert.match(html,/id="driver-sign-out"/);
  assert.match(display,/PROFILE_KEY="mfma-driver-profile"/);assert.match(display,/localStorage\.setItem\(PROFILE_KEY,JSON\.stringify/);
- assert.match(display,/profile\?\.driverId&&profile\?\.mraNumber/);
+ assert.match(display,/profile\?\.teamId&&profile\?\.driverId/);
  assert.match(display,/await ensureDriverAuth\(\);const report=.*cleanOccupantReport/);
- assert.match(display,/findDriver\(competition\.drivers,name,mraNumber\)/);assert.match(display,/mfma\/requests\/access/);
+ assert.match(display,/teamDrivers\(driverProfile\.teamId\)/);assert.match(display,/mfma\/requests\/access/);
+ assert.match(display,/passengerParticipants\/\$\{driverProfile\.passengerId\}/);
  assert.match(display,/mfma\/state\/event\/vehicleReports\/\$\{driverProfile\.vehicleId\}/);
  assert.match(display,/syncStoredDriverProfile\(\)/);
 });

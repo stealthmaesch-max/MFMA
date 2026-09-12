@@ -67,7 +67,8 @@ test("expanded team controls stay contained on compact iPhone portrait",async()=
   document.querySelector("#status-view").classList.add("hidden");
   document.querySelector("#live-view").classList.remove("hidden");
   document.querySelector("#occupant-form").classList.remove("hidden");
-  document.querySelector("#passenger-name").value="A very long passenger name used to verify containment";
+  document.querySelector("#team-driver").innerHTML='<option>Very Long Registered Driver Name • MRA 100</option>';
+  document.querySelector("#passenger-driver").innerHTML='<option>A very long registered passenger name • Another Team • MRA 200</option>';
  });
  const metrics=await page.evaluate(()=>{const tools=document.querySelector("#driver-tools").getBoundingClientRect(),form=document.querySelector("#occupant-form").getBoundingClientRect();return {pageWidth:document.documentElement.scrollWidth,tools:{left:tools.left,right:tools.right,top:tools.top,bottom:tools.bottom},form:{left:form.left,right:form.right,top:form.top,bottom:form.bottom},overflowY:getComputedStyle(document.querySelector("#driver-tools")).overflowY}});
  assert.equal(metrics.pageWidth,375,"expanded controls do not create horizontal scrolling");
