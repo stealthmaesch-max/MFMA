@@ -69,7 +69,7 @@ test("operational signals flash while Green and infractions remain steady",async
  for(const name of ["green","proceed-to-start","infraction-warning","under-review","disqualification"])assert.equal(signals[name].flash,false,`${name} remains steady`);
  const display=fs.readFileSync("display.js","utf8"),css=fs.readFileSync("styles.css","utf8");
  assert.match(display,/flag-safety-car flash/);
- assert.match(display,/applyDisplayClass\("display flag-white",mode\)/);
+ assert.match(display,/flag-disqualified/);assert.match(display,/flag-under-review/);
  assert.match(css,/\.flash \.signal-label,[\s\S]*\.flash \.status-title/);
  assert.doesNotMatch(css,/\.flag-checkered \.signal-label[\s\S]*animation: none/);
 });
@@ -80,8 +80,18 @@ test("MRA safety information is scoped to the currently active management signal
  assert.match(control,/safetyManagementFlags=new Set\(\["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"\]\)/);
  assert.match(control,/safetyMessage:clean\?\{text:clean,flag:state\.activeFlag,updatedAt:Date\.now\(\)\}:null/);
  assert.match(display,/state\.safetyMessage\?\.flag===state\.activeFlag/);
- assert.match(display,/textContent=message\|\|"OFFICIAL SAFETY CONTROL"/);
+ assert.match(display,/panel\.classList\.toggle\("hidden",!message\)/);
+ assert.match(display,/\$\("safety-message"\)\.textContent=message/);
  assert.match(driverHtml,/id="safety-management"[\s\S]*mra-logo\.png[\s\S]*id="safety-message"/);
+});
+
+test("Driver Portal keeps a local profile and syncs it through narrow anonymous writes",()=>{
+ const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8");
+ assert.match(html,/mfma-driver-portal-logo\.png/);assert.match(html,/id="driver-signin-form"/);assert.match(html,/id="driver-sign-out"/);
+ assert.match(display,/PROFILE_KEY="mfma-driver-profile"/);assert.match(display,/localStorage\.setItem\(PROFILE_KEY,JSON\.stringify\(profile\)\)/);
+ assert.match(display,/await ensureDriverAuth\(\);const report=cleanOccupantReport/);
+ assert.match(display,/mfma\/state\/event\/vehicleReports\/\$\{driverProfile\.vehicleId\}/);
+ assert.match(display,/syncStoredDriverProfile\(\)/);
 });
 
 test("a stopped session can return to the line and restart through the full light sequence",()=>{

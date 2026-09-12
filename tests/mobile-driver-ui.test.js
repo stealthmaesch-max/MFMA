@@ -6,6 +6,7 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
+async function signedDriverPage(browser,viewport){const page=await browser.newPage({viewport});await page.addInitScript(()=>localStorage.setItem("mfma-driver-profile",JSON.stringify({vehicleId:"ranger",driverName:"Test Driver",passengerName:""})));return page}
 before(async()=>{
  server=http.createServer((request,response)=>{
   const pathname=new URL(request.url,"http://localhost").pathname;
@@ -21,7 +22,7 @@ after(()=>new Promise(resolve=>server.close(resolve)));
 for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,height:852},{width:402,height:874},{width:430,height:932}]){
  test(`Driver layout fits ${viewport.width}x${viewport.height}`,async()=>{
   const browser=await chromium.launch({headless:true});
-  const page=await browser.newPage({viewport});
+  const page=await signedDriverPage(browser,viewport);
   await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
   await page.evaluate(()=>{
    document.querySelector("#status-view").classList.add("hidden");
@@ -60,7 +61,7 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
 
 test("expanded team controls stay contained on compact iPhone portrait",async()=>{
  const browser=await chromium.launch({headless:true});
- const page=await browser.newPage({viewport:{width:375,height:667}});
+ const page=await signedDriverPage(browser,{width:375,height:667});
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
  await page.evaluate(()=>{
   document.querySelector("#status-view").classList.add("hidden");
@@ -79,7 +80,7 @@ test("expanded team controls stay contained on compact iPhone portrait",async()=
 
 test("start lights are the sole central focus on iPhone portrait",async()=>{
  const browser=await chromium.launch({headless:true});
- const page=await browser.newPage({viewport:{width:390,height:844}});
+ const page=await signedDriverPage(browser,{width:390,height:844});
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
  const result=await page.evaluate(()=>{
   const display=document.querySelector("#display"),live=document.querySelector("#live-view"),timer=document.querySelector("#display-timer");
@@ -113,7 +114,7 @@ test("branded shells and MRA steward review fit iPhone portrait",async()=>{
   const result=await page.evaluate(()=>{const logo=document.querySelector(".brand-logo"),box=logo?.getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,logo:box&&{left:box.left,right:box.right,top:box.top,bottom:box.bottom},loaded:logo?.complete&&logo?.naturalWidth>0}});
   assert.equal(result.scrollWidth,390,`${pageName} has no horizontal overflow`);assert(result.loaded,`${pageName} loads its MFMA logo`);assert(result.logo.left>=0&&result.logo.right<=390,`${pageName} logo is contained`);await page.close();
  }
- const display=await browser.newPage({viewport:{width:390,height:844}});await display.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const display=await signedDriverPage(browser,{width:390,height:844});await display.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
  const review=await display.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className="display flag-white";document.querySelector("#steward-brand").classList.remove("hidden");document.querySelector("#label").textContent="MRA STEWARD";document.querySelector("#instruction").textContent="INCIDENT UNDER INVESTIGATION";const logo=document.querySelector("#steward-brand").getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,logo:{left:logo.left,right:logo.right,top:logo.top,bottom:logo.bottom},toolsTop:tools.top,label:document.querySelector("#label").textContent,instruction:document.querySelector("#instruction").textContent}});
  assert.equal(review.scrollWidth,390);assert(review.logo.left>=0&&review.logo.right<=390&&review.logo.bottom<review.toolsTop,"MRA review logo remains visible above Driver controls");assert.equal(`${review.label} — ${review.instruction}`,"MRA STEWARD — INCIDENT UNDER INVESTIGATION");
  await browser.close();
@@ -122,9 +123,16 @@ test("branded shells and MRA steward review fit iPhone portrait",async()=>{
 test("MRA safety information remains readable on iPhone 15 and later",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const viewport of [{width:393,height:852},{width:402,height:874},{width:430,height:932}]){
-  const page=await browser.newPage({viewport});await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+  const page=await signedDriverPage(browser,viewport);await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
   const result=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className="display flag-yellow flash";document.querySelector("#label").textContent="CAUTION";document.querySelector("#instruction").textContent="TIMER AT HALF SPEED";document.querySelector("#display-timer").textContent="01:42";const panel=document.querySelector("#safety-management");panel.classList.remove("hidden");panel.classList.add("has-message");document.querySelector("#safety-message").textContent="Debris near the north gate — reduce speed";const box=panel.getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,panel:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},toolsTop:tools.top,fontSize:parseFloat(getComputedStyle(document.querySelector("#safety-message")).fontSize)}});
   assert.equal(result.scrollWidth,viewport.width);assert(result.panel.left>=0&&result.panel.right<=viewport.width,"safety information fits horizontally");assert(result.panel.bottom<result.toolsTop,"safety information remains above Driver controls");assert(result.fontSize>=14,"safety message remains legible");await page.close();
  }
  await browser.close();
+});
+
+test("Driver Portal sign-in and MRA disqualification fit iPhone 15",async()=>{
+ const browser=await chromium.launch({headless:true}),signedOut=await browser.newPage({viewport:{width:393,height:852}});await signedOut.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const portal=await signedOut.evaluate(()=>{const card=document.querySelector("#driver-signin-form").getBoundingClientRect(),logo=document.querySelector("#driver-signin-form img");return {scrollWidth:document.documentElement.scrollWidth,card:{left:card.left,right:card.right,top:card.top,bottom:card.bottom},logoLoaded:logo.complete&&logo.naturalWidth>0,inputs:[...document.querySelectorAll("#driver-signin-form input,#driver-signin-form select,#driver-signin-form button")].map(element=>element.getBoundingClientRect().height),toolsHidden:document.querySelector("#driver-tools").classList.contains("hidden")}});
+ assert.equal(portal.scrollWidth,393);assert(portal.card.left>=0&&portal.card.right<=393&&portal.card.top>=0&&portal.card.bottom<=852,"portal card stays in viewport");assert(portal.logoLoaded);assert(portal.inputs.every(height=>height>=44),"portal controls meet iPhone touch sizing");assert(portal.toolsHidden,"signed-out users see the portal instead of reporting tools");await signedOut.close();
+ const page=await signedDriverPage(browser,{width:393,height:852});await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});const dq=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className="display flag-white flag-disqualified";document.querySelector("#steward-brand").classList.remove("hidden");const label=document.querySelector("#label");label.textContent="DISQUALIFIED";document.querySelector("#instruction").textContent="RETURN TO STARTING ZONE";document.querySelector("#display-timer").textContent="ENDED";const box=label.getBoundingClientRect(),style=getComputedStyle(label),logo=document.querySelector("#steward-brand").getBoundingClientRect();return {label:{left:box.left,right:box.right,height:box.height,fontSize:parseFloat(style.fontSize)},logo:{left:logo.left,right:logo.right},safetyHidden:document.querySelector("#safety-management").classList.contains("hidden")}});assert(dq.label.left>=0&&dq.label.right<=393,"Disqualified stays horizontally contained");assert(dq.label.height<=dq.label.fontSize*1.15,"Disqualified remains on one line");assert(dq.logo.left>=0&&dq.logo.right<=393,"MRA enforcement logo is contained");assert(dq.safetyHidden,"unused safety information stays hidden");await browser.close();
 });
