@@ -93,7 +93,9 @@ test("Driver Portal keeps an approved team device and switches registered driver
  assert.match(display,/await ensureDriverAuth\(\);const report=.*cleanOccupantReport/);
  assert.match(display,/teamDrivers\(driverProfile\.teamId\)/);assert.match(display,/mfma\/requests\/access/);
  assert.match(display,/passengerParticipants\/\$\{driverProfile\.passengerId\}/);
- assert.match(display,/mfma\/state\/event\/vehicleReports\/\$\{driverProfile\.vehicleId\}/);
+ assert.match(display,/vehicleReports\/\$\{driverProfile\.vehicleId\}/);
+ assert.match(display,/driverParticipants\/\$\{driverProfile\.driverId\}/);
+ assert.match(display,/passengerId:driverProfile\.passengerId\|\|null/);
  assert.match(display,/syncStoredDriverProfile\(\)/);
 });
 

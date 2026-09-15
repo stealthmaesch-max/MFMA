@@ -37,8 +37,8 @@
         "registrations": {
           "$uid": {
             ".read": "auth != null && (auth.uid === $uid || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
-            ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && (!data.exists() || data.child('status').val() !== 'approved') && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending') || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
-            ".validate": "newData.hasChildren(['uid','name','teamName','requestedMraNumber','status','requestedAt']) && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('teamName').isString() && newData.child('teamName').val().length > 0 && newData.child('teamName').val().length <= 50 && newData.child('requestedMraNumber').isString() && newData.child('requestedMraNumber').val().length <= 20"
+            ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && (!data.exists() || data.child('status').val() !== 'approved') && newData.child('uid').val() === auth.uid && newData.child('status').val() === 'pending' && root.child('mfma').child('competition').child('teams').child(newData.child('teamId').val()).child('status').val() === 'approved' && newData.child('teamName').val() === root.child('mfma').child('competition').child('teams').child(newData.child('teamId').val()).child('name').val()) || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+            ".validate": "newData.hasChildren(['uid','name','teamId','teamName','requestedMraNumber','status','requestedAt']) && root.child('mfma').child('competition').child('teams').child(newData.child('teamId').val()).child('status').val() === 'approved' && newData.child('teamName').val() === root.child('mfma').child('competition').child('teams').child(newData.child('teamId').val()).child('name').val() && newData.child('name').isString() && newData.child('name').val().length > 0 && newData.child('name').val().length <= 50 && newData.child('teamName').isString() && newData.child('teamName').val().length > 0 && newData.child('teamName').val().length <= 50 && newData.child('requestedMraNumber').isString() && newData.child('requestedMraNumber').val().length <= 20"
           }
         },
         "access": {
@@ -88,6 +88,13 @@
               "recordedByTeamId": { ".validate": "newData.isString()" },
               "participatedAt": { ".validate": "newData.isNumber()" },
               "$other": { ".validate": false }
+            }
+          },
+          "driverParticipants": {
+            "$driverId": {
+              ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && newData.child('driverId').val() === $driverId && newData.child('driverName').val() === root.child('mfma').child('competition').child('drivers').child($driverId).child('name').val() && newData.child('mraNumber').val() === root.child('mfma').child('competition').child('drivers').child($driverId).child('mraNumber').val() && newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child($driverId).child('teamId').val() && (newData.child('teamId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() || newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val()) && (newData.child('vehicleId').val() === 'ranger' || newData.child('vehicleId').val() === 'shelly' || newData.child('vehicleId').val() === 'gator')",
+              ".validate": "newData.hasChildren(['driverId','driverName','mraNumber','teamId','teamName','vehicleId','lastParticipatedAt']) && newData.child('lastParticipatedAt').isNumber() && newData.child('lastParticipatedAt').val() <= now + 60000",
+              "$other": { ".validate": "newData.isString() || newData.isNumber()" }
             }
           },
           "hazards": {

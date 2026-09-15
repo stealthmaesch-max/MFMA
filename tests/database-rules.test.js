@@ -70,8 +70,10 @@ test("Driver to Race Director round trip carries crew and hazard status",async()
 });
 
 test("Registration is self-service but approval and team-device binding remain MRA-only",async()=>{
- const registration={uid:"driver-device",name:"New Driver",teamName:"New Team",requestedMraNumber:"MRA202",status:"pending",requestedAt:100};
+ await set(ref(rd,"mfma/competition/teams/team-one"),{name:"Team One",status:"approved"});
+ const registration={uid:"driver-device",name:"New Driver",teamId:"team-one",teamName:"Team One",requestedMraNumber:"MRA202",status:"pending",requestedAt:100};
  await assertSucceeds(set(ref(driver,"mfma/requests/registrations/driver-device"),registration));
+ await assertFails(set(ref(driver,"mfma/requests/registrations/driver-device"),{...registration,teamId:"invented-team",teamName:"Invented Team"}));
  await assertFails(set(ref(driver,"mfma/driverAccess/driver-device"),{teamId:"new-team",status:"approved"}));
  await assertFails(set(ref(driver,"mfma/competition/drivers/d2"),{name:"New Driver",status:"approved"}));
  await assertSucceeds(update(ref(rd,"mfma"),{"competition/drivers/d2":{name:"New Driver",mraNumber:"MRA202",teamId:"new-team",teamName:"New Team",status:"approved"},"competition/teams/new-team":{name:"New Team",status:"approved"},"driverAccess/driver-device":{teamId:"new-team",teamName:"New Team",status:"approved"},"requests/registrations/driver-device/status":"approved"}));
@@ -102,6 +104,15 @@ test("A team can record one registered passenger participation entry per event",
  await assertSucceeds(set(ref(driver,"mfma/state/event/passengerParticipants/d2"),participation));
  await assertSucceeds(set(ref(driver,"mfma/state/event/passengerParticipants/d2"),{...participation,participatedAt:200}));
  await assertFails(set(ref(driver,"mfma/state/event/passengerParticipants/d2"),{...participation,driverName:"Imposter"}));
+});
+
+test("A team device records its driver participation but cannot claim a rival driver",async()=>{
+ await authorizeDriver();
+ await set(ref(rd,"mfma/competition/drivers/d2"),{name:"Rival",mraNumber:"MRA202",teamId:"team-two",teamName:"Team Two",status:"approved"});
+ const participation={driverId:"d1",driverName:"Stealth",mraNumber:"MRA101",teamId:"team-one",teamName:"Team One",vehicleId:"ranger",lastParticipatedAt:100};
+ await assertSucceeds(set(ref(driver,"mfma/state/event/driverParticipants/d1"),participation));
+ await assertFails(set(ref(driver,"mfma/state/event/driverParticipants/d2"),{...participation,driverId:"d2",driverName:"Rival",mraNumber:"MRA202",teamId:"team-two",teamName:"Team Two"}));
+ await assertSucceeds(update(ref(driver,"mfma/state/event"),{"vehicleReports/ranger":{driverId:"d1",driverName:"Stealth",mraNumber:"MRA101",teamId:"team-one",teamName:"Team One",passengerName:"",passengerId:null,passengerMraNumber:null,submittedAt:200},"driverParticipants/d1":{...participation,lastParticipatedAt:200}}));
 });
 
 test("Unapproved devices cannot submit race reports",async()=>{
