@@ -4,7 +4,7 @@ export const LEGACY_VEHICLES={
  gator:{name:"Gator",status:"approved",legacy:true}
 };
 
-export const DEFAULT_POINTS=[10,6,4,3,2,1];
+export const DEFAULT_POINTS=[10,6];
 export const TEAM_BRANDING={
  "monarch-mfma-team":{accent:"#7758ff",emblem:"assets/branding/monarch-team-emblem.png",logo:"assets/branding/monarch-mfma-team-logo-dignified.png"},
  "parakeet-mfma-team":{accent:"#139ff2",emblem:"assets/branding/parakeet-team-emblem-v2.png",logo:"assets/branding/parakeet-mfma-team-logo-v2.png"}
@@ -30,8 +30,10 @@ export function findDriver(drivers={},name,mraNumber){
 
 function rankedEntries(event={}){
  const scores=event.scores||{},vehicleIds=event.vehicleIds||event.lastVehicleIds||[];
- return Object.entries(scores).map(([side,wins],index)=>({side,wins:Number(wins)||0,vehicleId:vehicleIds[side==="a"?0:side==="b"?1:index]||null})).sort((a,b)=>b.wins-a.wins||a.side.localeCompare(b.side));
+ return Object.entries(scores).map(([side,wins],index)=>({side,wins:Number(wins)||0,vehicleId:vehicleIds[side==="a"?0:side==="b"?1:index]||null,teamName:event.teamNames?.[side]||null})).sort((a,b)=>b.wins-a.wins||a.side.localeCompare(b.side));
 }
+
+function matchingTeam(teams={},name){const wanted=normalizeName(name).toLocaleLowerCase();return Object.entries(teams).find(([,team])=>normalizeName(team?.name).toLocaleLowerCase()===wanted)||null}
 
 export function buildEventArchive(state,competition={},options={}){
  const event=state?.event||{},reports=event.vehicleReports||{},points=competition?.seasons?.[options.seasonId]?.points||DEFAULT_POINTS;
@@ -39,17 +41,18 @@ export function buildEventArchive(state,competition={},options={}){
  let priorWins=null,priorPosition=0;
  const classification=ranked.map((entry,index)=>{
   const position=priorWins===entry.wins?priorPosition:index+1;priorWins=entry.wins;priorPosition=position;
-  const report=reports[entry.vehicleId]||{},driver=competition?.drivers?.[report.driverId]||{};
-  return {...entry,position,points:Number(points[position-1])||0,vehicleName:competition?.vehicles?.[entry.vehicleId]?.name||LEGACY_VEHICLES[entry.vehicleId]?.name||entry.vehicleId,driverId:report.driverId||null,driverName:report.driverName||driver.name||null,mraNumber:report.mraNumber||driver.mraNumber||null,teamId:driver.teamId||report.teamId||null,teamName:driver.teamName||report.teamName||null};
+  const report=reports[entry.vehicleId]||Object.values(reports).find(item=>item?.teamName===entry.teamName)||{},driver=competition?.drivers?.[report.driverId]||{},team=matchingTeam(competition?.teams,entry.teamName);
+  return {...entry,position,points:Number(points[position-1])||0,vehicleName:competition?.vehicles?.[entry.vehicleId]?.name||LEGACY_VEHICLES[entry.vehicleId]?.name||entry.vehicleId,driverId:report.driverId||null,driverName:report.driverName||driver.name||null,mraNumber:report.mraNumber||driver.mraNumber||null,teamId:team?.[0]||driver.teamId||report.teamId||null,teamName:team?.[1]?.name||driver.teamName||report.teamName||entry.teamName||null};
  });
  const passengerParticipation=Object.values(event.passengerParticipants||{}).filter(item=>item?.driverId&&competition?.drivers?.[item.driverId]?.status==="approved").map(item=>{const driver=competition.drivers[item.driverId];return {driverId:item.driverId,driverName:driver.name,mraNumber:driver.mraNumber,points:1}});
- return {name:event.name||"MFMA Event",seasonId:options.seasonId,date:options.date||new Date().toISOString().slice(0,10),endedAt:options.endedAt||Date.now(),classification,passengerParticipation,sessionCount:Math.max(0,(event.sessionNumber||1)-1),circuit:event.circuit||null};
+ return {name:event.name||"MFMA Event",seasonId:options.seasonId,pointsEvent:event.pointsEvent!==false,date:options.date||new Date().toISOString().slice(0,10),endedAt:options.endedAt||Date.now(),classification,passengerParticipation,sessionCount:Math.max(0,(event.sessionNumber||1)-1),circuit:event.circuit||null};
 }
 
 export function rebuildStandings(archives={}){
  const standings={drivers:{},teams:{},vehicles:{}};
  const add=(type,id,name,row)=>{if(!id)return;const current=standings[type][id]||{id,name:name||id,points:0,wins:0,podiums:0,events:0};current.name=name||current.name;current.points+=row.points||0;current.wins+=row.position===1?1:0;current.podiums+=row.position<=3?1:0;current.events+=1;standings[type][id]=current};
  for(const archive of Object.values(archives||{})){
+  if(archive?.pointsEvent===false)continue;
   const classifiedDrivers=new Set();
   for(const row of archive?.classification||[]){add("drivers",row.driverId,row.driverName,row);add("teams",row.teamId,row.teamName,row);add("vehicles",row.vehicleId,row.vehicleName||row.vehicleId,row);if(row.driverId)classifiedDrivers.add(row.driverId)}
   for(const passenger of archive?.passengerParticipation||[]){if(!passenger.driverId)continue;const current=standings.drivers[passenger.driverId]||{id:passenger.driverId,name:passenger.driverName||passenger.driverId,points:0,wins:0,podiums:0,events:0};current.name=passenger.driverName||current.name;current.points+=(passenger.points||1);current.participationPoints=(current.participationPoints||0)+(passenger.points||1);if(!classifiedDrivers.has(passenger.driverId))current.events+=1;standings.drivers[passenger.driverId]=current}
