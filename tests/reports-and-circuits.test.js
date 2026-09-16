@@ -135,9 +135,10 @@ test("circuit counts report completed history separately from balance",async()=>
 
 test("official finalization increments roles exactly once",async()=>{
  const {applyOfficialSessionResult}=await importModule("circuit-model.js");
- const initial={systemState:"provisional",activeFlag:"checkered",event:{scores:{a:0,b:0},circuit:{roles:{}}},session:{teamNames:{a:"A",b:"B"},pursuitTeam:"a",evadingTeam:"b",provisionalWinner:"a",resultOfficial:false,running:false}};
+ const initial={systemState:"provisional",activeFlag:"checkered",event:{scores:{a:0,b:0},circuit:{roles:{}},vehicleReports:{ranger:{driverId:"d1",passengerId:"p1"}}},session:{teamNames:{a:"A",b:"B"},pursuitTeam:"a",evadingTeam:"b",provisionalWinner:"a",resultOfficial:false,running:false}};
  const once=applyOfficialSessionResult(initial),twice=applyOfficialSessionResult(once);
  assert.equal(once.event.circuit.roles.a.pursuitCount,1);assert.equal(once.event.circuit.roles.b.evadingCount,1);assert.equal(once.event.scores.a,1);
+ assert.equal(once.event.participationSessions.d1,1);assert.equal(once.event.participationSessions.p1,1);
  assert.strictEqual(twice,once);
 });
 

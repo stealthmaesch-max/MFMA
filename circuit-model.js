@@ -33,5 +33,10 @@ export function applyOfficialSessionResult(root){
  roles[session.evadingTeam].evadingCount+=1;
  const scores={...(root.event.scores||{})};
  if(session.provisionalWinner)scores[session.provisionalWinner]=(scores[session.provisionalWinner]||0)+1;
- return {...root,systemState:"session-complete",activeFlag:root.activeFlag==="return-to-start"?"return-to-start":"checkered",session:{...session,running:false,resultOfficial:true},event:{...root.event,scores,circuit:{...(root.event.circuit||{}),roles}}};
+ const participationSessions={...(root.event.participationSessions||{})};
+ for(const report of Object.values(root.event.vehicleReports||{})){
+  if(report?.driverId)participationSessions[report.driverId]=(participationSessions[report.driverId]||0)+1;
+  if(report?.passengerId)participationSessions[report.passengerId]=(participationSessions[report.passengerId]||0)+1;
+ }
+ return {...root,systemState:"session-complete",activeFlag:root.activeFlag==="return-to-start"?"return-to-start":"checkered",session:{...session,running:false,resultOfficial:true},event:{...root.event,scores,participationSessions,circuit:{...(root.event.circuit||{}),roles}}};
 }
