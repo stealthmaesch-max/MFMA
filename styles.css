@@ -1439,6 +1439,10 @@ button, input, select, summary { min-height: 44px; touch-action: manipulation; }
   .auth-card{padding:22px 18px}.auth-card .brand-row{display:grid;gap:14px}.auth-logo{width:min(100%,250px)}
 }
 
+/* v4.8 auditable championship scoring */
+.standing-name>span{min-width:0}.provisional-tag{display:block;margin-top:2px;color:#f8b84e;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.points-breakdown{color:#a9b4c1;font-size:11px;line-height:1.25}.event-close-controls{display:grid;justify-items:end;gap:8px}.official-outcomes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.official-outcomes label{display:grid;gap:3px;color:#aab5c2;font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}.official-outcomes select{min-width:150px;min-height:40px}.replacement-review{border-color:#d6a331!important;background:rgba(214,163,49,.08)!important}
+@media(max-width:699px){.dashboard-event.event-head{align-items:stretch}.event-close-controls{justify-items:stretch;width:100%}.official-outcomes{display:grid;grid-template-columns:1fr}.official-outcomes select{width:100%;min-width:0;font-size:16px}.points-breakdown{font-size:9px}.standings-table article{grid-template-columns:28px minmax(0,1fr) minmax(74px,.8fr) 42px}}
+
 /* v5.1 Championship portal */
 .championship-page{min-height:100dvh;margin:0;background:radial-gradient(circle at 12% -10%,rgba(241,21,36,.2),transparent 34rem),radial-gradient(circle at 95% 15%,rgba(19,159,242,.1),transparent 30rem),#07090d;color:#f5f7fa;font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"SF Pro Display",sans-serif}
 .championship-page *{box-sizing:border-box}.championship-shell{width:min(1180px,100%);margin:auto;padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(28px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}

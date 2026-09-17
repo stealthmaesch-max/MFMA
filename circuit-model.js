@@ -38,5 +38,17 @@ export function applyOfficialSessionResult(root){
   if(report?.driverId)participationSessions[report.driverId]=(participationSessions[report.driverId]||0)+1;
   if(report?.passengerId)participationSessions[report.passengerId]=(participationSessions[report.passengerId]||0)+1;
  }
- return {...root,systemState:"session-complete",activeFlag:root.activeFlag==="return-to-start"?"return-to-start":"checkered",session:{...session,running:false,resultOfficial:true},event:{...root.event,scores,participationSessions,circuit:{...(root.event.circuit||{}),roles}}};
+ const vehicleIds=session.setup?.vehicleIds||session.pursuitVehicleIds||[];
+ const sessionResult={
+  sessionNumber:session.number||root.event.sessionNumber||1,
+  winnerSide:session.provisionalWinner||null,
+  reason:session.provisionalReason||"Official session result",
+  completedAt:Date.now(),
+  entrants:teamIds.map((side,index)=>{
+   const vehicleId=vehicleIds[side==="a"?0:side==="b"?1:index]||null,report=root.event.vehicleReports?.[vehicleId]||{};
+   return {side,position:session.provisionalWinner?side===session.provisionalWinner?1:2:null,outcome:session.provisionalWinner?side===session.provisionalWinner?"winner":"classified":"no-result",teamId:root.event.teamIds?.[side]||report.teamId||null,teamName:session.teamNames?.[side]||report.teamName||null,vehicleId,driverId:report.driverId||null,driverName:report.driverName||null,mraNumber:report.mraNumber||null};
+  })
+ };
+ const sessionResults=[...(root.event.sessionResults||[]),sessionResult];
+ return {...root,systemState:"session-complete",activeFlag:root.activeFlag==="return-to-start"?"return-to-start":"checkered",session:{...session,running:false,resultOfficial:true},event:{...root.event,scores,participationSessions,sessionResults,circuit:{...(root.event.circuit||{}),roles}}};
 }

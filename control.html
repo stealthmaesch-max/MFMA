@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#07090d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>MRA Race Control</title><link rel="stylesheet" href="styles.css?v=83">
+<meta name="theme-color" content="#07090d"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"><title>MRA Race Control</title><link rel="stylesheet" href="styles.css?v=84">
 </head><body class="control-page race-control-page"><main class="control-shell">
 <section id="auth-panel" class="auth-shell">
   <section class="auth-card">
@@ -47,7 +47,7 @@
 
 <section id="event-area" class="hidden dashboard-grid">
 <section class="panel event-head dashboard-event"><div><p class="eyebrow">Active Event</p><h2 id="event-name">MFMA Event</h2><p id="event-meta"></p></div>
-<div class="button-row"><button id="standby-button" class="action secondary-btn">Standby</button><button id="end-event" class="danger-btn">End Event</button></div></section>
+<div class="event-close-controls"><div id="official-outcomes" class="official-outcomes hidden"><label id="outcome-label-a">Team A<select id="event-outcome-a"><option value="winner">Winner</option><option value="classified">Classified runner-up</option><option value="dnf">DNF after participation</option><option value="dns">DNS</option><option value="dq">Disqualified</option><option value="no-result">No result</option></select></label><label id="outcome-label-b">Team B<select id="event-outcome-b"><option value="winner">Winner</option><option value="classified">Classified runner-up</option><option value="dnf">DNF after participation</option><option value="dns">DNS</option><option value="dq">Disqualified</option><option value="no-result">No result</option></select></label></div><div class="button-row"><button id="standby-button" class="action secondary-btn">Standby</button><button id="end-event" class="danger-btn">End Event</button></div></div></section>
 <section id="hazard-panel" class="panel hazard-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Driver Reports</p><h2>Track Hazards</h2></div></div><div id="hazard-list" class="hazard-list"></div></section>
 <section id="occupant-panel" class="panel occupant-panel dashboard-event hidden"><div class="section-head compact"><div><p class="eyebrow">Latest Reports</p><h2>Crew / Occupants</h2></div></div><div id="occupant-list" class="occupant-list"></div></section>
 
@@ -212,4 +212,4 @@
 </section>
 </div>
 <dialog id="safety-message-dialog" class="safety-message-dialog"><form id="safety-message-form"><div class="dialog-head"><div><img class="dialog-mra-logo" src="assets/branding/mra-logo.png" alt="MFMA Race Authority"><p class="eyebrow">Safety Communication</p><h2>Additional Driver Information</h2></div><button type="button" id="close-safety-message" aria-label="Close">×</button></div><p class="modal-copy">The active safety signal takes effect immediately. This optional message adds concise instructions for drivers.</p><label>Driver message<textarea id="safety-message-input" maxlength="100" rows="3" placeholder="Example: Debris near the north gate"></textarea></label><div class="safety-message-presets" aria-label="Message presets"><button type="button" data-safety-preset="Hazard ahead — reduce speed">Hazard ahead</button><button type="button" data-safety-preset="Hold position and await instructions">Hold position</button><button type="button" data-safety-preset="Return to the starting zone">Return to start</button></div><div class="button-row"><button class="action primary-btn" type="submit">Present Information</button><button id="clear-safety-message" class="action secondary-btn" type="button">Clear Information</button></div><p id="safety-message-status" class="auth-status" role="status"></p></form></dialog>
-<script type="module" src="control.js?v=83"></script></body></html>
+<script type="module" src="control.js?v=84"></script></body></html>
