@@ -28,3 +28,8 @@ test("Race Control exposes Points Management without a collapsed default",()=>{
 });
 
 test("official outcomes replace the obsolete tied-score archive blocker",()=>{const control=require("node:fs").readFileSync("control.js","utf8");assert.doesNotMatch(control,/Resolve the finishing order before archiving/);assert.match(control,/Choose exactly one event winner/)});
+
+test("isolated Test Mode cannot create competition records",()=>{
+ const fs=require("node:fs"),control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8"),display=fs.readFileSync("display.js","utf8");
+ assert.match(html,/id="start-test-mode"/);assert.match(html,/id="test-mode-panel"/);assert.match(control,/state\?\.systemState!=="test-mode"\|\|!state\.event\?\.testMode/);assert.match(control,/systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null/);assert.match(display,/DISPLAY \/ SOUND VERIFICATION • NOT AN ACTIVE EVENT/);
+});

@@ -4,7 +4,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { signals } from "./signals.js?v=71";
-import { getRenderMode } from "./display-state.js?v=85";
+import { getRenderMode } from "./display-state.js?v=87";
 import {qualifyingTime} from "./qualifying-model.js?v=85";
 
 const app=initializeApp(firebaseConfig);
@@ -39,7 +39,7 @@ function render(){
 
  const mode=getRenderMode(state);
  const visibility={
-  "no-event":[],standby:[],"course-lap":[],"sprint-live":["fan-timer-panel"],"qualifying-live":["fan-timer-panel"],
+  "no-event":[],"test-mode":[],standby:[],"course-lap":[],"sprint-live":["fan-timer-panel"],"qualifying-live":["fan-timer-panel"],
   "session-live":["fan-timer-panel","fan-score-panel","fan-circuit-panel","fan-assignments-panel"],
   "awaiting-finding-start":["fan-timer-panel"],provisional:["fan-score-panel","fan-circuit-panel"],
   "session-complete":["fan-score-panel","fan-circuit-panel"],"next-session-staging":[],"next-session-countdown":[],"safety-car-termination":[],"violation-review":[],"white-termination":[]
@@ -66,6 +66,7 @@ function render(){
  $("fan-state").textContent=state.systemState==="white-termination"?"DISQUALIFICATION":state.systemState==="violation-review"?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":state.systemState.replaceAll("-"," ").toUpperCase();
  const operationalFlag=["standby","sprint-live"].includes(state.systemState)?(state.activeFlag||"clear"):null;
  $("fan-flag").textContent=(operationalFlag==="clear"?(state.systemState==="sprint-live"?"CLEAR":"STANDBY"):operationalFlag?operationalFlag.replaceAll("-"," "):(signals[state.activeFlag]?.label||state.activeFlag||"STANDBY")).toUpperCase();
+ if(mode==="test-mode"){$("fan-event").textContent="MRA SYSTEM TEST";$("fan-state").textContent="TEST MODE — NOT AN ACTIVE EVENT";$("fan-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();$("fan-phase").textContent="DISPLAY / SOUND VERIFICATION";$("fan-timer").textContent="TEST";$("fan-session").textContent="";$("fan-roles").textContent="";return}
 
  if(mode==="course-lap"){
   $("fan-state").textContent="COURSE LAP";$("fan-flag").textContent="SAFETY CAR";return;
