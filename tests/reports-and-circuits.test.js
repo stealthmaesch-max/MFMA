@@ -74,6 +74,29 @@ test("operational signals flash while Green and infractions remain steady",async
  assert.doesNotMatch(css,/\.flag-checkered \.signal-label[\s\S]*animation: none/);
 });
 
+test("Return and Proceed use neutral movement instructions instead of flag displays",async()=>{
+ const {signals}=await importModule("signals.js");
+ const css=fs.readFileSync("styles.css","utf8"),display=fs.readFileSync("display.html","utf8"),control=fs.readFileSync("control.js","utf8");
+ assert.match(signals["return-to-start"].className,/movement-screen movement-return/);
+ assert.match(signals["proceed-to-start"].className,/movement-screen movement-proceed/);
+ assert.doesNotMatch(signals["return-to-start"].instruction,/flag|folded/i);
+ assert.doesNotMatch(signals["proceed-to-start"].instruction,/flag|folded/i);
+ assert.doesNotMatch(css,/foldedFlagTwirl|flag-return-to-start|flag-proceed-to-start/);
+ assert.match(display,/id="movement-symbol"/);
+ assert.match(control,/instructionPatch\("return-to-start"/);
+ assert.match(control,/instructionPatch\("proceed-to-start"/);
+});
+
+test("critical instructions expose secure Driver acknowledgement and MRA status",()=>{
+ const display=fs.readFileSync("display.html","utf8"),displayJs=fs.readFileSync("display.js","utf8"),control=fs.readFileSync("control.html","utf8"),controlJs=fs.readFileSync("control.js","utf8"),rules=fs.readFileSync("database.rules.json","utf8");
+ assert.match(display,/id="instruction-ack"/);
+ assert.match(displayJs,/instructionAcks\/\$\{user\.uid\}/);
+ assert.match(control,/id="instruction-sync-panel"/);
+ assert.match(controlJs,/renderInstructionSync/);
+ assert.match(rules,/"instructionAcks"/);
+ assert.match(rules,/newData\.child\('instructionId'\)\.val\(\) === root\.child\('mfma'\).*currentInstruction/);
+});
+
 test("MRA safety information is scoped to the currently active management signal",()=>{
  const control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("control.html","utf8"),driverHtml=fs.readFileSync("display.html","utf8");
  assert.match(html,/id="safety-message-dialog"/);assert.match(html,/maxlength="100"/);assert.match(html,/data-safety-preset/);

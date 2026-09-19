@@ -21,7 +21,7 @@ const sprintBranch=issue.match(/if\(state\?\.systemState==="sprint-live"\)\{([\s
 assert(sprintBranch,"Sprint flag branch exists");
 for(const flag of ["green","yellow","red","safety-car","checkered","clear"])assert(sprintBranch.includes(`"${flag}"`),`${flag} is allowed in Sprint`);
 assert(!sprintBranch.includes('"white"'),"legacy White Flag is removed from Sprint");
-assert.match(sprintBranch,/update\(stateRef,\{activeFlag:flag,updatedAt:serverTimestamp\(\)\}\)/);
+assert.match(sprintBranch,/update\(stateRef,\{activeFlag:flag,\.\.\.clearInstructionPatch\(\),updatedAt:serverTimestamp\(\)\}\)/);
 for(const forbidden of ["automaticCheckered","openWhiteDialog","safety-car-termination","session/","event/"])assert(!sprintBranch.includes(forbidden),`Sprint flags exclude ${forbidden}`);
 
 const sprintFunctions=["startSprint","terminateSprint","setSprintTimerMode","configureSprintDuration","startSprintTimer","pauseSprintTimer","resetSprintTimer","adjustSprintTimer","setSprintTimer","sprintTick"].map(functionSource).join("\n");

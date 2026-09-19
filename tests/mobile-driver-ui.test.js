@@ -220,3 +220,19 @@ test("Race Control prioritizes live work and keeps MRA administration proportion
  }
  await browser.close();
 });
+
+test("flag-free movement orders and acknowledgement controls fit iPhone portrait",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ for(const configuration of [{className:"movement-screen movement-return flash",label:"RETURN TO START",instruction:"EVERYONE RETURN TO THE STARTING ZONE"},{className:"movement-screen movement-proceed",label:"PROCEED TO LINE",instruction:"NEXT HIDING TEAM TO THE STARTING LINE"}]){
+  const metrics=await page.evaluate(configuration=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className=`display ${configuration.className}`;document.querySelector("#movement-symbol").classList.remove("hidden");document.querySelector("#label").textContent=configuration.label;document.querySelector("#instruction").textContent=configuration.instruction;const acknowledgement=document.querySelector("#instruction-ack");acknowledgement.classList.remove("hidden");const symbol=document.querySelector("#movement-symbol").getBoundingClientRect(),button=acknowledgement.getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {width:document.documentElement.scrollWidth,symbol:{left:symbol.left,right:symbol.right},button:{left:button.left,right:button.right,height:button.height,bottom:button.bottom},toolsTop:tools.top}},configuration);
+  assert.equal(metrics.width,393);assert(metrics.symbol.left>=0&&metrics.symbol.right<=393,"movement symbol is contained");assert(metrics.button.left>=0&&metrics.button.right<=393&&metrics.button.height>=44,"acknowledgement is a safe touch target");assert(metrics.button.bottom<metrics.toolsTop,"acknowledgement remains above Driver tools");
+ }
+ await browser.close();
+});
+
+test("MRA instruction status remains compact and readable on iPhone",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:393,height:852}});await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
+ const metrics=await page.evaluate(()=>{document.querySelector("#auth-gate")?.classList.add("hidden");document.querySelector("#secured-control")?.classList.remove("hidden");document.querySelector("#event-area")?.classList.remove("hidden");const panel=document.querySelector("#instruction-sync-panel");panel.classList.remove("hidden");document.querySelector("#instruction-sync-title").textContent="EVERYONE RETURN TO STARTING ZONE";document.querySelector("#instruction-sync-summary").textContent="1 of 2 signed-in Driver displays acknowledged.";document.querySelector("#instruction-sync-list").innerHTML='<span class="acknowledged">✓ Ranger • Driver One</span><span>○ Shelly • Driver Two</span>';const box=panel.getBoundingClientRect();return {width:document.documentElement.scrollWidth,panel:{left:box.left,right:box.right,height:box.height},chips:[...panel.querySelectorAll("span")].map(item=>item.getBoundingClientRect().toJSON())}});
+ assert.equal(metrics.width,393);assert(metrics.panel.left>=0&&metrics.panel.right<=393,"status widget is contained");assert(metrics.panel.height<240,"status widget does not dominate the MRA screen");assert(metrics.chips.every(chip=>chip.left>=metrics.panel.left&&chip.right<=metrics.panel.right),"acknowledgement chips stay contained");await browser.close();
+});

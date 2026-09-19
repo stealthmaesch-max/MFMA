@@ -38,6 +38,18 @@ test("Driver can create an open hazard but cannot acknowledge or resolve it",asy
  await assertFails(set(ref(driver,"mfma/state/event/hazards/h3"),{...openHazard,rdNotes:"driver note"}));
 });
 
+test("Approved team devices can acknowledge only the current MRA instruction",async()=>{
+ await authorizeDriver();
+ await set(ref(rd,"mfma/state/event/currentInstruction"),{id:9001,type:"return-to-start",label:"EVERYONE RETURN TO STARTING ZONE",issuedAt:9001});
+ const acknowledgement={instructionId:9001,type:"return-to-start",vehicleId:"ranger",driverId:"d1",teamId:"team-one",acknowledgedAt:9100};
+ await assertSucceeds(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),acknowledgement));
+ await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/another-device"),acknowledgement));
+ await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,instructionId:8999}));
+ await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,type:"red"}));
+ await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,vehicleId:"unapproved"}));
+ await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,teamId:"other-team"}));
+});
+
 test("Driver cannot change Race Director state",async()=>{
  for(const [path,value] of [
   ["activeFlag","red"],

@@ -97,6 +97,19 @@
               "$other": { ".validate": "newData.isString() || newData.isNumber()" }
             }
           },
+          "instructionAcks": {
+            "$uid": {
+              ".write": "auth != null && auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && newData.exists() && newData.child('instructionId').val() === root.child('mfma').child('state').child('event').child('currentInstruction').child('id').val() && newData.child('type').val() === root.child('mfma').child('state').child('event').child('currentInstruction').child('type').val() && newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('teamId').val() && (newData.child('teamId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() || newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val()) && (newData.child('vehicleId').val() === 'ranger' || newData.child('vehicleId').val() === 'shelly' || newData.child('vehicleId').val() === 'gator')",
+              ".validate": "newData.hasChildren(['instructionId','type','vehicleId','driverId','teamId','acknowledgedAt'])",
+              "instructionId": { ".validate": "newData.isNumber()" },
+              "type": { ".validate": "newData.isString() && (newData.val() === 'red' || newData.val() === 'safety-car' || newData.val() === 'return-to-start' || newData.val() === 'proceed-to-start' || newData.val() === 'restart')" },
+              "vehicleId": { ".validate": "newData.isString()" },
+              "driverId": { ".validate": "newData.isString()" },
+              "teamId": { ".validate": "newData.isString()" },
+              "acknowledgedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+              "$other": { ".validate": false }
+            }
+          },
           "hazards": {
             "$hazardId": {
               ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && !data.exists() && (root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('teamId').val() || root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('teamId').val()) && newData.child('mraNumber').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('mraNumber').val() && newData.child('status').val() === 'open' && !newData.hasChild('acknowledgedAt') && !newData.hasChild('resolvedAt') && !newData.hasChild('rdNotes') && (newData.child('vehicleId').val() === 'ranger' || newData.child('vehicleId').val() === 'shelly' || newData.child('vehicleId').val() === 'gator')",

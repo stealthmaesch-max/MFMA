@@ -12,7 +12,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
-import { signals } from "./signals.js?v=71";
+import { signals } from "./signals.js?v=93";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=70";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=53";
@@ -308,28 +308,31 @@ async function setSprintTimer(){
 }
 
 async function automaticCheckered(winner,reason){
- if(!requireAuthenticatedWrite())return;await update(stateRef,{systemState:"provisional",activeFlag:"checkered","session/running":false,"session/provisionalWinner":winner,"session/provisionalReason":reason,updatedAt:serverTimestamp()})}
+ if(!requireAuthenticatedWrite())return;await update(stateRef,{systemState:"provisional",activeFlag:"checkered","session/running":false,"session/provisionalWinner":winner,"session/provisionalReason":reason,"event/currentInstruction":null,"event/instructionAcks":null,updatedAt:serverTimestamp()})}
+
+function instructionPatch(type,label){const id=Date.now();return {"event/currentInstruction":{id,type,label,issuedAt:id},"event/instructionAcks":null}}
+function clearInstructionPatch(){return {"event/currentInstruction":null,"event/instructionAcks":null}}
 
 async function issueFlag(flag){
  if(!requireAuthenticatedWrite())return;
  if(state?.systemState==="sprint-live"){
   const sprintFlags=new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]);
   if(!state?.sprint?.active||!sprintFlags.has(flag))return;
-  await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
+  await update(stateRef,{activeFlag:flag,...clearInstructionPatch(),updatedAt:serverTimestamp()});
   return;
  }
  if(state?.systemState==="standby"){
   const standbyFlags=new Set(["yellow","move-over","red","safety-car","checkered","clear"]);
   if(!standbyFlags.has(flag))return;
-  await update(stateRef,{activeFlag:flag,updatedAt:serverTimestamp()});
+  await update(stateRef,{activeFlag:flag,...clearInstructionPatch(),updatedAt:serverTimestamp()});
   return;
  }
  if(!state?.session||state.systemState!=="session-live")return;
- if(flag==="yellow"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"yellow","session/flag":"yellow","session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
- if(flag==="move-over"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"move-over",updatedAt:serverTimestamp()});return}
- if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),updatedAt:serverTimestamp()});return}
- if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,updatedAt:serverTimestamp()});return}
- if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",updatedAt:serverTimestamp()});return}
+ if(flag==="yellow"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"yellow","session/flag":"yellow","session/lastTickAt":Date.now(),...clearInstructionPatch(),updatedAt:serverTimestamp()});return}
+ if(flag==="move-over"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"move-over",...clearInstructionPatch(),updatedAt:serverTimestamp()});return}
+ if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),...clearInstructionPatch(),updatedAt:serverTimestamp()});return}
+ if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,...instructionPatch("red","STOP — AWAIT RACE CONTROL"),updatedAt:serverTimestamp()});return}
+ if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",...instructionPatch("safety-car","SAFETY CAR — FOLLOW OFFICIAL VEHICLE"),updatedAt:serverTimestamp()});return}
  if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered(null,"Manual Checkered");
 }
 
@@ -546,18 +549,18 @@ async function advanceNextSession(){
  const spotIds=prior.format==="vehicle-vehicle"?[vehicleIds[pursuit==="a"?0:1]].filter(Boolean):(setup.pursuitVehicleIds||prior.pursuitVehicleIds||[]);
  const session={number:(state.event.sessionNumber||prior.number||1)+1,format:prior.format,teamNames:prior.teamNames,pursuitTeam:pursuit,evadingTeam:evading,setup,phase:"staging",remainingMs:hide,hideDurationMs:hide,findDurationMs:find,running:false,lastTickAt:null,flag:"proceed-to-start",spotStatus:Object.fromEntries(spotIds.map(id=>[id,false])),pursuitVehicleIds:spotIds,provisionalWinner:null,provisionalReason:null,resultOfficial:false,countdownEndsAt:null};
  roleIndex=nextRoleIndex;
- await update(stateRef,{systemState:"next-session-staging",activeFlag:"proceed-to-start",session,"event/sessionNumber":session.number,"event/circuit/roleIndex":roleIndex,"event/circuit/nextRolesSwapped":null,"event/pendingAdjustment":null,updatedAt:serverTimestamp()});
+ await update(stateRef,{systemState:"next-session-staging",activeFlag:"proceed-to-start",session,"event/sessionNumber":session.number,"event/circuit/roleIndex":roleIndex,"event/circuit/nextRolesSwapped":null,"event/pendingAdjustment":null,...instructionPatch("proceed-to-start","NEXT HIDING TEAM TO STARTING LINE"),updatedAt:serverTimestamp()});
 }
 
-async function startNextCountdown(){if(!requireAuthenticatedWrite()||state?.systemState!=="next-session-staging")return;await update(stateRef,{systemState:"next-session-countdown","session/phase":"countdown","session/countdownEndsAt":Date.now()+10000,updatedAt:serverTimestamp()})}
+async function startNextCountdown(){if(!requireAuthenticatedWrite()||state?.systemState!=="next-session-staging")return;await update(stateRef,{systemState:"next-session-countdown","session/phase":"countdown","session/countdownEndsAt":Date.now()+10000,...clearInstructionPatch(),updatedAt:serverTimestamp()})}
 
-async function issueReturnToStart(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"return-to-start","session/postSessionStage":"return-to-start",updatedAt:serverTimestamp()})}
+async function issueReturnToStart(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"return-to-start","session/postSessionStage":"return-to-start",...instructionPatch("return-to-start","EVERYONE RETURN TO STARTING ZONE"),updatedAt:serverTimestamp()})}
 async function swapNextRoles(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{"event/circuit/nextRolesSwapped":!state.event.circuit?.nextRolesSwapped,updatedAt:serverTimestamp()})}
 function countdownDots(element,endsAt){if(!element)return;const elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;element.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
 function scheduleNextStart(){
  if(nextStartTimer){clearTimeout(nextStartTimer);nextStartTimer=null}
  if(state?.systemState!=="next-session-countdown"||!state.session?.countdownEndsAt)return;
- const start=async()=>{if(!currentUser){nextStartTimer=setTimeout(start,500);return}if(state?.systemState!=="next-session-countdown")return;await update(stateRef,{systemState:"session-live",activeFlag:"green","session/phase":"hiding","session/running":true,"session/flag":"green","session/lastTickAt":Date.now(),"session/countdownEndsAt":null,updatedAt:serverTimestamp()})};
+ const start=async()=>{if(!currentUser){nextStartTimer=setTimeout(start,500);return}if(state?.systemState!=="next-session-countdown")return;await update(stateRef,{systemState:"session-live",activeFlag:"green","session/phase":"hiding","session/running":true,"session/flag":"green","session/lastTickAt":Date.now(),"session/countdownEndsAt":null,...clearInstructionPatch(),updatedAt:serverTimestamp()})};
  nextStartTimer=setTimeout(()=>start().catch(error=>console.error("Unable to start next session",error)),Math.max(0,state.session.countdownEndsAt-Date.now()));
 }
 
@@ -602,6 +605,7 @@ async function restartTerminatedSession(){
   "session/terminationType":null,
   "session/terminationDetail":null,
   "session/spotStatus":Object.fromEntries((s.pursuitVehicleIds||[]).map(v=>[v,false])),
+  ...instructionPatch("restart","RETURN TO STARTING LINE — PREPARE TO RESTART"),
   updatedAt:serverTimestamp()
  });
 }
@@ -688,11 +692,12 @@ function renderReports(){
  document.querySelectorAll("[data-hazard-resolve]").forEach(b=>b.onclick=()=>resolveHazard(b.dataset.hazardResolve));
  document.querySelectorAll("[data-hazard-red]").forEach(b=>b.onclick=()=>issueFlag("red"));document.querySelectorAll("[data-hazard-safety]").forEach(b=>b.onclick=()=>issueFlag("safety-car"));
 }
+function renderInstructionSync(){const panel=$("instruction-sync-panel"),current=state?.event?.currentInstruction;if(!current){panel.classList.add("hidden");return}const reports=Object.entries(state.event?.vehicleReports||{}),acks=state.event?.instructionAcks||{},rows=reports.map(([vehicleId,report])=>({vehicleId,report,acknowledged:Object.values(acks).some(ack=>ack?.instructionId===current.id&&ack.vehicleId===vehicleId)})),acknowledgedCount=rows.filter(row=>row.acknowledged).length;panel.classList.remove("hidden");$("instruction-sync-title").textContent=current.label||current.type.replaceAll("-"," ");$("instruction-sync-summary").textContent=rows.length?`${acknowledgedCount} of ${rows.length} signed-in Driver display${rows.length===1?"":"s"} acknowledged.`:"Waiting for a signed-in Driver display.";$("instruction-sync-list").innerHTML=rows.map(({vehicleId,report,acknowledged})=>`<span class="${acknowledged?"acknowledged":""}">${acknowledged?"✓ ":"○ "}${escapeHtml(vehicleLabel(vehicleId))} • ${escapeHtml(report.driverName||"Driver")}</span>`).join("")}
 function render(){
  const mode=getRenderMode(state),has=mode!=="no-event";document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);const safetyActive=safetyManagementActive(),currentSafetyMessage=safetyActive&&state.safetyMessage?.flag===state.activeFlag?state.safetyMessage.text||"":"";$("safety-message-open").classList.toggle("hidden",!safetyActive);$("safety-message-open").textContent=currentSafetyMessage?"Safety Info • Live":"Safety Info";if(!has)return;
  E.eventName.textContent=state.event.name;E.eventMeta.textContent=state.event.circuit?.format?state.event.circuit.format.replace("-","–"):"Awaiting first session";
  const testMode=mode==="test-mode",standby=mode==="standby",course=mode==="course-lap",sprintLive=mode==="sprint-live",qualifyingLive=mode==="qualifying-live",live=mode==="session-live"||mode==="awaiting-finding-start",awaiting=mode==="awaiting-finding-start",prov=mode==="provisional",complete=mode==="session-complete",staging=mode==="next-session-staging",countdown=mode==="next-session-countdown",safetyTerm=mode==="safety-car-termination",review=mode==="violation-review",whiteTerm=mode==="white-termination";
- showOnly(mode,{"test-mode":E.testMode,standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"qualifying-live":E.qualifying,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"next-session-staging":E.nextStart,"next-session-countdown":E.nextStart,"safety-car-termination":E.termination,"violation-review":E.termination,"white-termination":E.termination});
+ showOnly(mode,{"test-mode":E.testMode,standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"qualifying-live":E.qualifying,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"next-session-staging":E.nextStart,"next-session-countdown":E.nextStart,"safety-car-termination":E.termination,"violation-review":E.termination,"white-termination":E.termination});renderInstructionSync();
  $("event-head-panel").classList.toggle("hidden",testMode);$("hazard-panel").classList.toggle("hidden",testMode);$("occupant-panel").classList.toggle("hidden",testMode);
  E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(standby||(live&&!awaiting)));
  const flagsAllowed=standby||sprintLive||(live&&!awaiting);$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-status").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
@@ -743,7 +748,7 @@ function render(){
   renderScore("between-scoreboard");
   renderCircuit("circuit-progress");
  }
- if(staging||countdown){const restart=Boolean(state.session?.restart);$("next-start-panel").querySelector("h2").textContent=restart?"Restart at Starting Line":"Proceed to Starting Line";$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?`${restart?"Restart":"Start"} sequence active. Green and the hiding timer begin when all red lights go out.`:`${restart?"Restart ordered":"The folded green order has been issued"}. Wait until the hiding team is stopped behind the line.`;if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
+ if(staging||countdown){const restart=Boolean(state.session?.restart);$("next-start-panel").querySelector("h2").textContent=restart?"Restart at Starting Line":"Proceed to Starting Line";$("start-next-countdown").classList.toggle("hidden",countdown);$("next-start-guidance").textContent=countdown?`${restart?"Restart":"Start"} sequence active. Green and the hiding timer begin when all red lights go out.`:`${restart?"Restart order issued":"Proceed order issued"}. Wait until the hiding team is stopped behind the line.`;if(countdown)countdownDots($("control-start-dots"),state.session.countdownEndsAt);else $("control-start-dots").innerHTML=""}
 }
 
 document.querySelectorAll("[data-type]").forEach(b=>b.onclick=()=>{document.querySelectorAll("[data-type]").forEach(x=>x.classList.remove("active"));b.classList.add("active");sessionType=b.dataset.type;$("vehicle-vehicle-setup").classList.toggle("hidden",sessionType!=="vehicle-vehicle");$("vehicle-foot-setup").classList.toggle("hidden",sessionType!=="vehicle-foot");if(sessionType==="vehicle-foot"){E.hide.value=120;E.find.value=300;renderVF()}else{E.hide.value=60;E.find.value=120;renderVVSelectors()}});
