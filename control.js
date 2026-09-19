@@ -19,6 +19,7 @@ import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, teamBranding } from "./competition-model.js?v=88";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
+import {isMraAdminUser,mraAuthErrorMessage} from "./mra-auth.js?v=95";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
@@ -47,6 +48,12 @@ const authStatus=$("auth-status");
 const authError=$("auth-error");
 const accountName=$("account-name");
 const controlSound=$("control-sound");
+let authStateResolved=false;
+const authStartupTimer=setTimeout(()=>{
+ if(authStateResolved)return;
+ authStatus.textContent="Authentication unavailable";
+ setAuthError("Firebase Authentication did not respond. Check the connection, reload the page, and try again.");
+},8000);
 
 function renderControlSound({state:audioState}){controlSound.textContent=audioState==="enabled"?"Sound On":"Enable Sounds";controlSound.dataset.state=audioState}
 controlSound.onclick=async()=>{try{await enableSounds()}catch(error){console.warn("Unable to enable Race Control sounds",error)}renderControlSound(getSoundStatus())};
@@ -74,20 +81,14 @@ async function beginProviderSignIn(provider,label){
   await signInWithPopup(auth,provider);
  }catch(error){
   console.error(`${label} sign-in failed`,error);
-  const messages={
-   "auth/popup-closed-by-user":"Sign-in was canceled.",
-   "auth/popup-blocked":"The browser blocked the sign-in window. Allow pop-ups for this site and try again.",
-   "auth/unauthorized-domain":"Add stealthmaesch-max.github.io to Firebase Authentication authorized domains.",
-   "auth/account-exists-with-different-credential":"That email is already connected to another provider. Sign in with that provider first.",
-   "auth/operation-not-allowed":`${label} sign-in is not enabled in Firebase Authentication.`
-  };
-  setAuthError(messages[error.code]||`Sign-in failed: ${error.message}`);
+  setAuthError(mraAuthErrorMessage(error,label));
   authStatus.textContent="Not signed in";
  }
 }
 
 $("github-sign-in").onclick=()=>beginProviderSignIn(githubProvider,"GitHub");
 $("google-sign-in").onclick=()=>beginProviderSignIn(googleProvider,"Google");
+$("auth-reset").onclick=async()=>{setAuthError("");await signOut(auth)};
 
 $("sign-out").onclick=async()=>{
  try{
@@ -112,25 +113,38 @@ setPersistence(auth,browserLocalPersistence).catch(error=>{
 });
 
 onAuthStateChanged(auth,user=>{
- const signedIn=Boolean(user&&!user.isAnonymous);
- currentUser=signedIn?user:null;
- authPanel.classList.toggle("hidden",signedIn);
- securedControl.classList.toggle("hidden",!signedIn);
+ authStateResolved=true;
+ clearTimeout(authStartupTimer);
+ const authorized=isMraAdminUser(user);
+ currentUser=authorized?user:null;
+ authPanel.classList.toggle("hidden",authorized);
+ securedControl.classList.toggle("hidden",!authorized);
 
- if(signedIn){
+ if(authorized){
   authStatus.textContent="Signed in";
   accountName.textContent=`${displayUserName(user)} • ${providerLabel(user)}`;
   setAuthError("");
   if(!requestsUnsubscribe)requestsUnsubscribe=onValue(requestsRef,snapshot=>{requests=snapshot.val()||{};renderManagement()},error=>console.error("Unable to load MRA approval queue",error));
  }else{
-  authStatus.textContent="Choose a sign-in method";
+  authStatus.textContent=user&&!user.isAnonymous?"Account not authorized":"Choose a sign-in method";
+  $("auth-reset").classList.toggle("hidden",!(user&&!user.isAnonymous));
   accountName.textContent="Signed out";
+  setAuthError(user&&!user.isAnonymous?`This account is signed in but is not approved for MRA Race Control. Use an authorized MRA account. Account UID: ${user.uid}`:"");
   if(requestsUnsubscribe){requestsUnsubscribe();requestsUnsubscribe=null}requests={};
  }
+},error=>{
+ authStateResolved=true;
+ clearTimeout(authStartupTimer);
+ currentUser=null;
+ authPanel.classList.remove("hidden");
+ securedControl.classList.add("hidden");
+ authStatus.textContent="Authentication unavailable";
+ $("auth-reset").classList.add("hidden");
+ setAuthError(mraAuthErrorMessage(error));
 });
 
 function requireAuthenticatedWrite(){
- if(currentUser)return true;
+ if(isMraAdminUser(currentUser))return true;
  setAuthError("Race Control requires sign-in before making changes.");
  authPanel.classList.remove("hidden");
  securedControl.classList.add("hidden");

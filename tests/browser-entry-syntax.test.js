@@ -1,12 +1,15 @@
 const test=require("node:test"),{execFileSync}=require("node:child_process"),assert=require("node:assert/strict");
 
-for(const file of ["control.js","display.js","fan.js","operations.js","championship.js"]){
+for(const file of ["control.js","display.js","fan.js","operations.js","championship.js","mra-auth.js"]){
  test(`${file} parses as valid browser JavaScript`,()=>assert.doesNotThrow(()=>execFileSync(process.execPath,["--check",file],{stdio:"pipe"})));
 }
 
-test("Race Control does not treat an anonymous Driver session as MRA authentication",()=>{
- const source=require("node:fs").readFileSync("control.js","utf8");
- assert.match(source,/Boolean\(user&&!user\.isAnonymous\)/);
+test("Race Control admits only approved MRA accounts",()=>{
+ const fs=require("node:fs"),source=fs.readFileSync("control.js","utf8"),shared=fs.readFileSync("mra-auth.js","utf8"),rules=fs.readFileSync("database.rules.json","utf8");
+ assert.match(source,/const authorized=isMraAdminUser\(user\)/);
+ assert.match(source,/if\(isMraAdminUser\(currentUser\)\)return true/);
+ assert.match(source,/Account UID: \$\{user\.uid\}/);
+ for(const uid of [...shared.matchAll(/"([A-Za-z0-9]{28})"/g)].map(match=>match[1]))assert.match(rules,new RegExp(uid));
  assert.doesNotMatch(source,/available-ranger/);
 });
 
@@ -16,6 +19,7 @@ test("championship supports one authorized manager account with a linked driver 
  assert.match(source,/function linkManagerDriver/);
  assert.match(source,/mfma\/driverAccess\/\$\{user\.uid\}/);
  assert.match(source,/mode="driver"/);
+ assert.match(source,/isMraAdminUser\(current\)/);
  assert.match(html,/id="champ-role-switch"/);
  assert.match(html,/id="manager-driver-dialog"/);
 });
@@ -51,3 +55,5 @@ test("Sprint points require a pre-start roster and a verified minute",()=>{const
 test("event ending and non-archive deletion remain available throughout an event",()=>{const fs=require("node:fs"),control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8");assert.match(html,/End &amp; Delete Invalid Event/);assert.match(control,/function eventArchiveIssues/);assert.match(control,/const archiveIssues=!testMode\?eventArchiveIssues\(\):\[\],canDiscard=!testMode/);assert.doesNotMatch(control,/discardInvalidEvent\(\).*state\.systemState==="sprint-live"/);assert.match(control,/closeSprintForEventEnd/);assert.match(control,/No result or points will be archived/);assert.match(control,/cancelReason/)});
 
 test("Race Control buttons avoid unsupported native dialogs and rerender after registry load",()=>{const fs=require("node:fs"),control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8");assert.doesNotMatch(control,/\b(?:prompt|confirm)\s*\(/);assert.match(html,/id="text-entry-dialog"/);assert.match(html,/id="confirmation-dialog"/);assert.match(control,/function requestText/);assert.match(control,/function requestConfirmation/);assert.match(control,/renderChampionshipEventOptions\(\);if\(state\)render\(\)/)});
+
+test("every static Race Control button has a JavaScript binding",()=>{const fs=require("node:fs"),html=fs.readFileSync("control.html","utf8"),source=fs.readFileSync("control.js","utf8"),ids=[...html.matchAll(/<button\b[^>]*\bid="([^"]+)"/g)].map(match=>match[1]);assert(ids.length>=50,"expected the full MRA control surface");assert.deepEqual(ids.filter(id=>!source.includes(`$("${id}")`)&&!source.includes(`getElementById("${id}")`)),[])});
