@@ -19,6 +19,16 @@ before(async()=>{
 });
 after(()=>new Promise(resolve=>server.close(resolve)));
 
+test("Race Control module starts and resolves the authentication status",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await browser.newPage(),errors=[];
+ page.on("pageerror",error=>errors.push(error.message));
+ await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
+ await page.waitForFunction(()=>document.querySelector("#auth-status")?.textContent!=="Checking sign-in status…",null,{timeout:12000});
+ assert.deepEqual(errors,[]);
+ assert.notEqual(await page.locator("#auth-status").textContent(),"Checking sign-in status…");
+ await browser.close();
+});
+
 for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,height:852},{width:402,height:874},{width:430,height:932}]){
  test(`Driver layout fits ${viewport.width}x${viewport.height}`,async()=>{
   const browser=await chromium.launch({headless:true});
