@@ -63,6 +63,8 @@ test("Race Director retains authoritative event and hazard controls",async()=>{
  await assertSucceeds(update(ref(rd,"mfma/state/event/hazards/h1"),{status:"resolved",resolvedAt:300}));
 });
 
+test("Race Director can atomically end and cancel an invalid event",async()=>{await assertSucceeds(set(ref(rd,"mfma/state"),{systemState:"standby",activeFlag:"clear",event:{name:"Invalid Test",championshipEventId:"round-invalid"}}));await assertSucceeds(set(ref(rd,"mfma/competition/events/round-invalid"),{name:"Invalid Test",status:"active",registrationStatus:"closed"}));await assertSucceeds(update(ref(rd,"mfma"),{state:{systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null},"competition/events/round-invalid/status":"cancelled","competition/events/round-invalid/registrationStatus":"closed","competition/events/round-invalid/cancelReason":"Missing legal event requirements"}))});
+
 test("Driver to Race Director round trip carries crew and hazard status",async()=>{
  await authorizeDriver();const report={driverId:"d1",mraNumber:"MRA101",teamId:"team-one",teamName:"Team One",driverName:"Stealth",passengerName:"Alex",submittedAt:100};
  await assertSucceeds(set(ref(driver,"mfma/state/event/vehicleReports/ranger"),report));
