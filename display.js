@@ -3,10 +3,11 @@ import { getDatabase, ref, onValue, get, update, push, serverTimestamp } from "h
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=71";
-import { getRenderMode } from "./display-state.js?v=63";
+import { getRenderMode } from "./display-state.js?v=85";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=70";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=84";
+import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime} from "./qualifying-model.js?v=85";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null,wake=null;
 const display=$("display"),status=$("display-status"),statusText=status.querySelector("span:last-child"),statusView=$("status-view"),liveView=$("live-view"),title=$("status-title"),detail=$("status-detail"),kicker=$("status-kicker"),sessionLine=$("display-session"),timer=$("display-timer"),label=$("label"),instruction=$("instruction"),theme=document.querySelector('meta[name="theme-color"]'),standbyLeaderboard=$("standby-leaderboard");
@@ -25,6 +26,7 @@ function applyDisplayClass(className,signal){
  display.className=className;visualSignal=signal;
 }
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
+function fmtQualifying(ms){const value=Math.max(0,Math.floor(ms||0));return `${String(Math.floor(value/60000)).padStart(2,"0")}:${String(Math.floor(value%60000/1000)).padStart(2,"0")}.${String(value%1000).padStart(3,"0")}`}
 function sprintTime(s=state?.sprint){if(!s||s.timerMode==="none")return 0;const delta=s.running?Math.max(0,Date.now()-(s.lastTickAt||Date.now())):0;return s.timerMode==="count-up"?Math.max(0,(s.elapsedMs||0)+delta):Math.max(0,(s.remainingMs||0)-delta)}
 async function awake(){try{if("wakeLock"in navigator)wake=await navigator.wakeLock.request("screen")}catch(_){}}
 function showStatus(t,d,k="MFMA DIGITAL FLAG NETWORK"){
@@ -47,9 +49,10 @@ function showSprint(){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`sprint:${flag}`);
  label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent=flag==="safety-car"?"FOLLOW SAFETY CAR • NO OVERTAKING":"MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
 }
+function showQualifying(){const qualifying=state.event?.qualifying||{},fastest=fastestQualifyingLap(qualifying.laps);statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass("display flag-qualifying","qualifying");label.textContent=qualifying.running?"QUALIFYING LAP":"QUALIFYING";instruction.textContent=qualifying.running?`${qualifying.currentDriverName||"DRIVER"} • SHELLY`:(fastest?`FASTEST • ${fastest.driverName} • ${fmtQualifying(fastest.timeMs)}`:"AWAITING FIRST LAP");sessionLine.textContent=`${(QUALIFYING_TRACKS[qualifying.trackLength]||"QUALIFYING").toUpperCase()} TRACK • SHELLY`;timer.textContent=fmtQualifying(qualifyingTime(qualifying));theme.content="#10141b"}
 function renderStartDots(){const endsAt=state.session?.countdownEndsAt||Date.now(),elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;timer.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
 function renderSafetyManagement(){const managed=safetyManagementFlags.has(state?.activeFlag),message=managed&&state.safetyMessage?.flag===state.activeFlag?String(state.safetyMessage.text||"").trim():"",panel=$("safety-management"),brand=$("display-brand-logo");panel.classList.toggle("hidden",!message);$("safety-message").textContent=message;panel.classList.toggle("has-message",Boolean(message));brand.src=managed?"assets/branding/mra-logo.png":"assets/branding/mfma-logo.png";brand.alt=managed?"MFMA Race Authority":"MFMA"}
-function render(){const mode=getRenderMode(state),enforcement=new Set(["violation-review","white-termination"]).has(mode);timer.classList.toggle("dot-timer",mode==="next-session-countdown");$("steward-brand").classList.toggle("hidden",!enforcement);renderSafetyManagement();if(mode==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="course-lap"){
+function render(){const mode=getRenderMode(state),enforcement=new Set(["violation-review","white-termination"]).has(mode);timer.classList.toggle("dot-timer",mode==="next-session-countdown");$("steward-brand").classList.toggle("hidden",!enforcement);renderSafetyManagement();if(mode==="no-event"){showStatus("NO ACTIVE EVENT","Race Control has not opened an event.");return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="qualifying-live"){showQualifying();return}if(mode==="course-lap"){
  showStatus("SAFETY CAR","COURSE FAMILIARIZATION LAP • FOLLOW SAFETY CAR • NO OVERTAKING",state.event.name);
  applyDisplayClass("display flag-safety-car flash","course-lap");
  return
@@ -83,7 +86,7 @@ if(mode==="provisional"||mode==="session-complete"){
  sessionLine.textContent=`SESSION ${s?.number||""} • PURSUIT: ${s?.teamNames?.[s.pursuitTeam]||"—"} • EVADING: ${s?.teamNames?.[s.evadingTeam]||"—"}`;
  timer.textContent="ENDED";theme.content=sig.theme;return
 }}
-function tick(){if(state?.systemState==="next-session-countdown"){renderStartDots();return}if(state?.systemState==="sprint-live"){timer.textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());return}if(!state?.session||state.systemState!=="session-live")return;if(!state.session.running){timer.textContent=fmt(state.session.remainingMs);return}const factor=state.session.flag==="yellow"?0.5:1;timer.textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}
+function tick(){if(state?.systemState==="next-session-countdown"){renderStartDots();return}if(state?.systemState==="sprint-live"){timer.textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());return}if(state?.systemState==="qualifying-live"){timer.textContent=fmtQualifying(qualifyingTime(state.event?.qualifying||{}));return}if(!state?.session||state.systemState!=="session-live")return;if(!state.session.running){timer.textContent=fmt(state.session.remainingMs);return}const factor=state.session.flag==="yellow"?0.5:1;timer.textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}
 function loadVehicleReports(){
  renderPassengerHistory();
  const report=state?.event?.vehicleReports?.[selectedVehicle]||{};

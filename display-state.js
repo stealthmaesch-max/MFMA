@@ -4,6 +4,7 @@ export const renderModes={
  "course-lap":"course-lap",
  "session-live":"session-live",
  "sprint-live":"sprint-live",
+ "qualifying-live":"qualifying-live",
  provisional:"provisional",
  "session-complete":"session-complete",
  "next-session-staging":"next-session-staging",

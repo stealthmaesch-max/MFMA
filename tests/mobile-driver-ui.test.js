@@ -107,6 +107,14 @@ test("Race Control keeps Driver reports visible during a mobile live session",as
  await browser.close();
 });
 
+test("Shelly qualifying control and driver display fit iPhone 15 portrait",async()=>{
+ const browser=await chromium.launch({headless:true});
+ const control=await browser.newPage({viewport:{width:393,height:852}});await control.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
+ const controlMetrics=await control.evaluate(()=>{document.querySelector("#event-area").classList.remove("hidden");document.querySelector("#qualifying-panel").classList.remove("hidden");const panel=document.querySelector("#qualifying-panel").getBoundingClientRect(),timer=document.querySelector("#qualifying-timer").getBoundingClientRect();return {width:document.documentElement.scrollWidth,panel:{left:panel.left,right:panel.right},timer:{left:timer.left,right:timer.right}}});
+ assert.equal(controlMetrics.width,393);assert(controlMetrics.panel.left>=0&&controlMetrics.panel.right<=393);assert(controlMetrics.timer.left>=0&&controlMetrics.timer.right<=393);await control.close();
+ const display=await signedDriverPage(browser,{width:393,height:852});await display.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});const displayMetrics=await display.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className="display flag-qualifying";document.querySelector("#label").textContent="QUALIFYING LAP";document.querySelector("#instruction").textContent="TEST DRIVER • SHELLY";document.querySelector("#display-session").textContent="SHORT TRACK • SHELLY";document.querySelector("#display-timer").textContent="01:23.456";const timer=document.querySelector("#display-timer").getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {width:document.documentElement.scrollWidth,timer:{left:timer.left,right:timer.right,bottom:timer.bottom},toolsTop:tools.top}});assert.equal(displayMetrics.width,393);assert(displayMetrics.timer.left>=0&&displayMetrics.timer.right<=393&&displayMetrics.timer.bottom<displayMetrics.toolsTop);await browser.close();
+});
+
 test("branded shells and MRA steward review fit iPhone portrait",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const pageName of ["index.html","control.html","fan.html","operations.html"]){

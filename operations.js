@@ -3,13 +3,14 @@ import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
-import { getRenderMode } from "./display-state.js?v=63";
+import { getRenderMode } from "./display-state.js?v=85";
+import {qualifyingTime} from "./qualifying-model.js?v=85";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null;
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
 function sprintTime(){const s=state?.sprint;if(!s||s.timerMode==="none")return 0;const delta=s.running?Math.max(0,Date.now()-(s.lastTickAt||Date.now())):0;return s.timerMode==="count-up"?Math.max(0,(s.elapsedMs||0)+delta):Math.max(0,(s.remainingMs||0)-delta)}
 function setVisible(mode){
- const visible={"no-event":[],standby:[],"course-lap":["ops-special"],"sprint-live":["ops-timer-panel"],"session-live":["ops-timer-panel","ops-score-panel","ops-circuit-panel","ops-assignments-panel"],"awaiting-finding-start":["ops-special"],provisional:["ops-score-panel","ops-circuit-panel"],"session-complete":["ops-score-panel","ops-circuit-panel"],"next-session-staging":["ops-special"],"next-session-countdown":["ops-special"],"safety-car-termination":["ops-special"],"violation-review":["ops-special"],"white-termination":["ops-special"]}[mode]||[];
+ const visible={"no-event":[],standby:[],"course-lap":["ops-special"],"sprint-live":["ops-timer-panel"],"qualifying-live":["ops-timer-panel"],"session-live":["ops-timer-panel","ops-score-panel","ops-circuit-panel","ops-assignments-panel"],"awaiting-finding-start":["ops-special"],provisional:["ops-score-panel","ops-circuit-panel"],"session-complete":["ops-score-panel","ops-circuit-panel"],"next-session-staging":["ops-special"],"next-session-countdown":["ops-special"],"safety-car-termination":["ops-special"],"violation-review":["ops-special"],"white-termination":["ops-special"]}[mode]||[];
  ["ops-timer-panel","ops-special","ops-score-panel","ops-circuit-panel","ops-assignments-panel"].forEach(id=>$(id).classList.toggle("hidden",!visible.includes(id)));
 }
 function render(){
@@ -21,6 +22,7 @@ function render(){
  if(mode==="standby"){$("ops-state").textContent=state.event.courseLap?.status==="complete"?"STANDBY • COURSE LAP COMPLETE":"STANDBY";return}
  if(mode==="course-lap"){$("ops-special-title").textContent="Safety Car Familiarization Lap";$("ops-special-detail").textContent="Follow the Safety Car. No overtaking.";return}
  if(mode==="sprint-live"){$("ops-phase").textContent=`MFMA SPRINT • ${(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase()}`;$("ops-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());$("ops-session").textContent="";$("ops-roles").textContent="";return}
+ if(mode==="qualifying-live"){$("ops-phase").textContent=`QUALIFYING • SHELLY • ${(state.event.qualifying?.trackLength||"").toUpperCase()}`;$("ops-timer").textContent=fmt(qualifyingTime(state.event.qualifying));$("ops-session").textContent=state.event.qualifying?.currentDriverName||"";$("ops-roles").textContent="FASTEST TIME WINS";return}
  if(mode==="awaiting-finding-start"){$("ops-special-title").textContent="Awaiting Finding Start";$("ops-special-detail").textContent="Hiding complete. Waiting for Race Director confirmation.";return}
  if(mode==="next-session-staging"||mode==="next-session-countdown"){$("ops-special-title").textContent=mode==="next-session-countdown"?"Start Countdown":"Proceed to Starting Line";$("ops-special-detail").textContent=mode==="next-session-countdown"?"The hiding timer starts when all five dots go out.":"Next hiding team to the starting line.";return}
  if(mode==="violation-review"){$("ops-special-title").textContent="MRA Steward — Incident Under Investigation";$("ops-special-detail").textContent=s?.terminationDetail||"Return to the starting zone and await the MRA Steward.";return}
@@ -35,4 +37,4 @@ function render(){
  else $("ops-assignments").innerHTML=`<article class="assignment"><h3>${s.teamNames[s.pursuitTeam]}</h3><p>Pursuit vehicle: ${vehicles[setup.pursuitVehicle]?.name||"—"}</p></article><article class="assignment"><h3>${s.teamNames[s.evadingTeam]}</h3><p>Evading on foot</p></article>`;
 }
 onValue(stateRef,s=>{state=s.val()||{};render()},e=>console.error(e));
-setInterval(()=>{if(state?.systemState==="sprint-live")$("ops-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());if(state?.session&&getRenderMode(state)==="session-live"&&state.session.running){const factor=state.session.flag==="yellow"?0.5:1;$("ops-timer").textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}},250);
+setInterval(()=>{if(state?.systemState==="sprint-live")$("ops-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());if(state?.systemState==="qualifying-live")$("ops-timer").textContent=fmt(qualifyingTime(state.event.qualifying));if(state?.session&&getRenderMode(state)==="session-live"&&state.session.running){const factor=state.session.flag==="yellow"?0.5:1;$("ops-timer").textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}},250);

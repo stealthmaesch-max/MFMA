@@ -4,7 +4,8 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=40";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { signals } from "./signals.js?v=71";
-import { getRenderMode } from "./display-state.js?v=63";
+import { getRenderMode } from "./display-state.js?v=85";
+import {qualifyingTime} from "./qualifying-model.js?v=85";
 
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
@@ -38,7 +39,7 @@ function render(){
 
  const mode=getRenderMode(state);
  const visibility={
-  "no-event":[],standby:[],"course-lap":[],"sprint-live":["fan-timer-panel"],
+  "no-event":[],standby:[],"course-lap":[],"sprint-live":["fan-timer-panel"],"qualifying-live":["fan-timer-panel"],
   "session-live":["fan-timer-panel","fan-score-panel","fan-circuit-panel","fan-assignments-panel"],
   "awaiting-finding-start":["fan-timer-panel"],provisional:["fan-score-panel","fan-circuit-panel"],
   "session-complete":["fan-score-panel","fan-circuit-panel"],"next-session-staging":[],"next-session-countdown":[],"safety-car-termination":[],"violation-review":[],"white-termination":[]
@@ -73,6 +74,7 @@ function render(){
   $("fan-state").textContent="MFMA SPRINT";$("fan-phase").textContent="MFMA SPRINT";$("fan-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());$("fan-session").textContent="";$("fan-roles").textContent="";
   return;
  }
+ if(mode==="qualifying-live"){$("fan-state").textContent="QUALIFYING";$("fan-phase").textContent=`SHELLY • ${(event.qualifying?.trackLength||"").toUpperCase()} TRACK`;$("fan-timer").textContent=fmt(qualifyingTime(event.qualifying));$("fan-session").textContent=event.qualifying?.currentDriverName||"";$("fan-roles").textContent="FASTEST TIME WINS";return}
 
  $("fan-phase").textContent=s?(s.phase==="awaiting-finding-start"?"HIDING COMPLETE • AWAITING RACE DIRECTOR":s.phase.toUpperCase()):"STANDBY";
  $("fan-timer").textContent=s?fmt(liveRemaining()):"--:--";
@@ -121,5 +123,6 @@ onValue(stateRef,snapshot=>{
 
 setInterval(()=>{
  if(state?.systemState==="sprint-live")$("fan-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());
+ if(state?.systemState==="qualifying-live")$("fan-timer").textContent=fmt(qualifyingTime(state.event.qualifying));
  if(state?.session&&state.systemState==="session-live")$("fan-timer").textContent=fmt(liveRemaining());
 },250);

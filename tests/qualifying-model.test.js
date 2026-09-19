@@ -1,0 +1,5 @@
+const test=require("node:test"),assert=require("node:assert/strict"),fs=require("node:fs"),vm=require("node:vm");
+const source=fs.readFileSync("qualifying-model.js","utf8").replaceAll("export ","");const context={};vm.createContext(context);vm.runInContext(`${source};this.api={QUALIFYING_TRACKS,qualifyingTime,rankedQualifyingLaps,fastestQualifyingLap}`,context);const m=context.api;
+test("qualifying supports short medium and long Shelly tracks",()=>assert.deepEqual(Object.keys(m.QUALIFYING_TRACKS),["short","medium","long"]));
+test("qualifying clock advances only while running",()=>{assert.equal(m.qualifyingTime({elapsedMs:1200,running:false,lastTickAt:1000},4000),1200);assert.equal(m.qualifyingTime({elapsedMs:1200,running:true,lastTickAt:1000},4000),4200)});
+test("fastest valid lap wins and invalid laps are excluded",()=>{const laps={a:{driverName:"A",timeMs:70000,status:"valid",recordedAt:1},b:{driverName:"B",timeMs:65000,status:"invalid",recordedAt:2},c:{driverName:"C",timeMs:68000,status:"valid",recordedAt:3}};assert.equal(m.fastestQualifyingLap(laps).driverName,"C");assert.equal(m.rankedQualifyingLaps(laps).length,2)});

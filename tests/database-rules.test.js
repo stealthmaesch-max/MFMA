@@ -46,6 +46,7 @@ test("Driver cannot change Race Director state",async()=>{
   ["event/safetyCarOvertake",{active:true}],
   ["event/scores/ranger",99],
   ["event/participationSessions/d1",99],
+  ["event/qualifying",{active:true,trackLength:"short",vehicleId:"shelly"}],
   ["session/resultOfficial",true],
   ["event/name","Changed by Driver"]
  ])await assertFails(set(ref(driver,`mfma/state/${path}`),value));
@@ -56,6 +57,7 @@ test("Race Director retains authoritative event and hazard controls",async()=>{
  await assertSucceeds(update(ref(rd,"mfma/state/event/hazards/h1"),{status:"acknowledged",acknowledgedAt:200}));
  await assertSucceeds(update(ref(rd,"mfma/state"),{activeFlag:"safety-car","session/running":false}));
  await assertSucceeds(update(ref(rd,"mfma/state/event"),{"participationSessions/d1":1,"participationSessions/p1":1}));
+ await assertSucceeds(update(ref(rd,"mfma/state/event"),{qualifying:{active:true,trackLength:"short",vehicleId:"shelly",running:false,laps:{}}}));
  await assertSucceeds(update(ref(rd,"mfma/state/event/hazards/h1"),{status:"resolved",resolvedAt:300}));
 });
 
