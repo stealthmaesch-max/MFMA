@@ -26,3 +26,5 @@ test("Race Control exposes Points Management without a collapsed default",()=>{
  assert.match(html,/>Points Management</);
  assert.match(html,/Use a negative adjustment to remove points/);
 });
+
+test("official outcomes replace the obsolete tied-score archive blocker",()=>{const control=require("node:fs").readFileSync("control.js","utf8");assert.doesNotMatch(control,/Resolve the finishing order before archiving/);assert.match(control,/Choose exactly one event winner/)});

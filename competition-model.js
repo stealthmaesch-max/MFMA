@@ -36,17 +36,18 @@ export function findDriver(drivers={},name,mraNumber){
 
 function rankedEntries(event={}){
  const scores=event.scores||{},vehicleIds=event.vehicleIds||event.lastVehicleIds||[];
- return Object.entries(scores).map(([side,wins],index)=>({side,wins:Number(wins)||0,vehicleId:vehicleIds[side==="a"?0:side==="b"?1:index]||null,teamName:event.teamNames?.[side]||null})).sort((a,b)=>b.wins-a.wins||a.side.localeCompare(b.side));
+ const sides=[...new Set([...Object.keys(scores),...Object.keys(event.teamNames||{}),...Object.keys(event.teamIds||{})])];
+ return sides.map((side,index)=>({side,wins:Number(scores[side])||0,vehicleId:vehicleIds[side==="a"?0:side==="b"?1:index]||null,teamName:event.teamNames?.[side]||null})).sort((a,b)=>b.wins-a.wins||a.side.localeCompare(b.side));
 }
 
 function matchingTeam(teams={},name){const wanted=normalizeName(name).toLocaleLowerCase();return Object.entries(teams).find(([,team])=>normalizeName(team?.name).toLocaleLowerCase()===wanted)||null}
 
 export function buildEventArchive(state,competition={},options={}){
  const event=state?.event||{},reports=event.vehicleReports||{},season=competition?.seasons?.[options.seasonId]||{},points=season.points||DEFAULT_POINTS,sessionPoints=season.sessionPoints||DEFAULT_SESSION_POINTS;
- const ranked=rankedEntries({...event,lastVehicleIds:state?.session?.setup?.vehicleIds||state?.session?.pursuitVehicleIds||[]});
+ const explicitOutcomes=options.finalOutcomes&&Object.keys(options.finalOutcomes).length>0,ranked=rankedEntries({...event,lastVehicleIds:state?.session?.setup?.vehicleIds||state?.session?.pursuitVehicleIds||[]}).sort((a,b)=>explicitOutcomes?Number(options.finalOutcomes?.[b.side]==="winner")-Number(options.finalOutcomes?.[a.side]==="winner")||b.wins-a.wins||a.side.localeCompare(b.side):0);
  let priorWins=null,priorPosition=0;
  const classification=ranked.map((entry,index)=>{
-  const position=priorWins===entry.wins?priorPosition:index+1;priorWins=entry.wins;priorPosition=position;
+  const position=explicitOutcomes?index+1:priorWins===entry.wins?priorPosition:index+1;priorWins=entry.wins;priorPosition=position;
   const explicitTeamId=event.teamIds?.[entry.side],team=explicitTeamId&&competition?.teams?.[explicitTeamId]?[explicitTeamId,competition.teams[explicitTeamId]]:matchingTeam(competition?.teams,entry.teamName),teamId=team?.[0]||null;
   const report=reports[entry.vehicleId]||Object.values(reports).find(item=>item?.teamId===teamId||item?.teamName===entry.teamName)||{},requestedDriverId=event.scoringDrivers?.[teamId]||report.driverId||null,requestedDriver=competition?.drivers?.[requestedDriverId]||{},selectedDriverId=isScoringDriverEligible(requestedDriverId,requestedDriver)?requestedDriverId:null,participant=event.driverParticipants?.[selectedDriverId]||{},driver=competition?.drivers?.[selectedDriverId]||{};
   const outcome=options.finalOutcomes?.[entry.side]||(position===1?"winner":"classified"),awarded=outcome==="winner"?Number(points[0])||0:outcome==="classified"?Number(points[1])||0:outcome==="dnf"?1:0;
