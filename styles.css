@@ -1492,6 +1492,10 @@ body[data-mode="test-mode"] .dashboard-sidebar,body[data-mode="test-mode"] #quic
 
 @media(max-width:699px){body[data-mode="test-mode"] .test-mode-panel .flag-grid{grid-template-columns:repeat(2,minmax(0,1fr))}body[data-mode="test-mode"] .test-mode-panel button.flag{min-height:72px!important;padding:9px!important}}
 
+/* v5.2 Sprint participation and invalid-event controls */
+.sprint-roster-card{display:grid;gap:9px;margin:12px 0;padding:12px;border:1px solid rgba(255,255,255,.11);border-radius:13px;background:#10161e}.sprint-roster-card>div:first-child{display:grid;gap:3px}.sprint-roster-card small{color:#9faab7;line-height:1.35}.sprint-roster{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}.sprint-roster label{display:flex;align-items:center;gap:9px;min-height:48px;padding:8px;border:1px solid rgba(255,255,255,.1);border-radius:10px;background:#181f29}.sprint-roster input{width:20px;height:20px;flex:0 0 20px;accent-color:#f11524}.sprint-roster label>span{display:grid;min-width:0}.sprint-roster label strong,.sprint-roster label small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.archive-issues{max-width:460px;margin:8px 0 0;padding:8px 10px;border-left:3px solid #ffb52e;border-radius:7px;background:rgba(255,181,46,.1);color:#ffd68b;font-size:11px;line-height:1.4}
+@media(max-width:699px){.sprint-roster{grid-template-columns:1fr}.event-close-controls .button-row{display:grid;grid-template-columns:1fr}.event-close-controls .button-row>*{width:100%;min-height:44px}}
+
 /* v4.7 MRA race-management shell and safety communications */
 .mra-shell-logo{width:clamp(132px,15vw,210px)}
 .mra-mode{padding-top:84px}.mra-mode img{position:absolute;top:18px;left:20px;width:min(210px,62%);height:auto;filter:drop-shadow(0 7px 13px rgba(0,0,0,.22))}

@@ -33,3 +33,7 @@ test("isolated Test Mode cannot create competition records",()=>{
  const fs=require("node:fs"),control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8"),display=fs.readFileSync("display.js","utf8");
  assert.match(html,/id="start-test-mode"/);assert.match(html,/id="test-mode-panel"/);assert.match(control,/state\?\.systemState!=="test-mode"\|\|!state\.event\?\.testMode/);assert.match(control,/systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null/);assert.match(display,/DISPLAY \/ SOUND VERIFICATION • NOT AN ACTIVE EVENT/);
 });
+
+test("Sprint points require a pre-start roster and a verified minute",()=>{const fs=require("node:fs"),control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8");assert.match(html,/id="sprint-roster"/);assert.match(control,/\[data-sprint-driver\]:checked/);assert.match(control,/durationMs>=60000/);assert.match(control,/event\/sprintParticipants/)});
+
+test("invalid events expose an explicit non-archive deletion path",()=>{const fs=require("node:fs"),control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8");assert.match(html,/End &amp; Delete Invalid Event/);assert.match(control,/function eventArchiveIssues/);assert.match(control,/No result or points will be archived/);assert.match(control,/cancelReason/)});
