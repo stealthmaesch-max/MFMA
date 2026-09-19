@@ -129,6 +129,7 @@ test("branded shells and MRA steward review fit iPhone portrait",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const pageName of ["index.html","control.html","fan.html","operations.html"]){
   const page=await browser.newPage({viewport:{width:390,height:844}});await page.goto(`${baseUrl}/${pageName}`,{waitUntil:"domcontentloaded"});
+  await page.waitForFunction(()=>{const logo=document.querySelector(".brand-logo");return logo?.complete&&logo?.naturalWidth>0});
   const result=await page.evaluate(()=>{const logo=document.querySelector(".brand-logo"),box=logo?.getBoundingClientRect();return {scrollWidth:document.documentElement.scrollWidth,logo:box&&{left:box.left,right:box.right,top:box.top,bottom:box.bottom},loaded:logo?.complete&&logo?.naturalWidth>0}});
   assert.equal(result.scrollWidth,390,`${pageName} has no horizontal overflow`);assert(result.loaded,`${pageName} loads its MFMA logo`);assert(result.logo.left>=0&&result.logo.right<=390,`${pageName} logo is contained`);await page.close();
  }
@@ -163,6 +164,59 @@ test("Championship portal branding and leaderboard fit iPhone 15 through Pro Max
   assert.equal(auth.scrollWidth,viewport.width,"championship sign-in has no horizontal overflow");assert(auth.header.left>=0&&auth.header.right<=viewport.width,"championship header is contained");assert(auth.cards.every(card=>card.left>=0&&card.right<=viewport.width),"credential cards are contained");assert(auth.logos.every(Boolean),"MFMA and MRA credential branding loads");
   await page.evaluate(()=>{document.querySelector("#champ-auth").classList.add("hidden");document.querySelector("#champ-portal").classList.remove("hidden");document.querySelector("#champ-standings").innerHTML='<article class="champ-standing-row" style="--team-accent:#7758ff"><b class="champ-position">1</b><div class="champ-entrant"><img src="assets/branding/monarch-team-emblem.png" alt=""><span><strong>Stealth Maeschen</strong><small>Monarch MFMA Team</small></span></div><div><strong>2</strong><small>Wins</small></div><div><strong>3</strong><small>Podiums</small></div><div class="champ-points"><strong>25</strong><small>Points</small></div></article>'});await page.waitForFunction(()=>document.querySelector(".champ-entrant img")?.complete);const portal=await page.evaluate(()=>{const row=document.querySelector(".champ-standing-row").getBoundingClientRect(),logo=document.querySelector(".champ-entrant img");return {scrollWidth:document.documentElement.scrollWidth,row:{left:row.left,right:row.right},logo:logo.naturalWidth>0}});
   assert.equal(portal.scrollWidth,viewport.width,"leaderboard has no horizontal overflow");assert(portal.row.left>=0&&portal.row.right<=viewport.width,"leaderboard row is contained");assert(portal.logo,"team emblem loads in the leaderboard");await page.close();
+ }
+ await browser.close();
+});
+
+test("all public shells stay contained across phone, landscape, tablet, and desktop",async()=>{
+ const browser=await chromium.launch({headless:true});
+ const viewports=[{width:360,height:800},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}];
+ for(const viewport of viewports){
+  for(const pageName of ["index.html","control.html","display.html","fan.html","operations.html","championship.html"]){
+   const page=pageName==="display.html"?await signedDriverPage(browser,viewport):await browser.newPage({viewport});
+   await page.goto(`${baseUrl}/${pageName}`,{waitUntil:"domcontentloaded"});
+   const metrics=await page.evaluate(pageName=>{
+    if(pageName==="control.html"){
+     document.querySelector("#auth-gate")?.classList.add("hidden");
+     document.querySelector("#secured-control")?.classList.remove("hidden");
+    }
+    const visibleControls=[...document.querySelectorAll("button,input,select,summary,a.mode")].filter(element=>{
+     const style=getComputedStyle(element),box=element.getBoundingClientRect();
+     return style.display!=="none"&&style.visibility!=="hidden"&&box.width>0&&box.height>0&&box.top<innerHeight;
+    });
+    return {
+     scrollWidth:document.documentElement.scrollWidth,
+     clientWidth:document.documentElement.clientWidth,
+     undersized:visibleControls.filter(element=>element.getBoundingClientRect().height<40).map(element=>element.id||element.textContent.trim().slice(0,30))
+    };
+   },pageName);
+   assert.equal(metrics.scrollWidth,metrics.clientWidth,`${pageName} has no horizontal overflow at ${viewport.width}x${viewport.height}`);
+   assert.deepEqual(metrics.undersized,[],`${pageName} avoids undersized interactive controls at ${viewport.width}x${viewport.height}`);
+   await page.close();
+  }
+ }
+ await browser.close();
+});
+
+test("Race Control prioritizes live work and keeps MRA administration proportional",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:393,height:852},{width:768,height:1024},{width:1440,height:900}]){
+  const page=await browser.newPage({viewport});
+  await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
+  const metrics=await page.evaluate(()=>{
+   document.querySelector("#auth-gate")?.classList.add("hidden");
+   document.querySelector("#secured-control")?.classList.remove("hidden");
+   document.querySelector("#no-event")?.classList.add("hidden");
+   document.querySelector("#event-area")?.classList.remove("hidden");
+   const event=document.querySelector("#event-area").getBoundingClientRect();
+   const management=document.querySelector("#mra-management").getBoundingClientRect();
+   const card=document.querySelector(".points-adjustment-form").getBoundingClientRect();
+   return {eventTop:event.top,managementTop:management.top,managementWidth:management.width,cardWidth:card.width,viewportWidth:innerWidth};
+  });
+  assert(metrics.eventTop<metrics.managementTop,"live event controls appear before administration");
+  assert(metrics.managementWidth<=Math.min(metrics.viewportWidth,1180)+1,"MRA administration uses a readable maximum width");
+  assert(metrics.cardWidth<=metrics.managementWidth,"points widget stays contained within MRA administration");
+  await page.close();
  }
  await browser.close();
 });

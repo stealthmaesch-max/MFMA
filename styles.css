@@ -1443,6 +1443,110 @@ button, input, select, summary { min-height: 44px; touch-action: manipulation; }
   .auth-card{padding:22px 18px}.auth-card .brand-row{display:grid;gap:14px}.auth-logo{width:min(100%,250px)}
 }
 
+/* v5.3 cross-platform proportion, accessibility and layout refinement */
+:where(button,a,input,select,textarea,summary){-webkit-tap-highlight-color:rgba(241,21,36,.22)}
+:where(button,a,input,select,textarea,summary):focus-visible{outline:3px solid #78b7ff;outline-offset:3px;box-shadow:0 0 0 5px rgba(24,116,255,.22)}
+:where(button,[role="button"],summary){touch-action:manipulation}
+:where(input,select,textarea){max-width:100%;font-size:16px}
+:where(.panel,.timer-panel,.mode,.champ-view,.champ-auth-card,.champ-team-card,.management-card){min-width:0}
+:where(h1,h2,h3,p,strong,span,label){text-wrap:pretty}
+button:disabled{filter:saturate(.55);opacity:.48;cursor:not-allowed}
+dialog{max-height:calc(100dvh - max(24px,env(safe-area-inset-top)) - max(24px,env(safe-area-inset-bottom)));overscroll-behavior:contain}
+dialog form{max-height:inherit;overflow:auto;overscroll-behavior:contain}
+
+/* Keep the live MRA workflow ahead of administrative widgets. */
+.race-control-page #secured-control:not(.hidden){display:flex;flex-direction:column;min-width:0}
+.race-control-page .control-toolbar{order:0}
+.race-control-page #no-event,.race-control-page #event-area{order:1}
+.race-control-page .mra-management{order:2}
+.race-control-page #secured-control>dialog{order:3}
+.mra-management{width:min(100%,1180px);align-self:center;padding:clamp(10px,1.5vw,16px)}
+.mra-management-body{gap:10px;padding-top:12px}
+.mra-management .section-head{margin-bottom:0}
+.mra-management .section-head h2{font-size:clamp(18px,2.5vw,25px)}
+.mra-management .management-logo{width:clamp(105px,14vw,155px)}
+.management-view{gap:12px}
+.management-view>div{gap:6px}
+.points-adjustment-form{margin-top:10px;padding:11px}
+.management-card{padding:10px}
+.archive-card{padding:11px}
+
+/* A stable content measure keeps desktop dashboards readable without giant cards. */
+.landing-shell{width:min(100%,1280px);margin-inline:auto}
+.fan-page .control-shell,.operations-page .control-shell{width:min(100%,1280px);margin-inline:auto}
+.champ-view,.champ-hero{max-width:1180px;margin-inline:auto}
+
+@media(max-width:760px){
+  .race-control-page.flag-controls-active{padding-bottom:calc(166px + env(safe-area-inset-bottom))}
+  .mra-management{margin:8px 0;padding:10px;border-radius:14px}
+  .mra-management>summary{min-height:48px;gap:8px}
+  .mra-management>summary b{font-size:15px}
+  .mra-management>summary small{display:none}
+  .mra-management>summary>strong{flex:0 0 auto;font-size:9px}
+  .mra-management .section-head{display:flex;align-items:center}
+  .mra-management .section-head .eyebrow{display:none}
+  .mra-management .management-logo{width:92px}
+  .management-tabs{position:sticky;top:0;z-index:3;padding:4px;background:#111720;border-radius:12px}
+  .management-tabs button{min-width:0;padding-inline:4px;font-size:11px}
+  .points-adjustment-form article{grid-template-columns:minmax(0,1fr) auto}
+  .points-adjustment-form article>:nth-child(3){grid-column:1/-1;width:100%}
+  .champ-tabs button{min-height:44px}
+  .championship-header{min-width:0}
+  .championship-header>div{min-width:0}
+  .championship-header h1{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .champ-hero{gap:12px}
+  .champ-view>.section-head{align-items:stretch}
+}
+
+@media(max-width:380px){
+  .quick-flag-bar{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .race-control-page.flag-controls-active{padding-bottom:calc(215px + env(safe-area-inset-bottom))}
+  .management-tabs button{font-size:10px}
+  .standings-head,.standings-table article{grid-template-columns:27px minmax(0,1fr) 42px}
+  .standings-head>:nth-child(3),.standings-table article>:nth-child(3){display:none}
+}
+
+@media(orientation:landscape) and (max-height:520px){
+  .control-toolbar,.fan-page .topbar,.championship-header,.champ-tabs{position:static}
+  .control-toolbar{grid-template-columns:minmax(0,1fr) auto minmax(260px,.7fr)}
+  .control-toolbar .toolbar-telemetry{grid-column:3;grid-row:1}
+  .quick-flag-panel{left:auto;width:min(56vw,620px)}
+  .race-control-page.flag-controls-active{padding-bottom:calc(112px + env(safe-area-inset-bottom))}
+  .quick-flag-bar{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .display{padding-top:max(48px,env(safe-area-inset-top));padding-bottom:max(44px,env(safe-area-inset-bottom))}
+  .live-view .signal-label{font-size:clamp(36px,11vh,62px)}
+  .live-view .signal-instruction{font-size:clamp(17px,5vh,28px)}
+  .driver-signin{align-items:start;padding-top:max(12px,env(safe-area-inset-top))}
+  .driver-signin-card{grid-template-columns:minmax(130px,.72fr) minmax(260px,1.28fr);align-items:start;width:min(760px,100%);padding:14px}
+  .driver-signin-card>img{grid-row:1/span 5;align-self:center}
+  .driver-signin-card h1,.driver-signin-card p{grid-column:2}
+  .championship-shell{padding-top:max(8px,env(safe-area-inset-top))}
+  .championship-header{padding-block:8px}
+  .championship-header img{width:82px}
+  .champ-hero{padding:14px;margin-top:8px}
+  .champ-tabs{margin-block:7px}
+}
+
+@media(min-width:761px) and (max-width:1100px){
+  .dashboard-grid{grid-template-columns:minmax(190px,.72fr) minmax(0,1.45fr)}
+  .dashboard-main{grid-column:2}
+  .dashboard-right{grid-column:1;grid-row:auto}
+  .quick-flag-bar{grid-template-columns:repeat(4,minmax(0,1fr))}
+  .management-card{grid-template-columns:minmax(0,1fr) minmax(130px,.5fr)}
+  .management-card>.action{grid-column:1/-1;width:100%}
+}
+
+@media(prefers-reduced-motion:reduce){
+  html{scroll-behavior:auto}
+  :where(button,a,.panel,.mode,.chip,.champ-standing-row){transition:none!important}
+  :where(.mode,.panel,.champ-team-card){transform:none!important}
+}
+
+@media(prefers-contrast:more){
+  :root{--line:rgba(255,255,255,.32);--muted:#c3cad4}
+  :where(.panel,.timer-panel,.mode,.champ-view,.management-card,input,select,textarea){border-width:2px}
+}
+
 /* v4.8 auditable championship scoring */
 .standing-name>span{min-width:0}.provisional-tag{display:block;margin-top:2px;color:#f8b84e;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.points-breakdown{color:#a9b4c1;font-size:11px;line-height:1.25}.event-close-controls{display:grid;justify-items:end;gap:8px}.official-outcomes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.official-outcomes label{display:grid;gap:3px;color:#aab5c2;font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}.official-outcomes select{min-width:150px;min-height:40px}.replacement-review{border-color:#d6a331!important;background:rgba(214,163,49,.08)!important}
 @media(max-width:699px){.dashboard-event.event-head{align-items:stretch}.event-close-controls{justify-items:stretch;width:100%}.official-outcomes{display:grid;grid-template-columns:1fr}.official-outcomes select{width:100%;min-width:0;font-size:16px}.points-breakdown{font-size:9px}.standings-table article{grid-template-columns:28px minmax(0,1fr) minmax(74px,.8fr) 42px}}
@@ -1515,3 +1619,7 @@ body[data-mode="test-mode"] .dashboard-sidebar,body[data-mode="test-mode"] #quic
   .display:has(.safety-management:not(.hidden)) .live-view,.display:has(.safety-management:not(.hidden)) .status-view{transform:translateY(-7vh)}
   .fan-page .mra-shell-logo{width:118px;flex-basis:118px}.fan-page .topbar>.pill{flex:0 0 auto;padding:8px 9px;font-size:10px;white-space:nowrap;overflow-wrap:normal}.fan-page .topbar>.pill span:last-child{white-space:nowrap}
 }
+
+/* Compact Driver controls remain comfortably tappable on every device. */
+.driver-sign-out,.crew-compact select,.driver-identity select,.display-sound{min-height:44px}
+.driver-sign-out{top:3px}
