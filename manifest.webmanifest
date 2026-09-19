@@ -1,6 +1,6 @@
 {
-  "name": "MFMA Digital Flag Network",
-  "short_name": "MFMAFLAG",
+  "name": "MFMA Competition Network",
+  "short_name": "MFMA",
   "start_url": "./display.html",
   "display": "standalone",
   "background_color": "#0a0d12",

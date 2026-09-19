@@ -20,11 +20,23 @@ test("championship supports one authorized manager account with a linked driver 
  assert.match(html,/id="manager-driver-dialog"/);
 });
 
-test("Race Control exposes Points Management without a collapsed default",()=>{
+test("Race Control keeps administration discoverable and points adjustment compact",()=>{
  const html=require("node:fs").readFileSync("control.html","utf8");
  assert.match(html,/id="mra-management"[^>]*open/);
- assert.match(html,/>Points Management</);
+ assert.match(html,/>MRA Administration</);
+ assert.match(html,/>Points</);
+ assert.match(html,/class="points-adjustment-details"/);
  assert.match(html,/Use a negative adjustment to remove points/);
+});
+
+test("MFMA public portals and MRA official screens use consistent branding",()=>{
+ const fs=require("node:fs"),index=fs.readFileSync("index.html","utf8"),display=fs.readFileSync("display.html","utf8"),control=fs.readFileSync("control.html","utf8"),championship=fs.readFileSync("championship.html","utf8"),operations=fs.readFileSync("operations.html","utf8");
+ assert.match(index,/MFMA Competition Network/);assert.doesNotMatch(index,/Digital Flag Network/);
+ assert.match(display,/MFMA COMPETITION NETWORK/);assert.match(display,/MFMA Driver Portal/);
+ assert.match(control,/MRA Race Control/);assert.match(control,/MRA Administration/);
+ assert.match(championship,/MFMA Championship/);assert.match(championship,/MRA Access/);
+ assert.match(operations,/MRA Race Management/);assert.match(operations,/>Operations</);
+ const manifest=JSON.parse(fs.readFileSync("manifest.webmanifest","utf8"));assert.equal(manifest.name,"MFMA Competition Network");assert.equal(manifest.short_name,"MFMA");
 });
 
 test("official outcomes replace the obsolete tied-score archive blocker",()=>{const control=require("node:fs").readFileSync("control.js","utf8");assert.doesNotMatch(control,/Resolve the finishing order before archiving/);assert.match(control,/Choose exactly one event winner/)});

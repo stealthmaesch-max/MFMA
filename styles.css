@@ -1537,6 +1537,23 @@ dialog form{max-height:inherit;overflow:auto;overscroll-behavior:contain}
   .champ-tabs{margin-block:7px}
 }
 
+/* v5.4 simplified operational hierarchy */
+#live-signal-panel{display:none!important}
+.quick-flag-panel .section-head{display:none}
+.quick-flag-panel{padding:7px!important}
+.points-adjustment-details{border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#10161e}
+.points-adjustment-details>summary{display:flex;align-items:center;min-height:46px;padding:8px 11px;cursor:pointer;color:#d5dbe4;font-size:13px;font-weight:900;list-style:none}
+.points-adjustment-details>summary::-webkit-details-marker{display:none}
+.points-adjustment-details>summary::after{content:"+";margin-left:auto;color:#ff7882;font-size:20px}
+.points-adjustment-details[open]>summary::after{content:"−"}
+.points-adjustment-details .points-adjustment-form{margin:0;border:0;border-top:1px solid rgba(255,255,255,.1);border-radius:0;background:transparent}
+.mra-management:not([open]){padding-block:7px}
+.mra-management:not([open])>summary{min-height:44px}
+@media(max-width:699px){
+  .quick-flag-panel{padding:6px!important}
+  .mra-management:not([open]){margin-block:5px}
+}
+
 @media(min-width:761px) and (max-width:1100px){
   .dashboard-grid{grid-template-columns:minmax(190px,.72fr) minmax(0,1.45fr)}
   .dashboard-main{grid-column:2}
