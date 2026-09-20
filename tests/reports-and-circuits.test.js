@@ -22,7 +22,7 @@ test("occupant names are informational and excluded from session eligibility",()
 test("driver report submission waits for anonymous authentication",()=>{
  const display=fs.readFileSync("display.js","utf8");
  assert.match(display,/function ensureDriverAuth\(\)/);
- assert.match(display,/await ensureDriverAuth\(\);const report=.*cleanOccupantReport/);
+ assert.match(display,/await ensureDriverAuth\(\);[\s\S]{0,400}cleanOccupantReport/);
  assert.match(display,/await ensureDriverAuth\(\);const hazardRef=push/);
  assert.doesNotMatch(display,/if\(!driverUser\).*Connecting securely/);
 });
@@ -113,7 +113,7 @@ test("Driver Portal keeps an approved team device and switches registered driver
  assert.match(html,/mfma-driver-portal-logo\.png/);assert.match(html,/id="driver-signin-form"/);assert.match(html,/id="driver-sign-out"/);
  assert.match(display,/PROFILE_KEY="mfma-driver-profile"/);assert.match(display,/localStorage\.setItem\(PROFILE_KEY,JSON\.stringify/);
  assert.match(display,/profile\?\.teamId&&profile\?\.driverId/);
- assert.match(display,/await ensureDriverAuth\(\);const report=.*cleanOccupantReport/);
+ assert.match(display,/await ensureDriverAuth\(\);[\s\S]{0,400}cleanOccupantReport/);
  assert.match(display,/teamDrivers\(driverProfile\.teamId\)/);assert.match(display,/mfma\/requests\/access/);
  assert.match(display,/passengerParticipants\/\$\{driverProfile\.passengerId\}/);
  assert.match(display,/vehicleReports\/\$\{driverProfile\.vehicleId\}/);

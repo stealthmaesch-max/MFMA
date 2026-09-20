@@ -43,6 +43,15 @@ test("MFMA public portals and MRA official screens use consistent branding",()=>
  const manifest=JSON.parse(fs.readFileSync("manifest.webmanifest","utf8"));assert.equal(manifest.name,"MFMA Competition Network");assert.equal(manifest.short_name,"MFMA");
 });
 
+test("event formats, emergency Gator use, and participant qualifying results are explicit",()=>{
+ const fs=require("node:fs"),control=fs.readFileSync("control.html","utf8"),controlJs=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.html","utf8"),displayJs=fs.readFileSync("display.js","utf8"),championship=fs.readFileSync("championship.html","utf8"),championshipJs=fs.readFileSync("championship.js","utf8");
+ for(const format of ["regular","sprint","qualifying"])assert.match(control,new RegExp(`data-create-event="${format}"`));
+ assert.match(controlJs,/Tiebreaker active/);assert.match(controlJs,/Qualifying is the official tiebreaker/);
+ assert.match(display,/id="qualifying-leaderboard"/);assert.match(displayJs,/rankedQualifyingLaps/);assert.match(displayJs,/current-driver/);
+ assert.match(championship,/id="champ-event-format"/);assert.match(championshipJs,/eventFormat/);
+ assert.match(display,/id="driver-gator-reason"/);assert.match(championship,/id="registration-gator-reason"/);assert.match(control,/id="manager-gator-reason"/);
+});
+
 test("official outcomes replace the obsolete tied-score archive blocker",()=>{const control=require("node:fs").readFileSync("control.js","utf8");assert.doesNotMatch(control,/Resolve the finishing order before archiving/);assert.match(control,/Choose exactly one event winner/)});
 
 test("isolated Test Mode cannot create competition records",()=>{
