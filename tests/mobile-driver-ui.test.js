@@ -29,6 +29,13 @@ test("Race Control module starts and resolves the authentication status",async()
  await browser.close();
 });
 
+test("contextual MRA controls and dual-role Driver drawer fit iPhone 15",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:393,height:852}});await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
+ await page.evaluate(()=>{document.querySelector("#auth-panel").classList.add("hidden");document.querySelector("#secured-control").classList.remove("hidden");document.querySelector("#quick-flag-panel").classList.remove("hidden");document.body.classList.add("flag-controls-active");document.querySelector("#driver-manager-fields").classList.remove("hidden");document.querySelector("#driver-manager-save").classList.remove("hidden");document.querySelector("#manager-driver").innerHTML='<option>Stealth • MRA 16</option>';document.querySelector("#manager-passenger").innerHTML='<option>No registered passenger</option>';document.querySelector("#driver-manager-dialog").showModal()});
+ let metrics=await page.evaluate(()=>{const dialog=document.querySelector("#driver-manager-dialog").getBoundingClientRect(),core=[...document.querySelector("#quick-flag-panel").querySelectorAll(":scope .quick-flag-bar > .flag")].map(button=>button.getBoundingClientRect().height);return {width:document.documentElement.scrollWidth,dialog:{left:dialog.left,right:dialog.right,top:dialog.top,bottom:dialog.bottom},core,secondaryHidden:document.querySelector("#secondary-signals").classList.contains("hidden")}});
+ assert.equal(metrics.width,393);assert(metrics.dialog.left>=0&&metrics.dialog.right<=393&&metrics.dialog.top>=0&&metrics.dialog.bottom<=852,"dual-role drawer is contained");assert.equal(metrics.core.length,5);assert(Math.max(...metrics.core)-Math.min(...metrics.core)<=2,"core signal buttons use a consistent height");assert(metrics.secondaryHidden,"secondary signals begin collapsed");metrics=await page.evaluate(()=>{document.querySelector("#driver-manager-dialog").close();document.querySelector("#more-signals").click();return {width:document.documentElement.scrollWidth,secondaryHidden:document.querySelector("#secondary-signals").classList.contains("hidden")}});assert.equal(metrics.width,393);assert.equal(metrics.secondaryHidden,false);await browser.close();
+});
+
 for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,height:852},{width:402,height:874},{width:430,height:932}]){
  test(`Driver layout fits ${viewport.width}x${viewport.height}`,async()=>{
   const browser=await chromium.launch({headless:true});

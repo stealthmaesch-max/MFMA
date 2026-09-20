@@ -1574,6 +1574,41 @@ dialog form{max-height:inherit;overflow:auto;overscroll-behavior:contain}
   :where(.panel,.timer-panel,.mode,.champ-view,.management-card,input,select,textarea){border-width:2px}
 }
 
+/* v5.5 contextual MRA controls and dual-role Driver access */
+.quick-flag-bar{grid-template-columns:repeat(5,minmax(0,1fr));align-items:stretch}
+.quick-flag-bar>.flag,.secondary-signals>.flag{min-height:48px}
+.secondary-signals{display:contents}
+.secondary-signals.hidden{display:none}
+.signal-more{background:linear-gradient(180deg,#313a48,#1b222d)!important;color:#fff!important;border:1px solid rgba(255,255,255,.18)!important}
+.event-actions-menu{position:relative;min-width:132px}
+.event-actions-menu>summary,.sprint-advanced-controls>summary{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px 12px;border:1px solid var(--line);border-radius:12px;background:#202733;color:#d9e0e9;font-size:12px;font-weight:850;cursor:pointer;list-style:none}
+.event-actions-menu>summary::-webkit-details-marker,.sprint-advanced-controls>summary::-webkit-details-marker{display:none}
+.event-actions-menu>summary::after,.sprint-advanced-controls>summary::after{content:"⌄";margin-left:7px;color:#8994a4}
+.event-actions-menu[open]>summary::after,.sprint-advanced-controls[open]>summary::after{content:"⌃"}
+.event-actions-menu>div{position:absolute;right:0;z-index:30;display:grid;width:min(270px,80vw);gap:6px;margin-top:6px;padding:7px;border:1px solid var(--line);border-radius:13px;background:#111720;box-shadow:0 14px 35px rgba(0,0,0,.5)}
+.event-actions-menu>div>*{width:100%;min-height:44px}
+.sprint-primary-controls{display:grid!important;grid-template-columns:1.4fr 1fr!important;gap:7px!important}
+.sprint-advanced-controls{margin-top:8px}
+.sprint-advanced-controls>summary{justify-content:flex-start;background:#151b24}
+.sprint-advanced-controls>div{display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:6px!important;margin-top:6px}
+.sprint-advanced-controls .action{min-width:0;padding-inline:7px;font-size:12px}
+.driver-manager-dialog .form-grid{grid-template-columns:1fr 1fr}
+.driver-manager-dialog .form-grid label:last-child{grid-column:1/-1}
+.driver-manager-dialog .button-row{display:grid;grid-template-columns:1fr 1fr}
+.driver-manager-dialog .action{display:flex;align-items:center;justify-content:center;text-align:center;text-decoration:none}
+#driver-manager-status:empty{display:none}
+@media(max-width:699px){
+  .control-toolbar #driver-manager-open{min-width:44px;max-width:84px;padding-inline:7px;font-size:10px}
+  .quick-flag-bar{grid-template-columns:repeat(3,minmax(0,1fr))}
+  .quick-flag-bar>.flag,.secondary-signals>.flag{min-height:46px}
+  .event-actions-menu{min-width:0}
+  .event-actions-menu>summary{padding-inline:7px}
+  .sprint-advanced-controls>div{grid-template-columns:1fr 1fr!important}
+  .driver-manager-dialog .form-grid,.driver-manager-dialog .button-row{grid-template-columns:1fr}
+  .driver-manager-dialog .form-grid label:last-child{grid-column:1}
+}
+@media(orientation:landscape) and (max-height:520px){.quick-flag-bar{grid-template-columns:repeat(4,minmax(0,1fr))}}
+
 /* v4.8 auditable championship scoring */
 .standing-name>span{min-width:0}.provisional-tag{display:block;margin-top:2px;color:#f8b84e;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.points-breakdown{color:#a9b4c1;font-size:11px;line-height:1.25}.event-close-controls{display:grid;justify-items:end;gap:8px}.official-outcomes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.official-outcomes label{display:grid;gap:3px;color:#aab5c2;font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}.official-outcomes select{min-width:150px;min-height:40px}.replacement-review{border-color:#d6a331!important;background:rgba(214,163,49,.08)!important}
 @media(max-width:699px){.dashboard-event.event-head{align-items:stretch}.event-close-controls{justify-items:stretch;width:100%}.official-outcomes{display:grid;grid-template-columns:1fr}.official-outcomes select{width:100%;min-width:0;font-size:16px}.points-breakdown{font-size:9px}.standings-table article{grid-template-columns:28px minmax(0,1fr) minmax(74px,.8fr) 42px}}

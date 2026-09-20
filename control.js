@@ -36,7 +36,7 @@ let confirmationResolve=null;
 function requestConfirmation(title,message,confirmLabel="Confirm"){const dialog=$("confirmation-dialog");if(confirmationResolve)confirmationResolve(false);$("confirmation-title").textContent=title;$("confirmation-message").textContent=message;$("confirmation-submit").textContent=confirmLabel;dialog.showModal();return new Promise(resolve=>{confirmationResolve=resolve})}
 function finishConfirmation(confirmed=false){const resolve=confirmationResolve;confirmationResolve=null;if($("confirmation-dialog").open)$("confirmation-dialog").close();resolve?.(confirmed)}
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
-let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null,competition={},requests={},requestsUnsubscribe=null,managementEventKey=null;
+let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null,competition={},requests={},requestsUnsubscribe=null,managerBindingUnsubscribe=null,managerBinding=null,managementEventKey=null,signalsExpanded=false;
 const safetyManagementFlags=new Set(["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
 
 const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),testMode:$("test-mode-panel"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),qualifying:$("qualifying-panel"),live:$("live-panel"),provisional:$("provisional-panel"),nextStart:$("next-start-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
@@ -125,12 +125,14 @@ onAuthStateChanged(auth,user=>{
   accountName.textContent=`${displayUserName(user)} • ${providerLabel(user)}`;
   setAuthError("");
   if(!requestsUnsubscribe)requestsUnsubscribe=onValue(requestsRef,snapshot=>{requests=snapshot.val()||{};renderManagement()},error=>console.error("Unable to load MRA approval queue",error));
+  if(!managerBindingUnsubscribe)managerBindingUnsubscribe=onValue(ref(db,`mfma/driverAccess/${user.uid}`),snapshot=>{managerBinding=snapshot.val()||null;renderManagerDriverOptions()},error=>console.error("Unable to load linked Driver profile",error));
  }else{
   authStatus.textContent=user&&!user.isAnonymous?"Account not authorized":"Choose a sign-in method";
   $("auth-reset").classList.toggle("hidden",!(user&&!user.isAnonymous));
   accountName.textContent="Signed out";
   setAuthError(user&&!user.isAnonymous?`This account is signed in but is not approved for MRA Race Control. Use an authorized MRA account. Account UID: ${user.uid}`:"");
   if(requestsUnsubscribe){requestsUnsubscribe();requestsUnsubscribe=null}requests={};
+  if(managerBindingUnsubscribe){managerBindingUnsubscribe();managerBindingUnsubscribe=null}managerBinding=null;
  }
 },error=>{
  authStateResolved=true;
@@ -142,6 +144,27 @@ onAuthStateChanged(auth,user=>{
  $("auth-reset").classList.add("hidden");
  setAuthError(mraAuthErrorMessage(error));
 });
+
+function linkedManagerTeamId(){return managerBinding?.teamId||competition.drivers?.[managerBinding?.driverId]?.teamId||null}
+function managerDriverProfile(){try{return JSON.parse(localStorage.getItem("mfma-driver-profile")||"null")}catch{return null}}
+function renderManagerPassengerOptions(driverId,preferredId=""){const passengers=Object.entries(competition.drivers||{}).filter(([id,driver])=>id!==driverId&&driver.status==="approved").sort((a,b)=>a[1].name.localeCompare(b[1].name));$("manager-passenger").innerHTML='<option value="">No registered passenger</option>'+passengers.map(([id,driver])=>`<option value="${escapeHtml(id)}">${escapeHtml(driver.name)} • ${escapeHtml(driver.teamName)} • MRA ${escapeHtml(driver.mraNumber)}</option>`).join("");if(preferredId&&competition.drivers?.[preferredId]?.status==="approved"&&preferredId!==driverId)$("manager-passenger").value=preferredId}
+function renderManagerDriverOptions(){
+ const teamId=linkedManagerTeamId(),linked=managerBinding?.status==="approved"&&teamId,fields=$("driver-manager-fields"),save=$("driver-manager-save"),full=$("driver-manager-full"),stored=managerDriverProfile();
+ fields.classList.toggle("hidden",!linked);save.classList.toggle("hidden",!linked);
+ if(!linked){$("driver-manager-detail").textContent="Link an approved Driver profile to this MRA account in Championship before using dual-role controls.";$("driver-manager-status").textContent="";full.href="championship.html";full.textContent="Link Driver Profile";return}
+ const drivers=Object.entries(competition.drivers||{}).filter(([id,driver])=>driver.status==="approved"&&driver.teamId===teamId&&isScoringDriverEligible(id,driver)).sort((a,b)=>a[1].name.localeCompare(b[1].name));
+ $("manager-driver").innerHTML=drivers.map(([id,driver])=>`<option value="${escapeHtml(id)}">${escapeHtml(driver.name)} • MRA ${escapeHtml(driver.mraNumber)}</option>`).join("");
+ const preferred=drivers.some(([id])=>id===stored?.driverId)?stored.driverId:drivers.some(([id])=>id===managerBinding.driverId)?managerBinding.driverId:drivers[0]?.[0];if(preferred)$("manager-driver").value=preferred;
+ renderManagerPassengerOptions(preferred,stored?.passengerId);
+ $("manager-vehicle").value=["ranger","shelly","gator"].includes(stored?.vehicleId)?stored.vehicleId:"ranger";
+ $("driver-manager-detail").textContent=`${competition.teams?.[teamId]?.name||managerBinding.teamName||"Linked team"} • Changes sync to Race Control and the Driver Portal.`;full.href="display.html";full.textContent="Open Full Driver View";
+}
+async function saveManagerDriverProfile(event){
+ event.preventDefault();const teamId=linkedManagerTeamId(),driverId=$("manager-driver").value,passengerId=$("manager-passenger").value,vehicleId=$("manager-vehicle").value,driver=competition.drivers?.[driverId],passenger=competition.drivers?.[passengerId];if(managerBinding?.status!=="approved"||!driver||driver.teamId!==teamId||!["ranger","shelly","gator"].includes(vehicleId)){$("driver-manager-status").textContent="Link an approved Driver profile before saving.";return}
+ const profile={driverId,driverName:driver.name,mraNumber:driver.mraNumber,teamId,teamName:driver.teamName||competition.teams?.[teamId]?.name||"Team",vehicleId,passengerId:passengerId||"",passengerName:passenger?.name||""};localStorage.setItem("mfma-driver-profile",JSON.stringify(profile));localStorage.setItem("mfma-driver-vehicle",vehicleId);localStorage.removeItem("mfma-driver-signed-out");
+ if(state?.event){const updates={[`event/vehicleReports/${vehicleId}`]:{driverId,driverName:profile.driverName,mraNumber:profile.mraNumber,teamId,teamName:profile.teamName,passengerId:passengerId||null,passengerName:profile.passengerName,passengerMraNumber:passenger?.mraNumber||null,submittedAt:serverTimestamp()},[`event/driverParticipants/${driverId}`]:{driverId,driverName:profile.driverName,mraNumber:profile.mraNumber,teamId,teamName:profile.teamName,vehicleId,lastParticipatedAt:serverTimestamp()}};if(passenger)updates[`event/passengerParticipants/${passengerId}`]={driverId:passengerId,driverName:passenger.name,mraNumber:passenger.mraNumber,recordedByTeamId:teamId,participatedAt:serverTimestamp()};await update(stateRef,updates)}
+ $("driver-manager-status").textContent=state?.event?"Crew synced with Race Control and Driver Portal.":"Driver profile saved. It will sync when an event opens.";renderManagerDriverOptions();
+}
 
 function requireAuthenticatedWrite(){
  if(isMraAdminUser(currentUser))return true;
@@ -715,8 +738,8 @@ function render(){
  $("event-head-panel").classList.toggle("hidden",testMode);$("hazard-panel").classList.toggle("hidden",testMode);$("occupant-panel").classList.toggle("hidden",testMode);
  E.setup.classList.toggle("hidden",!standby);$("event-score-panel").classList.toggle("hidden",!(standby||(live&&!awaiting)));
  const flagsAllowed=standby||sprintLive||(live&&!awaiting);$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-status").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
- const permittedFlags=standby?new Set(["yellow","move-over","red","safety-car","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","checkered"]);
- document.querySelectorAll("[data-quick-flag]").forEach(button=>{button.disabled=!permittedFlags.has(button.dataset.quickFlag);button.classList.toggle("active",button.dataset.quickFlag===state.activeFlag)});
+ const permittedFlags=standby?new Set(["yellow","move-over","red","safety-car","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","checkered"]),secondaryFlags=new Set(["move-over","checkered","clear"]),secondaryActive=secondaryFlags.has(state.activeFlag);
+ document.querySelectorAll("[data-quick-flag]").forEach(button=>{const permitted=permittedFlags.has(button.dataset.quickFlag);button.classList.toggle("hidden",!permitted);button.disabled=!permitted;button.classList.toggle("active",button.dataset.quickFlag===state.activeFlag)});$("secondary-signals").classList.toggle("hidden",!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More";
  $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=whiteTerm?"DISQUALIFICATION":review?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):qualifyingLive?fmtQualifying(qualifyingTime(state.event.qualifying)):live?fmt(state.session?.remainingMs||0):review?"HELD":(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
  renderScore("scoreboard");renderCircuit("sidebar-circuit");$("sidebar-status").textContent=awaiting?"Hiding complete — confirmation required":live?`${state.session?.format?.replaceAll("-"," ")||"Session"} • Session ${state.session?.number||""}`:state.event?.courseLap?.status==="complete"?"✓ Course Lap Complete":"Ready for competition";
@@ -779,6 +802,7 @@ $("sprint-timer-mode").onchange=setSprintTimerMode;$("sprint-duration").onchange
 $("sprint-add-time").onclick=()=>adjustSprintTimer(Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-subtract-time").onclick=()=>adjustSprintTimer(-Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-set-time").onclick=setSprintTimer;
 document.querySelectorAll("[data-sprint-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.sprintFlag));
 document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.quickFlag));
+$("more-signals").onclick=()=>{signalsExpanded=!signalsExpanded;const secondaryActive=new Set(["move-over","checkered","clear"]).has(state?.activeFlag);$("secondary-signals").classList.toggle("hidden",!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More"};
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("restart-at-line").onclick=restartTerminatedSession;
@@ -802,6 +826,7 @@ $("white-review-overlay").onclick=e=>{
 };
 $("text-entry-form").onsubmit=event=>{event.preventDefault();const value=normalizeName($("text-entry-input").value);if(value)finishTextEntry(value)};$("text-entry-close").onclick=()=>finishTextEntry();$("text-entry-cancel").onclick=()=>finishTextEntry();$("text-entry-dialog").addEventListener("cancel",event=>{event.preventDefault();finishTextEntry()});
 $("confirmation-form").onsubmit=event=>{event.preventDefault();finishConfirmation(true)};$("confirmation-close").onclick=()=>finishConfirmation(false);$("confirmation-cancel").onclick=()=>finishConfirmation(false);$("confirmation-dialog").addEventListener("cancel",event=>{event.preventDefault();finishConfirmation(false)});
+$("driver-manager-open").onclick=()=>{renderManagerDriverOptions();$("driver-manager-dialog").showModal()};$("driver-manager-close").onclick=()=>$("driver-manager-dialog").close();$("driver-manager-form").onsubmit=saveManagerDriverProfile;$("manager-driver").onchange=()=>renderManagerPassengerOptions($("manager-driver").value,$("manager-passenger").value);
 
 onValue(stateRef,s=>{const previous=state;state=s.val()||{systemState:"no-event"};playStateTransition(previous,state);scheduleWarningReturn();scheduleNextStart();const newHazards=newOpenHazardIds(previous,state);if(newHazards.length){try{playSound("hazard")}catch{}if(new Set(["clear","green","move-over"]).has(state.activeFlag||"clear"))issueFlag("yellow").catch(error=>console.error("Unable to call immediate yellow",error))}setConn("connected","Connected");roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="Race Control";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{setConn("error","Connection error");console.error(e)});
-onValue(competitionRef,snapshot=>{competition=snapshot.val()||{};renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();if(state)render()});$("new-event-season").value=currentSeasonId();renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();setInterval(()=>{tick();sprintTick();qualifyingTick();if(state?.systemState==="next-session-countdown")countdownDots($("control-start-dots"),state.session.countdownEndsAt)},50);
+onValue(competitionRef,snapshot=>{competition=snapshot.val()||{};renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();renderManagerDriverOptions();if(state)render()});$("new-event-season").value=currentSeasonId();renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();renderManagerDriverOptions();setInterval(()=>{tick();sprintTick();qualifyingTick();if(state?.systemState==="next-session-countdown")countdownDots($("control-start-dots"),state.session.countdownEndsAt)},50);
