@@ -48,6 +48,7 @@ test("event formats, emergency Gator use, and participant qualifying results are
  for(const format of ["regular","sprint","qualifying"])assert.match(control,new RegExp(`data-create-event="${format}"`));
  assert.match(controlJs,/Tiebreaker active/);assert.match(controlJs,/Qualifying is the official tiebreaker/);
  assert.match(display,/id="qualifying-leaderboard"/);assert.match(displayJs,/rankedQualifyingLaps/);assert.match(displayJs,/current-driver/);
+ assert.match(control,/id="qualifying-lap-limit"/);assert.match(control,/id="qualifying-complete-warmup"/);assert.match(controlJs,/warmupCompleted/);assert.match(controlJs,/qualifying-halfway/);assert.match(displayJs,/CROSSED GREEN \+ CHECKERED/);
  assert.match(championship,/id="champ-event-format"/);assert.match(championshipJs,/eventFormat/);
  assert.match(display,/id="driver-gator-reason"/);assert.match(championship,/id="registration-gator-reason"/);assert.match(control,/id="manager-gator-reason"/);
 });
