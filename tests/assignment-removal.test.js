@@ -39,7 +39,8 @@ test("assignment selectors and person-based validation are removed",()=>{
  }
  const validation=functionSource("validate");
  assert(!/driver|passenger|personnel|assigned twice/i.test(validation));
- assert.match(validation,/Choose two different vehicle teams/);
+ assert.match(validation,/Choose two different vehicles/);
+ assert.doesNotMatch(controlHtml,/vehicle-foot|Vehicle.Foot/i);
 });
 
 test("legacy assignment objects remain readable but their people are ignored",()=>{
@@ -49,7 +50,7 @@ test("legacy assignment objects remain readable but their people are ignored",()
  }
 });
 
-test("Race Director sound control stays compact and reachable on mobile",()=>{
+test("MRA Steward sound control stays compact and reachable on mobile",()=>{
  assert.match(controlHtml,/<div class="header-account">[\s\S]*?id="control-sound"[\s\S]*?id="account-pill"/);
  assert.match(control,/audioState==="enabled"\?"Sound On":"Enable Sounds"/);
  assert.match(styles,/\.sound-toggle\{[\s\S]*?min-height:44px/);

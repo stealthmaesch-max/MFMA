@@ -6,7 +6,7 @@ import { signals } from "./signals.js?v=93";
 import { getRenderMode } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=70";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
-import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=88";
+import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=89";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime} from "./qualifying-model.js?v=85";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null,wake=null;
@@ -36,7 +36,7 @@ function showStatus(t,d,k="MFMA COMPETITION NETWORK"){
  standbyLeaderboard.classList.add("hidden");standbyLeaderboard.innerHTML="";
  applyDisplayClass("display flag-clear","status");theme.content="#0d1117";
 }
-function showLive(){const sig=signals[state.activeFlag]||signals.clear,s=state.session,awaiting=s.phase==="awaiting-finding-start";statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`${state.systemState}:${state.activeFlag}:${s.phase}`);label.textContent=awaiting?"HIDING COMPLETE":sig.label;instruction.textContent=awaiting?"Awaiting Race Director.":sig.instruction;theme.content=sig.theme;sessionLine.textContent=awaiting?`SESSION ${s.number} • AWAITING FINDING START`:`SESSION ${s.number} • ${s.phase.toUpperCase()} • PURSUIT: ${s.teamNames[s.pursuitTeam]} • EVADING: ${s.teamNames[s.evadingTeam]}`;timer.textContent=fmt(s.remainingMs)}
+function showLive(){const sig=signals[state.activeFlag]||signals.clear,s=state.session,awaiting=s.phase==="awaiting-finding-start";statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`${state.systemState}:${state.activeFlag}:${s.phase}`);label.textContent=awaiting?"HIDING COMPLETE":sig.label;instruction.textContent=awaiting?"Awaiting MRA Steward.":sig.instruction;theme.content=sig.theme;sessionLine.textContent=awaiting?`SESSION ${s.number} • AWAITING FINDING START`:`SESSION ${s.number} • ${s.phase.toUpperCase()} • PURSUIT: ${s.teamNames[s.pursuitTeam]} • EVADING: ${s.teamNames[s.evadingTeam]}`;timer.textContent=fmt(s.remainingMs)}
 function showStandbyFlag(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear;
  if(flag==="clear"){showStatus("STANDBY","Event active. No session is live.",state.event.name);return}

@@ -13,7 +13,9 @@
 
 /* v4.9 Shelly qualifying */
 .qualifying-launch{display:grid;gap:11px;margin:16px 0;padding:14px;border:1px solid rgba(255,255,255,.11);border-radius:16px;background:linear-gradient(135deg,rgba(241,21,36,.12),rgba(20,27,38,.9))}.qualifying-status{display:flex;align-items:center;justify-content:space-between;gap:14px}.qualifying-results{display:grid;gap:8px}.qualifying-results article{display:grid;grid-template-columns:32px minmax(0,1fr) auto auto;align-items:center;gap:10px;padding:11px;border:1px solid rgba(255,255,255,.1);border-radius:12px;background:#0c1118}.qualifying-results article>span{display:grid}.qualifying-results small{color:#9ca8b6}.flag-qualifying{background:radial-gradient(circle at 50% 22%,#29384b,#0a0e14 58%);color:#fff}.flag-qualifying #label,.flag-qualifying .label{color:#fff;text-shadow:0 0 28px rgba(108,178,255,.32)}
+.event-launch-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin-top:18px}.event-launch{display:grid;gap:5px;min-height:82px;padding:14px;text-align:left;color:#fff;border:1px solid rgba(255,255,255,.13);border-radius:15px;background:linear-gradient(145deg,#1c2430,#10151d);cursor:pointer}.event-launch b{font-size:16px}.event-launch span{color:#aeb8c5;font-size:12px;line-height:1.35}.event-launch.primary-btn{color:#101319;background:linear-gradient(145deg,#fff,#dce2eb)}.event-launch.primary-btn span{color:#4d5661}.no-event-utility{margin-top:10px}.chip.emergency-vehicle{border-style:dashed}.chip.emergency-vehicle small{color:#ffcc75}
 @media(max-width:699px){.qualifying-status{align-items:flex-start}.qualifying-status h2{font-size:25px}.qualifying-results article{grid-template-columns:28px minmax(0,1fr) auto}.qualifying-results article .mini-btn{grid-column:2/-1;width:100%;min-height:44px}.qualifying-launch .form-grid{grid-template-columns:1fr}}
+@media(max-width:699px){.event-launch-grid{grid-template-columns:1fr}.event-launch{min-height:64px}.race-control-page .control-toolbar .brand-row h1{font-size:clamp(17px,5vw,22px);white-space:nowrap}.race-control-page .control-toolbar .brand-row .eyebrow{display:none}}
 
 * { box-sizing: border-box; }
 
@@ -498,7 +500,7 @@ select {
   gap: 14px;
 }
 
-/* Race Director dashboard */
+/* MRA Steward dashboard */
 .race-control-page .control-shell {
   width: min(100%, 1560px);
   padding: max(10px, env(safe-area-inset-top)) 12px 18px;

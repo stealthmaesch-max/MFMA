@@ -2,7 +2,7 @@ import {initializeApp} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-
 import {getDatabase,ref,get,onValue,update,serverTimestamp} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import {getAuth,GithubAuthProvider,GoogleAuthProvider,signInWithPopup,signInAnonymously,signOut,onAuthStateChanged,setPersistence,browserLocalPersistence} from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import {firebaseConfig} from "./firebase-config.js?v=40";
-import {applyStandingsAdjustments,currentSeasonId,driverCompetitionRole,findDriver,isScoringDriverEligible,normalizeName,rebuildStandings,slugify,sortedStandings,teamBranding} from "./competition-model.js?v=88";
+import {applyStandingsAdjustments,currentSeasonId,driverCompetitionRole,findDriver,isScoringDriverEligible,normalizeName,rebuildStandings,slugify,sortedStandings,teamBranding} from "./competition-model.js?v=89";
 import {isMraAdminUser,mraAuthErrorMessage} from "./mra-auth.js?v=95";
 
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),$=id=>document.getElementById(id);

@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { vehicles } from "./personnel.js?v=40";
+import { vehicles } from "./personnel.js?v=41";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { signals } from "./signals.js?v=71";
 import { getRenderMode } from "./display-state.js?v=87";
@@ -77,7 +77,7 @@ function render(){
  }
  if(mode==="qualifying-live"){$("fan-state").textContent="QUALIFYING";$("fan-phase").textContent=`SHELLY • ${(event.qualifying?.trackLength||"").toUpperCase()} TRACK`;$("fan-timer").textContent=fmt(qualifyingTime(event.qualifying));$("fan-session").textContent=event.qualifying?.currentDriverName||"";$("fan-roles").textContent="FASTEST TIME WINS";return}
 
- $("fan-phase").textContent=s?(s.phase==="awaiting-finding-start"?"HIDING COMPLETE • AWAITING RACE DIRECTOR":s.phase.toUpperCase()):"STANDBY";
+ $("fan-phase").textContent=s?(s.phase==="awaiting-finding-start"?"HIDING COMPLETE • AWAITING MRA STEWARD":s.phase.toUpperCase()):"STANDBY";
  $("fan-timer").textContent=s?fmt(liveRemaining()):"--:--";
  $("fan-session").textContent=s?`Session ${s.number}`:"";
  $("fan-roles").textContent=s?`PURSUIT: ${names[s.pursuitTeam]||"—"} • EVADING: ${names[s.evadingTeam]||"—"}`:"";

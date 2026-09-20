@@ -1,7 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-app.js";
 import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { vehicles } from "./personnel.js?v=40";
+import { vehicles } from "./personnel.js?v=41";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { getRenderMode } from "./display-state.js?v=87";
 import {qualifyingTime} from "./qualifying-model.js?v=85";
@@ -24,7 +24,7 @@ function render(){
  if(mode==="course-lap"){$("ops-special-title").textContent="Safety Car Familiarization Lap";$("ops-special-detail").textContent="Follow the Safety Car. No overtaking.";return}
  if(mode==="sprint-live"){$("ops-phase").textContent=`MFMA SPRINT • ${(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase()}`;$("ops-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());$("ops-session").textContent="";$("ops-roles").textContent="";return}
  if(mode==="qualifying-live"){$("ops-phase").textContent=`QUALIFYING • SHELLY • ${(state.event.qualifying?.trackLength||"").toUpperCase()}`;$("ops-timer").textContent=fmt(qualifyingTime(state.event.qualifying));$("ops-session").textContent=state.event.qualifying?.currentDriverName||"";$("ops-roles").textContent="FASTEST TIME WINS";return}
- if(mode==="awaiting-finding-start"){$("ops-special-title").textContent="Awaiting Finding Start";$("ops-special-detail").textContent="Hiding complete. Waiting for Race Director confirmation.";return}
+ if(mode==="awaiting-finding-start"){$("ops-special-title").textContent="Awaiting Finding Start";$("ops-special-detail").textContent="Hiding complete. Waiting for MRA Steward confirmation.";return}
  if(mode==="next-session-staging"||mode==="next-session-countdown"){$("ops-special-title").textContent=mode==="next-session-countdown"?"Start Countdown":"Proceed to Starting Line";$("ops-special-detail").textContent=mode==="next-session-countdown"?"The hiding timer starts when all five dots go out.":"Next hiding team to the starting line.";return}
  if(mode==="violation-review"){$("ops-special-title").textContent="MRA Steward — Incident Under Investigation";$("ops-special-detail").textContent=s?.terminationDetail||"Return to the starting zone and await the MRA Steward.";return}
  if(mode==="safety-car-termination"||mode==="white-termination"){$("ops-special-title").textContent=mode==="white-termination"?"Disqualification":"Safety Car Termination";$("ops-special-detail").textContent=s?.terminationDetail||s?.provisionalReason||"Session terminated.";return}

@@ -1,7 +1,7 @@
 export const LEGACY_VEHICLES={
  ranger:{name:"Ranger",status:"approved",legacy:true},
  shelly:{name:"Shelly",status:"approved",legacy:true},
- gator:{name:"Gator",status:"approved",legacy:true}
+ gator:{name:"Gator",status:"approved",legacy:true,emergencyOnly:true}
 };
 
 export const DEFAULT_POINTS=[5,3];
@@ -60,7 +60,8 @@ export function buildEventArchive(state,competition={},options={}){
  for(const item of Object.values(event.passengerParticipants||{})){const driver=competition?.drivers?.[item?.driverId],completedSessions=event.participationSessions?.[item?.driverId]||0;if(item?.driverId&&!scoringDriverIds.has(item.driverId)&&driver?.status==="approved"&&completedSessions>0)participationByDriver[item.driverId]={driverId:item.driverId,driverName:driver.name,mraNumber:driver.mraNumber,role:"passenger",points:1,completedSessions}}
  for(const item of Object.values(event.sprintParticipants||{})){const driver=competition?.drivers?.[item?.driverId];if(item?.driverId&&!participationByDriver[item.driverId]&&driver?.status==="approved"&&item.verified===true&&(item.durationMs||0)>=60000)participationByDriver[item.driverId]={driverId:item.driverId,driverName:driver.name,mraNumber:driver.mraNumber,role:"sprint",points:1,durationMs:item.durationMs}}
  const participationAwards=Object.values(participationByDriver),passengerParticipation=participationAwards.filter(item=>item.role==="passenger");
- return {name:event.name||"MFMA Event",seasonId:options.seasonId,pointsEvent:event.pointsEvent!==false,date:options.date||new Date().toISOString().slice(0,10),endedAt:options.endedAt||Date.now(),classification,sessionResults,participationAwards,passengerParticipation,sessionCount:sessionResults.length||Math.max(0,(event.sessionNumber||1)-1),circuit:event.circuit||null,qualifying:event.qualifying||null,vehicleReplacements:event.vehicleReplacements||null,scoringPolicy:{sessionPoints:[...sessionPoints],eventPoints:[...points],passengerSeasonCap:PASSENGER_SEASON_CAP,sprintSeasonCap:SPRINT_SEASON_CAP}};
+ const scoreValues=Object.values(event.scores||{}).map(Number),qualifyingTiebreaker=event.eventFormat==="regular"&&scoreValues.length===2&&scoreValues[0]===scoreValues[1]&&event.qualifying?.winner?{method:"qualifying",driverId:event.qualifying.winner.driverId,driverName:event.qualifying.winner.driverName,teamId:event.qualifying.winner.teamId||null,timeMs:event.qualifying.winner.timeMs}:null;
+ return {name:event.name||"MFMA Event",eventFormat:event.eventFormat||"regular",seasonId:options.seasonId,pointsEvent:event.pointsEvent!==false,date:options.date||new Date().toISOString().slice(0,10),endedAt:options.endedAt||Date.now(),classification,sessionResults,participationAwards,passengerParticipation,sessionCount:sessionResults.length||Math.max(0,(event.sessionNumber||1)-1),circuit:event.circuit||null,qualifying:event.qualifying||null,qualifyingTiebreaker,vehicleReplacements:event.vehicleReplacements||null,scoringPolicy:{sessionPoints:[...sessionPoints],eventPoints:[...points],passengerSeasonCap:PASSENGER_SEASON_CAP,sprintSeasonCap:SPRINT_SEASON_CAP}};
 }
 
 export function rebuildStandings(archives={}){
