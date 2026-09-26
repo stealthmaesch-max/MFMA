@@ -837,6 +837,8 @@ dialog form {
 
 .flag-green { background: linear-gradient(145deg, #10a648, #087a34); color: #fff; }
 .flag-yellow { background: linear-gradient(145deg, #ffec1a, #e6c900); color: #111; }
+.flag.grip,.flag-grip{position:relative;overflow:hidden;background:repeating-linear-gradient(135deg,#ffd91a 0 18px,#d71920 18px 36px);color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.9)}.flag.grip::after,.flag-grip::after{content:"";position:absolute;inset:-30%;pointer-events:none;background:radial-gradient(circle,rgba(235,225,176,.9) 0 2px,transparent 3px) 0 0/38px 31px,linear-gradient(110deg,transparent 42%,rgba(170,225,255,.75) 47% 51%,transparent 56%) 0 0/54px 72px;opacity:.52;animation:gripSurface 1.15s linear infinite}.flag.grip>*{position:relative;z-index:1}@keyframes gripSurface{to{transform:translate3d(-38px,72px,0)}}
+.flag-grip[data-grip-condition="rain"]::after{background:linear-gradient(110deg,transparent 42%,rgba(185,230,255,.86) 47% 51%,transparent 56%) 0 0/42px 64px;opacity:.72;animation-duration:.72s}.flag-grip[data-grip-condition="debris"]::after{background:radial-gradient(circle,rgba(239,220,164,.95) 0 2px,transparent 3px) 0 0/32px 27px;opacity:.68;animation-duration:1.6s}
 .flag-move-over,.flag.move-over {background:linear-gradient(to bottom,#0756a5 0 40%,#ffd719 40% 60%,#0756a5 60% 100%);color:#fff;text-shadow:0 2px 5px rgba(0,0,0,.9)}
 
 .flag-safety-car {

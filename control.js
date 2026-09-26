@@ -12,9 +12,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
-import { signals } from "./signals.js?v=93";
+import { signals } from "./signals.js?v=94";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=70";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=71";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=53";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, teamBranding } from "./competition-model.js?v=89";
@@ -37,7 +37,7 @@ function requestConfirmation(title,message,confirmLabel="Confirm"){const dialog=
 function finishConfirmation(confirmed=false){const resolve=confirmationResolve;confirmationResolve=null;if($("confirmation-dialog").open)$("confirmation-dialog").close();resolve?.(confirmed)}
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
 let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null,competition={},requests={},requestsUnsubscribe=null,managerBindingUnsubscribe=null,managerBinding=null,managementEventKey=null,signalsExpanded=false;
-const safetyManagementFlags=new Set(["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
+const safetyManagementFlags=new Set(["yellow","grip-deterioration","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
 
 const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),testMode:$("test-mode-panel"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),qualifying:$("qualifying-panel"),live:$("live-panel"),provisional:$("provisional-panel"),nextStart:$("next-start-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
 
@@ -361,6 +361,8 @@ async function issueFlag(flag){
  if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",...instructionPatch("safety-car","SAFETY CAR — FOLLOW OFFICIAL VEHICLE"),updatedAt:serverTimestamp()});return}
  if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered(null,"Manual Checkered");
 }
+async function issueGrip(condition="surface"){if(!requireAuthenticatedWrite()||!new Set(["standby","sprint-live","session-live","test-mode"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"grip-deterioration",gripCondition:new Set(["rain","debris"]).has(condition)?condition:"surface",...clearInstructionPatch(),updatedAt:serverTimestamp()})}
+function installGripControls(){for(const [selector,compact] of [["#secondary-signals",true],["#standby-panel .flag-grid",false],["#sprint-panel .flag-grid",false],["#live-flag-panel",false],["#test-mode-panel .flag-grid",false]]){const host=document.querySelector(selector);if(!host||host.querySelector("[data-grip-condition]"))continue;for(const [condition,label] of [["rain","Rain / Water"],["debris","Loose Debris"]]){const button=document.createElement("button");button.type="button";button.className="flag grip";button.dataset.gripCondition=condition;button.innerHTML=`<b>YELLOW + RED${compact?"":" STRIPES"}</b><strong>Grip • ${label}</strong><small>${compact?"":"Competition continues • repeated warning"}</small>`;button.onclick=()=>issueGrip(condition);host.append(button)}}}
 
 function safetyManagementActive(){return Boolean(state?.event&&safetyManagementFlags.has(state.activeFlag))}
 function openSafetyMessage(){
@@ -796,6 +798,8 @@ $("start-qualifying").onclick=startQualifying;$("qualifying-live-driver").onchan
 $("sprint-timer-mode").onchange=setSprintTimerMode;$("sprint-duration").onchange=configureSprintDuration;$("sprint-start-timer").onclick=startSprintTimer;$("sprint-pause-timer").onclick=pauseSprintTimer;$("sprint-reset-timer").onclick=resetSprintTimer;
 $("sprint-add-time").onclick=()=>adjustSprintTimer(Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-subtract-time").onclick=()=>adjustSprintTimer(-Math.max(0,Number($("sprint-adjustment").value)||0)*1000);$("sprint-set-time").onclick=setSprintTimer;
 document.querySelectorAll("[data-sprint-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.sprintFlag));
+document.querySelectorAll("[data-grip-condition]").forEach(b=>b.onclick=()=>issueGrip(b.dataset.gripCondition));
+installGripControls();
 document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.quickFlag));
 $("more-signals").onclick=()=>{signalsExpanded=!signalsExpanded;const secondaryActive=new Set(["move-over","checkered","clear"]).has(state?.activeFlag);$("secondary-signals").classList.toggle("hidden",!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More"};
 $("start-finding").onclick=startFinding;

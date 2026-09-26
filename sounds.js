@@ -3,7 +3,7 @@ const VOLUME_KEY="mfma-sounds-volume";
 const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",grip:"Grip Deterioration",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
@@ -106,11 +106,13 @@ const moveOverCommand=[
  {frequency:1397,start:0,duration:.2,type:"triangle",gain:.3,endFrequency:1175,attack:.008,release:.05},
  {frequency:988,start:.25,duration:.27,type:"triangle",gain:.3,endFrequency:880,attack:.008,release:.065}
 ];
+function speakGrip(){try{if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==="undefined")return;window.speechSynthesis.cancel();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");message.rate=1.08;message.pitch=1;message.volume=volume;window.speechSynthesis.speak(message)}catch{}}
 
 export const soundDefinitions={
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
  yellow:{description:"engine-cutting persistent caution",repetitions:3,reminderMs:6500,play:()=>repeatPattern(yellowCaution,3,.9)},
+ grip:{description:"repeating surface grip warning with spoken callout",repetitions:3,reminderMs:4200,play:()=>{speakGrip();return repeatPattern([{frequency:880,start:0,duration:.18,type:"triangle",gain:.3},{frequency:880,start:.32,duration:.18,type:"triangle",gain:.3},{frequency:880,start:.64,duration:.18,type:"triangle",gain:.3}],1,1)}},
  moveOver:{description:"engine-cutting persistent passing command",repetitions:3,reminderMs:4500,play:()=>repeatPattern(moveOverCommand,3,.7)},
  red:{description:"firm persistent stop command",repetitions:4,reminderMs:4000,play:()=>repeatPattern(redAlarm,4,.72)},
  safetyCar:{description:"engine-cutting persistent Safety Car command",repetitions:5,reminderMs:5000,play:()=>repeatPattern(safetyCarWarning,5,.92)},
@@ -130,6 +132,7 @@ export const soundDefinitions={
 function playTestTone(){stopSounds();schedulePattern([{frequency:660,start:0,duration:.08,gain:.1},{frequency:880,start:.09,duration:.12,gain:.1}])}
 
 export function stopSounds(){
+ try{window.speechSynthesis?.cancel()}catch{}
  for(const timeout of activeTimeouts)clearTimeout(timeout);
  for(const interval of activeIntervals)clearInterval(interval);
  activeTimeouts.clear();activeIntervals.clear();
@@ -157,7 +160,7 @@ export function soundForStateTransition(previous,current){
  if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
  if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
  if(previous.activeFlag!==current.activeFlag){
-  const flagSounds={green:"green",yellow:"yellow","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered",clear:"clear"};
+  const flagSounds={green:"green",yellow:"yellow","grip-deterioration":"grip","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered",clear:"clear"};
   return flagSounds[current.activeFlag]||null;
  }
  return null;

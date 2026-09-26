@@ -2,9 +2,9 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebas
 import { getDatabase, ref, onValue, get, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { signals } from "./signals.js?v=93";
+import { signals } from "./signals.js?v=94";
 import { getRenderMode } from "./display-state.js?v=87";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=70";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=71";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=89";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
@@ -16,7 +16,7 @@ const vehicleSelect=$("driver-vehicle"),tools=$("driver-tools"),PROFILE_KEY="mfm
 function readDriverProfile(){try{const profile=JSON.parse(localStorage.getItem(PROFILE_KEY)||"null");return profile?.teamId&&profile?.driverId&&profile?.vehicleId?profile:null}catch{return null}}
 let driverProfile=readDriverProfile(),selectedVehicle=driverProfile?.vehicleId||localStorage.getItem("mfma-driver-vehicle")||"ranger",competition={};
 let driverUser=null,driverAuthPromise=null,crewEditing=false,lastReportKey="",resolvedTimer=null,accessUnsubscribe=null,currentBinding=null;
-const safetyManagementFlags=new Set(["yellow","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
+const safetyManagementFlags=new Set(["yellow","grip-deterioration","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
 const acknowledgedInstructionTypes=new Set(["red","safety-car","return-to-start","proceed-to-start","restart"]);
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
 let visualSignal=null;
@@ -24,7 +24,7 @@ function applyDisplayClass(className,signal){
  if(signal!==visualSignal&&display.classList.contains("flash")&&className.includes(" flash")){
   display.classList.remove("flash");void display.offsetWidth;
  }
- display.className=className;visualSignal=signal;
+ display.className=className;display.dataset.gripCondition=state?.gripCondition||"surface";visualSignal=signal;
 }
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
 function fmtQualifying(ms){const value=Math.max(0,Math.floor(ms||0));return `${String(Math.floor(value/60000)).padStart(2,"0")}:${String(Math.floor(value%60000/1000)).padStart(2,"0")}.${String(value%1000).padStart(3,"0")}`}
@@ -47,9 +47,9 @@ function showStandbyFlag(){
 }
 function showSprint(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear,s=state.sprint||{};
- const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW","move-over":"MOVE OVER",red:"RED","safety-car":"SAFETY CAR","infraction-warning":"INFRACTION WARNING",disqualification:"DISQUALIFIED",checkered:"CHECKERED"};
+ const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW","grip-deterioration":"GRIP DETERIORATION","move-over":"MOVE OVER",red:"RED","safety-car":"SAFETY CAR","infraction-warning":"INFRACTION WARNING",disqualification:"DISQUALIFIED",checkered:"CHECKERED"};
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`sprint:${flag}`);
- label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent=flag==="safety-car"?"FOLLOW SAFETY CAR • NO OVERTAKING":"MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT";timer.textContent=s.timerMode==="none"?"NO TIMER":fmt(sprintTime(s));theme.content=sig.theme;
+ label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent=flag==="safety-car"?"FOLLOW SAFETY CAR • NO OVERTAKING":flag==="grip-deterioration"?"GRIP • GRIP • GRIP":"MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT • FLAG OPERATIONS";timer.textContent=s.timerMode==="none"?"NO FORMAL SESSION":fmt(sprintTime(s));theme.content=sig.theme;
 }
 function showQualifying(){const qualifying=state.event?.qualifying||{},laps=rankedQualifyingLaps(qualifying.laps),leaders=laps.filter((lap,index)=>laps.findIndex(item=>item.driverId===lap.driverId)===index),fastest=leaders[0],board=$("qualifying-leaderboard"),warmup=!qualifying.warmupCompleted,halfway=state.activeFlag==="qualifying-halfway",completed=Object.values(qualifying.laps||{}).filter(lap=>lap?.driverId===qualifying.currentDriverId).length,limit=qualifying.lapLimit||5;statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display flag-qualifying${halfway?" flag-qualifying-halfway flash":""}`,"qualifying");label.textContent=warmup?"WARM-UP LAP":halfway?"HALFWAY":qualifying.running?"QUALIFYING LAP":"QUALIFYING";instruction.textContent=warmup?"UNTIMED • SHELLY":halfway?"CROSSED GREEN + CHECKERED":qualifying.running?`${qualifying.currentDriverName||"DRIVER"} • LAP ${completed+1} OF ${limit}`:(fastest?`FASTEST • ${fastest.driverName} • ${fmtQualifying(fastest.timeMs)}`:"AWAITING FIRST LAP");sessionLine.textContent=`${(QUALIFYING_TRACKS[qualifying.trackLength]||"QUALIFYING").toUpperCase()} TRACK • SHELLY`;timer.textContent=warmup?"WARM-UP":fmtQualifying(qualifyingTime(qualifying));board.classList.toggle("hidden",warmup||!leaders.length);board.innerHTML=leaders.slice(0,5).map((lap,index)=>`<span class="${lap.driverId===driverProfile?.driverId?"current-driver":""}"><b>${index+1}</b><strong>${escapeHtml(lap.driverName)}</strong><time>${fmtQualifying(lap.timeMs)}</time></span>`).join("");theme.content=halfway?"#16261a":"#10141b"}
 function showTestMode(){const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear;statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display test-mode-display ${sig.className}${sig.flash?" flash":""}`,`test:${flag}`);label.textContent=flag==="clear"?"TEST MODE":sig.label;instruction.textContent="DISPLAY / SOUND VERIFICATION • NOT AN ACTIVE EVENT";sessionLine.textContent=`MRA SYSTEM TEST • ${flag.replaceAll("-"," ").toUpperCase()}`;timer.textContent="TEST";theme.content=sig.theme;tools.classList.add("hidden")}
