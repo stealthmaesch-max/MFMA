@@ -66,6 +66,8 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.yellow.repetitions,3);
  assert.equal(sounds.soundDefinitions.grip.repetitions,3);
  assert.equal(sounds.soundDefinitions.grip.reminderMs,4200);
+ assert.equal(sounds.soundDefinitions.yellowGrip.reminderMs,5600);
+ assert.equal(sounds.soundDefinitions.safetyCarGrip.reminderMs,5000);
  assert.match(source,/malePattern=.*aaron.*alex.*daniel.*fred.*guy.*ralph.*reed.*rocko.*tom.*male/i);
  assert.match(source,/message\.rate=\.9;message\.pitch=\.78/);
  assert.equal(sounds.soundDefinitions.moveOver.repetitions,3);
@@ -98,8 +100,16 @@ test("production flag transitions play once and resume an enabled context",async
   assert.equal(sounds.getActiveSoundState().oscillators,oscillators,`${flag} schedules exactly one complete sequence`);
   assert.equal(await sounds.playStateTransition(current,{...current}),null,"an unchanged Firebase snapshot stays silent");
   assert.equal(sounds.getActiveSoundState().oscillators,oscillators,"an unchanged snapshot does not replay or replace audio");
-  sounds.stopSounds();
+ sounds.stopSounds();
  }
+ const green={systemState:"sprint-live",activeFlag:"green"},grip={...green,trackSignals:{"sector-2":{type:"rain",issuedAt:1}}};
+ assert.equal(await sounds.playStateTransition(green,grip),"grip","a local grip advisory sounds without replacing Green");
+ assert.equal(sounds.getActiveSoundState().intervals,1,"the local Grip reminder remains persistent");
+ assert.equal(await sounds.playStateTransition(grip,green),"green","clearing Grip restores the underlying primary sound");
+ const yellowGrip={...grip,activeFlag:"yellow"},safetyCarGrip={...grip,activeFlag:"safety-car"};
+ assert.equal(await sounds.playStateTransition(grip,yellowGrip),"yellowGrip","Yellow remains part of the combined Grip warning");
+ assert.equal(await sounds.playStateTransition(yellowGrip,safetyCarGrip),"safetyCarGrip","Safety Car remains part of the combined Grip warning");
+ sounds.stopSounds();
 });
 
 test("production listeners retain state history and restart changed flash signals",()=>{

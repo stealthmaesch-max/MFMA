@@ -3,7 +3,7 @@ const VOLUME_KEY="mfma-sounds-volume";
 const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",grip:"Grip Deterioration",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
@@ -114,6 +114,8 @@ export const soundDefinitions={
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
  yellow:{description:"engine-cutting persistent caution",repetitions:3,reminderMs:6500,play:()=>repeatPattern(yellowCaution,3,.9)},
  grip:{description:"repeating surface grip warning with spoken callout",repetitions:3,reminderMs:4200,play:()=>{speakGrip();return repeatPattern([{frequency:880,start:0,duration:.18,type:"triangle",gain:.3},{frequency:880,start:.32,duration:.18,type:"triangle",gain:.3},{frequency:880,start:.64,duration:.18,type:"triangle",gain:.3}],1,1)}},
+ yellowGrip:{description:"persistent Yellow with spoken grip advisory",repetitions:3,reminderMs:5600,play:()=>{speakGrip();return repeatPattern(yellowCaution,3,.9)}},
+ safetyCarGrip:{description:"persistent Safety Car with spoken grip advisory",repetitions:5,reminderMs:5000,play:()=>{speakGrip();return repeatPattern(safetyCarWarning,5,.92)}},
  moveOver:{description:"engine-cutting persistent passing command",repetitions:3,reminderMs:4500,play:()=>repeatPattern(moveOverCommand,3,.7)},
  red:{description:"firm persistent stop command",repetitions:4,reminderMs:4000,play:()=>repeatPattern(redAlarm,4,.72)},
  safetyCar:{description:"engine-cutting persistent Safety Car command",repetitions:5,reminderMs:5000,play:()=>repeatPattern(safetyCarWarning,5,.92)},
@@ -160,10 +162,12 @@ export function soundForStateTransition(previous,current){
  if(previousPhase!=="awaiting-finding-start"&&currentPhase==="awaiting-finding-start")return "awaitingFinding";
  if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
  if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
+ const flagSounds={green:"green",yellow:"yellow","grip-deterioration":"grip","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered",clear:"clear"},hasGrip=Object.values(current.trackSignals||{}).some(signal=>new Set(["rain","debris"]).has(signal?.type)),layeredGripSound=hasGrip?(current.activeFlag==="safety-car"?"safetyCarGrip":current.activeFlag==="yellow"?"yellowGrip":current.activeFlag==="green"?"grip":null):null;
  if(previous.activeFlag!==current.activeFlag){
-  const flagSounds={green:"green",yellow:"yellow","grip-deterioration":"grip","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered",clear:"clear"};
-  return flagSounds[current.activeFlag]||null;
+  return layeredGripSound||flagSounds[current.activeFlag]||null;
  }
+ const signature=value=>Object.entries(value||{}).filter(([,signal])=>signal?.type).map(([sector,signal])=>`${sector}:${signal.type}`).sort().join("|"),previousTrack=signature(previous.trackSignals),currentTrack=signature(current.trackSignals);
+ if(previousTrack!==currentTrack){if(layeredGripSound)return layeredGripSound;if(hasGrip)return current.activeFlag==="red"?"red":"grip";const hasLocalYellow=Object.values(current.trackSignals||{}).some(signal=>new Set(["yellow","double-yellow"]).has(signal?.type));if(hasLocalYellow)return current.activeFlag==="safety-car"?"safetyCar":"yellow";return flagSounds[current.activeFlag]||"clear"}
  return null;
 }
 
