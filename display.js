@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gsta
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=94";
 import { getRenderMode } from "./display-state.js?v=87";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=71";
+import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition } from "./sounds.js?v=72";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=89";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";

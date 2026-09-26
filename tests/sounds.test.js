@@ -66,6 +66,8 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.yellow.repetitions,3);
  assert.equal(sounds.soundDefinitions.grip.repetitions,3);
  assert.equal(sounds.soundDefinitions.grip.reminderMs,4200);
+ assert.match(source,/malePattern=.*aaron.*alex.*daniel.*fred.*guy.*ralph.*reed.*rocko.*tom.*male/i);
+ assert.match(source,/message\.rate=\.9;message\.pitch=\.78/);
  assert.equal(sounds.soundDefinitions.moveOver.repetitions,3);
  assert.equal(sounds.soundDefinitions.red.repetitions,4);
  assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);

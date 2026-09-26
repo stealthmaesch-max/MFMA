@@ -106,7 +106,8 @@ const moveOverCommand=[
  {frequency:1397,start:0,duration:.2,type:"triangle",gain:.3,endFrequency:1175,attack:.008,release:.05},
  {frequency:988,start:.25,duration:.27,type:"triangle",gain:.3,endFrequency:880,attack:.008,release:.065}
 ];
-function speakGrip(){try{if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==="undefined")return;window.speechSynthesis.cancel();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");message.rate=1.08;message.pitch=1;message.volume=volume;window.speechSynthesis.speak(message)}catch{}}
+function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),malePattern=/\b(aaron|alex|daniel|fred|guy|ralph|reed|rocko|tom|male)\b/i;return english.find(voice=>malePattern.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
+function speakGrip(){try{if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==="undefined")return;window.speechSynthesis.cancel();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=.9;message.pitch=.78;message.volume=volume;window.speechSynthesis.speak(message)}catch{}}
 
 export const soundDefinitions={
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
