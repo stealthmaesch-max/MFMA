@@ -3,7 +3,7 @@ const VOLUME_KEY="mfma-sounds-volume";
 const MIN_GAIN=.0001;
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",qualifyingHalfway:"Qualifying Halfway",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
@@ -106,8 +106,8 @@ const moveOverCommand=[
  {frequency:1397,start:0,duration:.2,type:"triangle",gain:.3,endFrequency:1175,attack:.008,release:.05},
  {frequency:988,start:.25,duration:.27,type:"triangle",gain:.3,endFrequency:880,attack:.008,release:.065}
 ];
-function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),malePattern=/\b(aaron|alex|daniel|fred|guy|ralph|reed|rocko|tom|male)\b/i;return english.find(voice=>malePattern.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
-function speakGrip(){try{if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==="undefined")return;window.speechSynthesis.cancel();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=.9;message.pitch=.78;message.volume=volume;window.speechSynthesis.speak(message)}catch{}}
+function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),natural=/\b(enhanced|premium|natural)\b/i,male=/\b(evan|daniel|aaron|alex|tom|guy|reed|male)\b/i;return english.find(voice=>natural.test(voice.name)&&male.test(voice.name))||english.find(voice=>male.test(voice.name))||english.find(voice=>natural.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
+function speakGrip(){try{if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==="undefined")return;window.speechSynthesis.cancel();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=1.02;message.pitch=.93;message.volume=Math.max(.88,volume);window.speechSynthesis.speak(message)}catch{}}
 
 export const soundDefinitions={
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
@@ -121,6 +121,7 @@ export const soundDefinitions={
  safetyCar:{description:"engine-cutting persistent Safety Car command",repetitions:5,reminderMs:5000,play:()=>repeatPattern(safetyCarWarning,5,.92)},
  white:{description:"loud persistent infraction command",reminderMs:7000,play:()=>schedulePattern([{frequency:1319,start:0,duration:.21,type:"triangle",gain:.3,attack:.008,release:.055},{frequency:988,start:.26,duration:.27,type:"triangle",gain:.3,attack:.008,release:.065},{frequency:1319,start:.59,duration:.24,type:"triangle",gain:.31,attack:.008,release:.06}])},
  checkered:{description:"finish flourish",play:()=>schedulePattern([523,659,784,1047].map((frequency,index)=>({frequency,start:index*.09,duration:.2,type:"triangle",gain:.13})))},
+ qualifyingHalfway:{description:"qualifying halfway marker",play:()=>schedulePattern([{frequency:784,start:0,duration:.16,type:"triangle",gain:.22},{frequency:1047,start:.2,duration:.2,type:"triangle",gain:.25},{frequency:784,start:.46,duration:.2,type:"triangle",gain:.22}])},
  clear:{description:"soft reset",play:()=>schedulePattern([{frequency:392,start:0,duration:.12,type:"sine",gain:.09},{frequency:294,start:.11,duration:.23,type:"sine",gain:.08}])},
  startLights:{description:"five synchronized start-light tones",play:()=>schedulePattern(Array.from({length:5},(_,index)=>({frequency:440,start:index*1.5,duration:.2,type:"triangle",gain:.17,attack:.008,release:.06})))},
  courseLapStart:{description:"formal start",play:()=>schedulePattern([{frequency:262,start:0,duration:.22,type:"triangle",gain:.13},{frequency:262,start:.3,duration:.12,type:"triangle",gain:.12},{frequency:392,start:.46,duration:.25,type:"triangle",gain:.14}])},
@@ -162,7 +163,7 @@ export function soundForStateTransition(previous,current){
  if(previousPhase!=="awaiting-finding-start"&&currentPhase==="awaiting-finding-start")return "awaitingFinding";
  if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
  if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
- const flagSounds={green:"green",yellow:"yellow","grip-deterioration":"grip","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered",clear:"clear"},hasGrip=Object.values(current.trackSignals||{}).some(signal=>new Set(["rain","debris"]).has(signal?.type)),layeredGripSound=hasGrip?(current.activeFlag==="safety-car"?"safetyCarGrip":current.activeFlag==="yellow"?"yellowGrip":current.activeFlag==="green"?"grip":null):null;
+ const flagSounds={green:"green",yellow:"yellow","grip-deterioration":"grip","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered","qualifying-halfway":"qualifyingHalfway",clear:"clear"},hasGrip=Object.values(current.trackSignals||{}).some(signal=>new Set(["rain","debris"]).has(signal?.type)),layeredGripSound=hasGrip?(current.activeFlag==="safety-car"?"safetyCarGrip":current.activeFlag==="yellow"?"yellowGrip":current.activeFlag==="green"?"grip":null):null;
  if(previous.activeFlag!==current.activeFlag){
   return layeredGripSound||flagSounds[current.activeFlag]||null;
  }

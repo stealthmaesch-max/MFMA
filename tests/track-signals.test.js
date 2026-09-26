@@ -9,6 +9,7 @@ test("track outline exposes eight independently addressable sectors",()=>{
  for(const sector of TRACK_SECTORS)assert.match(markup,new RegExp(`data-track-sector="${sector.id}"`));
  for(const landmark of ["site-start","site-grass"])assert.match(markup,new RegExp(`class="${landmark}"`));
  assert.doesNotMatch(markup,/site-building|site-bin/);
+ const sector5=markup.match(/data-track-sector="sector-5" d="([^"]+)"/)?.[1];assert(sector5);assert.doesNotMatch(sector5,/\sM/,"S5 is one continuous northeast return, not two separate paths");
 });
 
 test("track signals retain valid local flags and reject unknown values",()=>{

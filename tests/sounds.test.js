@@ -68,8 +68,9 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.grip.reminderMs,4200);
  assert.equal(sounds.soundDefinitions.yellowGrip.reminderMs,5600);
  assert.equal(sounds.soundDefinitions.safetyCarGrip.reminderMs,5000);
- assert.match(source,/malePattern=.*aaron.*alex.*daniel.*fred.*guy.*ralph.*reed.*rocko.*tom.*male/i);
- assert.match(source,/message\.rate=\.9;message\.pitch=\.78/);
+ assert.match(source,/natural=.*enhanced.*premium.*natural/i);
+ assert.match(source,/male=.*evan.*daniel.*aaron.*alex.*tom.*guy.*reed.*male/i);
+ assert.match(source,/message\.rate=1\.02;message\.pitch=\.93/);
  assert.equal(sounds.soundDefinitions.moveOver.repetitions,3);
  assert.equal(sounds.soundDefinitions.red.repetitions,4);
  assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);
@@ -143,4 +144,5 @@ test("Firebase state transitions resolve to authoritative signals",async()=>{
  assert.equal(transition({systemState:"standby"},{systemState:"sprint-live",sprint:{active:true}}),"sprintStart");
  assert.equal(transition({systemState:"sprint-live",sprint:{timerMode:"count-down",remainingMs:900}},{systemState:"sprint-live",sprint:{timerMode:"count-down",remainingMs:0}}),"sprintTimerZero");
  assert.equal(transition({systemState:"sprint-live"},{systemState:"standby",activeFlag:"clear"}),"sprintTerminated");
+ assert.equal(transition({systemState:"qualifying-live",activeFlag:"green"},{systemState:"qualifying-live",activeFlag:"qualifying-halfway"}),"qualifyingHalfway","the Driver receives the crossed Green and Checkered halfway cue");
 });
