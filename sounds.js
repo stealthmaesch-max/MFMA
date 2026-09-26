@@ -167,7 +167,7 @@ export function soundForStateTransition(previous,current){
   return layeredGripSound||flagSounds[current.activeFlag]||null;
  }
  const signature=value=>Object.entries(value||{}).filter(([,signal])=>signal?.type).map(([sector,signal])=>`${sector}:${signal.type}`).sort().join("|"),previousTrack=signature(previous.trackSignals),currentTrack=signature(current.trackSignals);
- if(previousTrack!==currentTrack){if(layeredGripSound)return layeredGripSound;if(hasGrip)return current.activeFlag==="red"?"red":"grip";const hasLocalYellow=Object.values(current.trackSignals||{}).some(signal=>new Set(["yellow","double-yellow"]).has(signal?.type));if(hasLocalYellow)return current.activeFlag==="safety-car"?"safetyCar":"yellow";return flagSounds[current.activeFlag]||"clear"}
+ if(previousTrack!==currentTrack){if(layeredGripSound)return layeredGripSound;if(hasGrip)return current.activeFlag==="red"?"red":"grip";const hasLocalYellow=Object.values(current.trackSignals||{}).some(signal=>signal?.type==="yellow");if(hasLocalYellow)return current.activeFlag==="safety-car"?"safetyCar":"yellow";return flagSounds[current.activeFlag]||"clear"}
  return null;
 }
 

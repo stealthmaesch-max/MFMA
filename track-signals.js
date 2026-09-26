@@ -9,7 +9,6 @@ export const TRACK_SECTORS=Object.freeze([
 
 export const TRACK_SIGNAL_TYPES=Object.freeze({
  yellow:{label:"Local Yellow",shortLabel:"YELLOW",className:"local-yellow"},
- "double-yellow":{label:"Double Yellow",shortLabel:"DOUBLE YELLOW",className:"double-yellow"},
  rain:{label:"Grip • Rain / Water",shortLabel:"WET",className:"grip-rain",grip:true},
  debris:{label:"Grip • Loose Debris",shortLabel:"DEBRIS",className:"grip-debris",grip:true}
 });

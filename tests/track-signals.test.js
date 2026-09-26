@@ -16,5 +16,6 @@ test("track signals retain valid local flags and reject unknown values",()=>{
  const active=activeTrackSignals(raw);
  assert.deepEqual(active.map(signal=>[signal.id,signal.type]),[["sector-1","yellow"],["sector-2","rain"]]);
  assert.equal(hasGripSignal(raw),true);
- assert.equal(hasGripSignal({"sector-1":{type:"double-yellow"}}),false);
+ assert.equal(hasGripSignal({"sector-1":{type:"yellow"}}),false);
+ assert.deepEqual(cleanTrackSignals({"sector-1":{type:"double-yellow"}}),{},"undefined Double Yellow is rejected");
 });
