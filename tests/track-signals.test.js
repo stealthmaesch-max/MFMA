@@ -4,8 +4,10 @@ import {TRACK_SECTORS,activeTrackSignals,cleanTrackSignals,hasGripSignal,trackOu
 
 test("track outline exposes six independently addressable sectors",()=>{
  assert.equal(TRACK_SECTORS.length,6);
+ assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Side","North Loop","East Side","South Grass Run","Central Crossover"]);
  const markup=trackOutlineMarkup();
  for(const sector of TRACK_SECTORS)assert.match(markup,new RegExp(`data-track-sector="${sector.id}"`));
+ for(const landmark of ["site-start","site-grass","site-building","site-bin"])assert.match(markup,new RegExp(`class="${landmark}"`));
 });
 
 test("track signals retain valid local flags and reject unknown values",()=>{
