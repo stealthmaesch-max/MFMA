@@ -2,12 +2,13 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {TRACK_SECTORS,activeTrackSignals,cleanTrackSignals,hasGripSignal,trackOutlineMarkup} from "../track-signals.js";
 
-test("track outline exposes six independently addressable sectors",()=>{
- assert.equal(TRACK_SECTORS.length,6);
- assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Side","North Loop","East Side","South Grass Run","Central Crossover"]);
+test("track outline exposes eight independently addressable sectors",()=>{
+ assert.equal(TRACK_SECTORS.length,8);
+ assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grass","Northwest Approach","North Loop","Northeast Return","East Side","South Grass","Central Crossovers"]);
  const markup=trackOutlineMarkup();
  for(const sector of TRACK_SECTORS)assert.match(markup,new RegExp(`data-track-sector="${sector.id}"`));
- for(const landmark of ["site-start","site-grass","site-building","site-bin"])assert.match(markup,new RegExp(`class="${landmark}"`));
+ for(const landmark of ["site-start","site-grass"])assert.match(markup,new RegExp(`class="${landmark}"`));
+ assert.doesNotMatch(markup,/site-building|site-bin/);
 });
 
 test("track signals retain valid local flags and reject unknown values",()=>{
