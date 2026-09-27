@@ -182,6 +182,12 @@ export async function playStateTransition(previous,current){
  playSound(sound);return sound;
 }
 
+export async function playCurrentState(current){
+ if(!current||!context)return null;
+ const baseline={systemState:"audio-armed",activeFlag:"__none__",session:{},sprint:{},trackSignals:{}};
+ return playStateTransition(baseline,current);
+}
+
 export function playSound(name){
  const definition=soundDefinitions[name];
  if(!definition)throw new Error(`Unknown sound: ${name}`);

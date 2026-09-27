@@ -14,7 +14,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
 import { signals } from "./signals.js?v=94";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
-import { enableSounds, getSoundStatus, onSoundStatus, playStateTransition, playSound } from "./sounds.js?v=75";
+import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound } from "./sounds.js?v=76";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=53";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=4";
@@ -58,7 +58,7 @@ const authStartupTimer=setTimeout(()=>{
 },8000);
 
 function renderControlSound({state:audioState}){controlSound.textContent=audioState==="enabled"?"Sound On":"Enable Sounds";controlSound.dataset.state=audioState}
-controlSound.onclick=async()=>{try{await enableSounds()}catch(error){console.warn("Unable to enable Race Control sounds",error)}renderControlSound(getSoundStatus())};
+controlSound.onclick=async()=>{try{await enableSounds();await playCurrentState(state)}catch(error){console.warn("Unable to enable Race Control sounds",error)}renderControlSound(getSoundStatus())};
 onSoundStatus(renderControlSound);
 
 function providerLabel(user){

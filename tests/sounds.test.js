@@ -146,3 +146,9 @@ test("Firebase state transitions resolve to authoritative signals",async()=>{
  assert.equal(transition({systemState:"sprint-live"},{systemState:"standby",activeFlag:"clear"}),"sprintTerminated");
  assert.equal(transition({systemState:"qualifying-live",activeFlag:"green"},{systemState:"qualifying-live",activeFlag:"qualifying-halfway"}),"qualifyingHalfway","the Driver receives the crossed Green and Checkered halfway cue");
 });
+
+test("enabling Driver audio replays an already-active warning",async()=>{
+ global.localStorage={getItem:()=>null,setItem:()=>{}};global.window={AudioContext:FakeAudioContext};
+ const source=fs.readFileSync("sounds.js","utf8"),sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// current warning").toString("base64")}`);await sounds.enableSounds();
+ assert.equal(await sounds.playCurrentState({systemState:"session-live",activeFlag:"safety-car",session:{phase:"finding"}}),"safetyCar");sounds.stopSounds();
+});
