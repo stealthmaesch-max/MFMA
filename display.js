@@ -7,7 +7,7 @@ import { getRenderMode } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playSound, playStateTransition } from "./sounds.js?v=76";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { TRACK_SECTORS, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=6";
-import {distanceToZone,locateTrackPosition} from "./gps-assist.js?v=1";
+import {distanceToZone,locateTrackPosition} from "./gps-assist.js?v=2";
 import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=89";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
