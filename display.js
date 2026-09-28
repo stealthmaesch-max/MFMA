@@ -6,7 +6,7 @@ import { signals } from "./signals.js?v=94";
 import { getRenderMode } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition } from "./sounds.js?v=76";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
-import { activeTrackSignals, hasGripSignal, trackOutlineMarkup } from "./track-signals.js?v=4";
+import { activeTrackSignals, hasGripSignal, trackOutlineMarkup } from "./track-signals.js?v=5";
 import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=89";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");

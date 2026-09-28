@@ -4,12 +4,12 @@ import {TRACK_SECTORS,activeTrackSignals,cleanTrackSignals,hasGripSignal,trackOu
 
 test("track outline exposes eight independently addressable sectors",()=>{
  assert.equal(TRACK_SECTORS.length,8);
- assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grass","Northwest Approach","North Loop","Northeast Return","East Side","South Grass","Central Crossovers"]);
+ assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grounds","Northwest Grounds","North Grounds","Northeast Grounds","East Grounds","South Grounds","Central Grounds"]);
  const markup=trackOutlineMarkup();
  for(const sector of TRACK_SECTORS)assert.match(markup,new RegExp(`data-track-sector="${sector.id}"`));
- for(const landmark of ["site-start","site-grass"])assert.match(markup,new RegExp(`class="${landmark}"`));
- assert.doesNotMatch(markup,/site-building|site-bin/);
- const sector5=markup.match(/data-track-sector="sector-5" d="([^"]+)"/)?.[1];assert(sector5);assert.doesNotMatch(sector5,/\sM/,"S5 is one continuous northeast return, not two separate paths");
+ for(const landmark of ["site-start","site-grass","site-field-closed","site-buildings","common-routes"])assert.match(markup,new RegExp(`class="${landmark}`));
+ assert.doesNotMatch(markup,/site-bin/);
+ assert.match(markup,/Buildings are legal hiding locations, not through routes/);
 });
 
 test("track signals retain valid local flags and reject unknown values",()=>{
