@@ -3,11 +3,11 @@ import assert from "node:assert/strict";
 import {TRACK_SECTORS,activeTrackSignals,cleanTrackSignals,hasGripSignal,trackOutlineMarkup} from "../track-signals.js";
 
 test("track outline exposes central north and south as independently addressable zones",()=>{
- assert.equal(TRACK_SECTORS.length,9);
- assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grounds","Northwest Grounds","North Grounds","Northeast Grounds","East Grounds","South Grounds","Central North","Central South"]);
+ assert.equal(TRACK_SECTORS.length,12);
+ assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grounds","Northwest Grounds","North Grounds","Northeast Grounds","East Grounds","South Grounds","Central North","Central South","West Field","North Field","East Field"]);
  const markup=trackOutlineMarkup();
  for(const sector of TRACK_SECTORS)assert.match(markup,new RegExp(`data-track-sector="${sector.id}"`));
- for(const landmark of ["site-start","site-grass","site-field-closed","site-buildings","common-routes"])assert.match(markup,new RegExp(`class="${landmark}`));
+ for(const landmark of ["site-start","site-grass","field-zone","site-buildings","common-routes"])assert.match(markup,new RegExp(`class="${landmark}`));
  assert.doesNotMatch(markup,/site-bin/);
  assert.match(markup,/Buildings are legal hiding locations, not through routes/);
 });
