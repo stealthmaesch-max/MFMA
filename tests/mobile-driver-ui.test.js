@@ -57,21 +57,21 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
    label:document.querySelector("#label").getBoundingClientRect().toJSON(),
    timer:document.querySelector("#display-timer").getBoundingClientRect().toJSON(),
    tools:document.querySelector("#driver-tools").getBoundingClientRect().toJSON(),
-   hazard:document.querySelector(".hazard-actions").getBoundingClientRect().toJSON(),
-   crew:document.querySelector("#crew-toggle").getBoundingClientRect().toJSON()
+   dock:document.querySelector(".driver-dock").getBoundingClientRect().toJSON(),
+   dockButtons:[...document.querySelectorAll(".driver-dock button")].map(button=>button.getBoundingClientRect().toJSON())
   }));
   assert.equal(metrics.scrollWidth,metrics.clientWidth,"no horizontal scrolling");
-  for(const key of ["label","timer","tools","hazard","crew"]){
+  for(const key of ["label","timer","tools","dock"]){
    assert(metrics[key].left>=0&&metrics[key].right<=viewport.width,`${key} fits horizontally: ${JSON.stringify(metrics[key])}`);
    assert(metrics[key].top>=0&&metrics[key].bottom<=viewport.height,`${key} is visible without scrolling`);
   }
   assert(metrics.label.bottom<metrics.tools.top,"race condition does not overlap Driver controls");
-  for(const key of ["hazard","crew"]){
-   assert(metrics[key].left>=metrics.tools.left&&metrics[key].right<=metrics.tools.right,`${key} is contained by Driver controls`);
-   assert(metrics[key].top>=metrics.tools.top&&metrics[key].bottom<=metrics.tools.bottom,`${key} stays vertically contained`);
-  }
-  assert.equal(await page.locator("[data-hazard-request]").count(),2,"two one-tap hazard requests are visible");
-  for(const button of await page.locator("[data-hazard-request]").all())assert((await button.boundingBox()).height>=44,"hazard request has a 44px touch target");
+  assert(metrics.dock.left>=metrics.tools.left&&metrics.dock.right<=metrics.tools.right,"dock is contained by Driver controls");
+  assert(metrics.dockButtons.every(button=>button.height>=44),"every driving-view action has a 44px touch target");
+  await page.locator("#driver-hazard-open").click();
+  const hazard=await page.evaluate(()=>{const sheet=document.querySelector("#driver-hazard-sheet").getBoundingClientRect();return {sheet:{left:sheet.left,right:sheet.right,top:sheet.top,bottom:sheet.bottom},buttons:[...document.querySelectorAll("[data-hazard-request]")].map(button=>button.getBoundingClientRect().toJSON())}});
+  assert(hazard.sheet.left>=0&&hazard.sheet.right<=viewport.width&&hazard.sheet.top>=0&&hazard.sheet.bottom<=viewport.height,"hazard sheet is contained");
+  assert.equal(hazard.buttons.length,2,"two one-tap hazard choices are available");assert(hazard.buttons.every(button=>button.height>=44),"hazard choices have large touch targets");
   await browser.close();
  });
 }
@@ -83,15 +83,15 @@ test("expanded team controls stay contained on compact iPhone portrait",async()=
  await page.evaluate(()=>{
   document.querySelector("#status-view").classList.add("hidden");
   document.querySelector("#live-view").classList.remove("hidden");
-  document.querySelector("#occupant-form").classList.remove("hidden");
+  document.querySelector("#driver-portal-controls").classList.remove("hidden");document.querySelector("#occupant-form").classList.remove("hidden");
   document.querySelector("#team-driver").innerHTML='<option>Very Long Registered Driver Name • MRA 100</option>';
   document.querySelector("#passenger-driver").innerHTML='<option>A very long registered passenger name • Another Team • MRA 200</option>';
  });
- const metrics=await page.evaluate(()=>{const tools=document.querySelector("#driver-tools").getBoundingClientRect(),form=document.querySelector("#occupant-form").getBoundingClientRect();return {pageWidth:document.documentElement.scrollWidth,tools:{left:tools.left,right:tools.right,top:tools.top,bottom:tools.bottom},form:{left:form.left,right:form.right,top:form.top,bottom:form.bottom},overflowY:getComputedStyle(document.querySelector("#driver-tools")).overflowY}});
+ const metrics=await page.evaluate(()=>{const sheet=document.querySelector("#driver-portal-controls .driver-sheet-card").getBoundingClientRect(),form=document.querySelector("#occupant-form").getBoundingClientRect();return {pageWidth:document.documentElement.scrollWidth,sheet:{left:sheet.left,right:sheet.right,top:sheet.top,bottom:sheet.bottom},form:{left:form.left,right:form.right,top:form.top,bottom:form.bottom},overflowY:getComputedStyle(document.querySelector("#driver-portal-controls .driver-sheet-card")).overflowY}});
  assert.equal(metrics.pageWidth,375,"expanded controls do not create horizontal scrolling");
- assert(metrics.tools.left>=0&&metrics.tools.right<=375&&metrics.tools.top>=0&&metrics.tools.bottom<=667,"Driver controls remain inside the viewport");
- assert(metrics.form.left>=metrics.tools.left&&metrics.form.right<=metrics.tools.right,"expanded team form stays horizontally contained");
- assert.equal(metrics.overflowY,"auto","expanded controls scroll inside their container when needed");
+ assert(metrics.sheet.left>=0&&metrics.sheet.right<=375&&metrics.sheet.top>=0&&metrics.sheet.bottom<=667,"Driver Portal sheet remains inside the viewport");
+ assert(metrics.form.left>=metrics.sheet.left&&metrics.form.right<=metrics.sheet.right,"expanded team form stays horizontally contained");
+ assert.equal(metrics.overflowY,"auto","expanded controls scroll inside their stopped-use sheet when needed");
  await browser.close();
 });
 
