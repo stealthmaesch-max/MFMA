@@ -6,8 +6,8 @@ import { signals } from "./signals.js?v=94";
 import { getRenderMode } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playSound, playStateTransition } from "./sounds.js?v=76";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
-import { TRACK_SECTORS, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=6";
-import {distanceToZone,locateTrackPosition} from "./gps-assist.js?v=2";
+import { TRACK_SECTORS, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=7";
+import {distanceToZone,locateTrackPosition} from "./gps-assist.js?v=3";
 import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=89";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
@@ -60,10 +60,49 @@ function renderSafetyManagement(){const managed=safetyManagementFlags.has(state?
 function driverZoneOpen(id){const zone=TRACK_SECTORS.find(item=>item.id===id);return Boolean(zone)&&(!zone.field||state?.event?.fieldOpen===true)&&state?.event?.courseZones?.[id]!==false}
 function paintDriverMap(map,signals=[]){map?.querySelectorAll("[data-track-sector]").forEach(path=>{const signal=signals.find(item=>item.id===path.dataset.trackSector);path.setAttribute("class",signal?.className||"");path.classList.toggle("out-of-bounds",!driverZoneOpen(path.dataset.trackSector))})}
 function renderTrackAdvisory(){let panel=$("track-advisory");if(!panel){panel=document.createElement("aside");panel.id="track-advisory";panel.className="track-advisory hidden";panel.innerHTML=`${trackOutlineMarkup("driver-track-map")}<div><span>LOCAL TRACK SIGNAL</span><strong id="track-advisory-copy"></strong></div>`;display.append(panel)}const signals=activeTrackSignals(state?.trackSignals).filter(signal=>driverZoneOpen(signal.id)),suppressed=new Set(["red","checkered","under-review","disqualification","infraction-warning"]).has(state?.activeFlag);panel.classList.toggle("hidden",!signals.length||suppressed);panel.classList.toggle("has-grip",signals.some(signal=>signal.grip));paintDriverMap(panel,signals);$("track-advisory-copy").textContent=signals.map(signal=>`${signal.label} ${signal.name} — ${signal.shortLabel}`).join(" · ")}
-function updateGpsEmphasis(){const signals=activeTrackSignals(state?.trackSignals).filter(signal=>driverZoneOpen(signal.id)),near=gpsFix&&gpsFix.accuracy<=35?signals.find(signal=>distanceToZone(gpsFix,signal.id)<=55):null,panel=$("track-advisory"),key=near?`${near.id}:${near.type}`:"";panel?.classList.toggle("proximity-near",Boolean(near));if(key&&key!==lastNearbySignal){try{playSound(near.grip?"grip":"yellow")}catch{}}lastNearbySignal=key}
-function updateGpsReadout(){const panel=$("driver-course-status"),readout=panel?.querySelector("[data-gps-readout]"),map=panel?.querySelector("svg");if(!readout||!map)return;let marker=map.querySelector(".gps-position");if(gpsFix){if(!marker){marker=document.createElementNS("http://www.w3.org/2000/svg","circle");marker.setAttribute("class","gps-position");marker.setAttribute("r","7");map.append(marker)}marker.setAttribute("cx",gpsFix.x);marker.setAttribute("cy",gpsFix.y);readout.textContent=`${gpsFix.zoneLabel} ${gpsFix.zoneName} • accuracy ±${Math.round(gpsFix.accuracy)} m`;readout.className=gpsFix.accuracy<=35?"gps-good":"gps-poor"}else{marker?.remove();readout.textContent=gpsWatchId===null?"GPS Assist is off":"Waiting for an accurate location…";readout.className=""}updateGpsEmphasis()}
-function toggleGpsAssist(){const button=$("driver-course-status")?.querySelector("[data-gps-toggle]");if(gpsWatchId!==null){navigator.geolocation.clearWatch(gpsWatchId);gpsWatchId=null;gpsFix=null;lastNearbySignal="";button.textContent="Enable GPS Assist";updateGpsReadout();return}if(!navigator.geolocation){button.textContent="GPS unavailable";button.disabled=true;return}button.textContent="Requesting Location…";gpsWatchId=navigator.geolocation.watchPosition(position=>{gpsFix=locateTrackPosition(position.coords.latitude,position.coords.longitude,position.coords.accuracy);button.textContent="Disable GPS Assist";updateGpsReadout()},error=>{gpsWatchId=null;gpsFix=null;button.textContent="Try GPS Assist Again";const readout=$("driver-course-status")?.querySelector("[data-gps-readout]");if(readout)readout.textContent=error.code===1?"Location permission was denied":"Unable to obtain a current location"},{enableHighAccuracy:true,maximumAge:2000,timeout:12000})}
-function renderDriverCourseStatus(){let panel=$("driver-course-status");if(!panel){panel=document.createElement("details");panel.id="driver-course-status";panel.className="driver-course-status";panel.innerHTML=`<summary><span><b>Course Status</b><small>Open and closed operating zones</small></span><strong>View Map</strong></summary>${trackOutlineMarkup("driver-track-map driver-course-map")}<p data-course-summary></p><div class="gps-assist"><button type="button" data-gps-toggle>Enable GPS Assist</button><span data-gps-readout>GPS Assist is off</span></div>`;tools.insertBefore(panel,tools.children[1]||null);panel.querySelector("[data-gps-toggle]").onclick=toggleGpsAssist}panel.classList.toggle("hidden",!state?.event);if(!state?.event)return;const signals=activeTrackSignals(state?.trackSignals).filter(signal=>driverZoneOpen(signal.id));paintDriverMap(panel,signals);const closed=TRACK_SECTORS.filter(zone=>!driverZoneOpen(zone.id));panel.querySelector("[data-course-summary]").textContent=`Field ${state.event.fieldOpen===true?"open":"closed"} • ${closed.length?`${closed.map(zone=>zone.label).join(", ")} out of bounds`:"All enabled zones in bounds"}`;updateGpsReadout()}
+function updateGpsEmphasis(){
+ const fresh=gpsFix&&Date.now()-gpsFix.timestamp<=10000&&gpsFix.accuracy<=20;
+ const signals=activeTrackSignals(state?.trackSignals).filter(signal=>driverZoneOpen(signal.id));
+ const near=fresh?signals.find(signal=>distanceToZone(gpsFix,signal.id)<=15):null;
+ const key=near?near.id+":"+near.type:"";
+ $("track-advisory")?.classList.toggle("proximity-near",Boolean(near));
+ // Replay the authoritative combined signal so proximity never downgrades emergency audio.
+ if(key&&key!==lastNearbySignal&&["green","clear","yellow"].includes(state?.activeFlag)&&!document.hidden)
+   playCurrentState(state).catch(()=>{});
+ lastNearbySignal=key;
+}
+function updateGpsReadout(){const panel=$("driver-course-status"),readout=panel?.querySelector("[data-gps-readout]"),map=panel?.querySelector("svg");if(!readout||!map)return;let marker=map.querySelector(".gps-position");if(gpsFix){if(!marker){marker=document.createElementNS("http://www.w3.org/2000/svg","circle");marker.setAttribute("class","gps-position");marker.setAttribute("r","7");map.append(marker)}marker.setAttribute("cx",gpsFix.x);marker.setAttribute("cy",gpsFix.y);readout.textContent=`${gpsFix.zoneLabel} ${gpsFix.zoneName} • accuracy ±${Math.round(gpsFix.accuracy)} m`;readout.className=gpsFix.accuracy<=20?"gps-good":"gps-poor"}else{marker?.remove();readout.textContent=gpsWatchId===null?"GPS Assist is off • experimental calibration":"Waiting for an accurate location…";readout.className=""}updateGpsEmphasis()}
+let gpsGeneration=0;
+function stopGpsAssist(){
+ gpsGeneration++;
+ if(gpsWatchId!==null)navigator.geolocation?.clearWatch(gpsWatchId);
+ gpsWatchId=null;gpsFix=null;lastNearbySignal="";
+ const button=$("driver-course-status")?.querySelector("[data-gps-toggle]");
+ if(button)button.textContent="Enable GPS Assist";
+ updateGpsReadout();
+}
+function toggleGpsAssist(){
+ if(gpsWatchId!==null){stopGpsAssist();return}
+ const button=$("driver-course-status")?.querySelector("[data-gps-toggle]");
+ if(!navigator.geolocation){button.textContent="GPS unavailable";return}
+ const generation=++gpsGeneration;
+ button.textContent="Disable GPS Assist";
+ gpsWatchId=navigator.geolocation.watchPosition(position=>{
+  if(generation!==gpsGeneration)return;
+  gpsFix=locateTrackPosition(position.coords.latitude,position.coords.longitude,position.coords.accuracy);
+  if(gpsFix)gpsFix.timestamp=position.timestamp;
+  updateGpsReadout();
+ },error=>{
+  if(generation!==gpsGeneration)return;
+  stopGpsAssist();
+  const readout=$("driver-course-status")?.querySelector("[data-gps-readout]");
+  if(readout)readout.textContent=error.code===1?"Location permission denied — all warnings remain active":"Location unavailable — all warnings remain active";
+ },{enableHighAccuracy:true,maximumAge:2000,timeout:12000});
+}
+setInterval(()=>{if(gpsFix&&Date.now()-gpsFix.timestamp>10000){gpsFix=null;updateGpsReadout()}},1000);
+document.addEventListener("visibilitychange",()=>{if(document.hidden)stopGpsAssist()});
+window.addEventListener("pagehide",stopGpsAssist);
+function renderDriverCourseStatus(){let panel=$("driver-course-status");if(!panel){panel=document.createElement("details");panel.id="driver-course-status";panel.className="driver-course-status";panel.innerHTML=`<summary><span><b>Course Status</b><small data-boundary-summary>Open and closed operating zones</small></span><strong>View Map</strong></summary>${trackOutlineMarkup("driver-track-map driver-course-map")}<p data-course-summary></p><div class="gps-assist"><button type="button" data-gps-toggle>Enable GPS Assist</button><span data-gps-readout>GPS Assist is off</span></div>`;tools.insertBefore(panel,tools.children[1]||null);panel.querySelector("[data-gps-toggle]").onclick=toggleGpsAssist}panel.classList.toggle("hidden",!state?.event);if(!state?.event){stopGpsAssist();return}const signals=activeTrackSignals(state?.trackSignals).filter(signal=>driverZoneOpen(signal.id));paintDriverMap(panel,signals);const closed=TRACK_SECTORS.filter(zone=>!driverZoneOpen(zone.id));panel.querySelector("[data-course-summary]").textContent=`Field ${state.event.fieldOpen===true?"open":"closed"} • ${closed.length?`${closed.map(zone=>zone.label).join(", ")} out of bounds`:"All enabled zones in bounds"}`;panel.querySelector("[data-boundary-summary]").textContent=`Field ${state.event.fieldOpen===true?"open":"closed"} • ${closed.length} closed zones`;updateGpsReadout()}
 function renderInstructionControls(mode){const current=state?.event?.currentInstruction,active=current&&acknowledgedInstructionTypes.has(current.type),ack=active&&driverUser?state.event?.instructionAcks?.[driverUser.uid]:null,acknowledged=Boolean(ack&&ack.instructionId===current.id),movement=state?.activeFlag==="return-to-start"||mode==="next-session-staging";$("movement-symbol").classList.toggle("hidden",!movement);const button=$("instruction-ack");button.classList.toggle("hidden",!active||!driverProfile);button.classList.toggle("acknowledged",acknowledged);button.disabled=acknowledged;button.textContent=acknowledged?"Acknowledged to Race Control":"Acknowledge Instruction"}
 function render(){const mode=getRenderMode(state),enforcement=new Set(["violation-review","white-termination"]).has(mode);timer.classList.toggle("dot-timer",mode==="next-session-countdown");$("steward-brand").classList.toggle("hidden",!enforcement);$("qualifying-leaderboard").classList.toggle("hidden",mode!=="qualifying-live");renderSafetyManagement();renderTrackAdvisory();renderDriverCourseStatus();renderInstructionControls(mode);if(mode==="no-event"){showStatus("NO ACTIVE EVENT","The MRA Steward has not opened an event.");return}if(mode==="test-mode"){showTestMode();return}if(mode==="standby"){showStandbyFlag();return}if(mode==="sprint-live"){showSprint();return}if(mode==="qualifying-live"){showQualifying();return}if(mode==="course-lap"){
  showStatus("SAFETY CAR","COURSE FAMILIARIZATION LAP • FOLLOW SAFETY CAR • NO OVERTAKING",state.event.name);
@@ -141,7 +180,7 @@ async function requestDriverAccess(){const teamId=$("signin-team").value,team=co
 $("driver-signin-form").onsubmit=async event=>{event.preventDefault();const button=$("driver-signin-submit"),statusLine=$("driver-signin-status");statusLine.textContent="";button.disabled=true;button.textContent="Checking…";try{await requestDriverAccess()}catch(error){statusLine.textContent=error.message||friendlyWriteError(error)}finally{button.disabled=false;button.textContent="Continue"}};
 $("show-registration").onclick=()=>{$("driver-signin-form").classList.add("hidden");$("driver-registration-form").classList.remove("hidden");$("registration-name").focus()};$("show-signin").onclick=()=>{$("driver-registration-form").classList.add("hidden");$("driver-signin-form").classList.remove("hidden");$("signin-team").focus()};
 $("driver-registration-form").onsubmit=async event=>{event.preventDefault();const statusLine=$("registration-status");try{const user=await ensureDriverAuth(),name=normalizeName($("registration-name").value),teamId=$("registration-team").value,teamName=competition.teams?.[teamId]?.name,requestedMraNumber=normalizeMraNumber($("registration-number").value);if(!teamName)throw new Error("Choose one of the two registered teams.");await update(ref(db,`mfma/requests/registrations/${user.uid}`),{uid:user.uid,name,teamId,teamName,requestedMraNumber,status:"pending",requestedAt:serverTimestamp()});statusLine.textContent="Registration sent to MRA Race Management for approval."}catch(error){statusLine.textContent=error.message||friendlyWriteError(error)}};
-$("driver-sign-out").onclick=()=>{driverProfile=null;currentBinding=null;localStorage.removeItem(PROFILE_KEY);localStorage.setItem("mfma-driver-signed-out","1");showDriverPortal(true)};
+$("driver-sign-out").onclick=()=>{stopGpsAssist();driverProfile=null;currentBinding=null;localStorage.removeItem(PROFILE_KEY);localStorage.setItem("mfma-driver-signed-out","1");showDriverPortal(true)};
 async function submitHazardRequest(kind,button){
  const safetyCar=kind==="safety-car",label=safetyCar?"Safety Car":"Red Flag";
  if(!state?.event){$("driver-hazard-status").textContent="No active event.";return}

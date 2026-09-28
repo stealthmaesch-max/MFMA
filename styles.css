@@ -1724,3 +1724,9 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
   .movement-screen .display-timer{font-size:36px}
   .instruction-ack{min-height:44px;padding-block:6px}
 }
+.driver-course-status[open]{position:fixed;z-index:110;inset:auto 12px max(12px,env(safe-area-inset-bottom));max-height:75dvh;overflow:auto;padding:12px;background:#111822;box-shadow:0 0 0 100vmax #0009}
+.driver-course-status[open] summary>strong{font-size:0}
+.driver-course-status[open] summary>strong::after{content:"Close Map";font-size:12px}
+.driver-course-status[open] .driver-course-map{max-height:40dvh}
+.track-advisory.proximity-near strong::before{content:"NEARBY WARNING • "}
+.site-buildings,.sector-labels{pointer-events:none}
