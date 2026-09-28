@@ -2,9 +2,9 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {TRACK_SECTORS,activeTrackSignals,cleanTrackSignals,hasGripSignal,trackOutlineMarkup} from "../track-signals.js";
 
-test("track outline exposes central north and south as independently addressable zones",()=>{
- assert.equal(TRACK_SECTORS.length,12);
- assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grounds","Northwest Grounds","North Grounds","Northeast Grounds","East Grounds","South Grounds","Central North","Central South","West Field","North Field","East Field"]);
+test("track outline exposes ten core sectors and three optional field zones",()=>{
+ assert.equal(TRACK_SECTORS.length,13);
+ assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grounds","Northwest Grounds","North Grounds","Northeast Grounds","East Loop","South Grounds","Central North","Central South","Shop Grounds","West Field","North Field","East Field"]);
  const markup=trackOutlineMarkup();
  for(const sector of TRACK_SECTORS)assert.match(markup,new RegExp(`data-track-sector="${sector.id}"`));
  for(const landmark of ["site-start","site-grass","field-zone","site-buildings","common-routes"])assert.match(markup,new RegExp(`class="${landmark}`));

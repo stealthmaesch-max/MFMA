@@ -17,7 +17,7 @@ import { getRenderMode, showOnly } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound } from "./sounds.js?v=76";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=53";
 import { newOpenHazardIds } from "./report-model.js?v=57";
-import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=7";
+import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=8";
 import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, teamBranding } from "./competition-model.js?v=89";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 import {isMraAdminUser,mraAuthErrorMessage} from "./mra-auth.js?v=95";
@@ -364,7 +364,7 @@ async function issueFlag(flag){
  if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered(null,"Manual Checkered");
 }
 function trackSignalAllowed(){return new Set(["standby","sprint-live","session-live","safety-car-termination","test-mode"]).has(state?.systemState)&&!new Set(["red","checkered","under-review","disqualification","infraction-warning"]).has(state?.activeFlag)}
-const TRACK_ZONE_ADJACENCY={"sector-1":["sector-2","sector-9"],"sector-2":["sector-1","sector-3","sector-8"],"sector-3":["sector-2","sector-4","sector-8"],"sector-4":["sector-3","sector-5","sector-8"],"sector-5":["sector-4","sector-6","sector-8"],"sector-6":["sector-5","sector-7","sector-8","sector-9"],"sector-7":["sector-6","sector-9"],"sector-8":["sector-2","sector-3","sector-4","sector-5","sector-6","sector-9"],"sector-9":["sector-1","sector-6","sector-7","sector-8"],"field-west":["sector-2","sector-3"],"field-north":["sector-3","sector-4","sector-5"],"field-east":["sector-5","sector-6","sector-7"]};
+const TRACK_ZONE_ADJACENCY={"sector-1":["sector-2","sector-9"],"sector-2":["sector-1","sector-3","sector-8"],"sector-3":["sector-2","sector-4","sector-8"],"sector-4":["sector-3","sector-5","sector-8"],"sector-5":["sector-4","sector-6","sector-8"],"sector-6":["sector-5","sector-8","sector-10"],"sector-7":["sector-9","sector-10"],"sector-8":["sector-2","sector-3","sector-4","sector-5","sector-6","sector-9","sector-10"],"sector-9":["sector-1","sector-7","sector-8","sector-10"],"sector-10":["sector-6","sector-7","sector-8","sector-9"],"field-west":["sector-2","sector-3"],"field-north":["sector-3","sector-4","sector-5"],"field-east":["sector-5","sector-6","sector-7","sector-10"]};
 for(const [id,neighbors] of Object.entries(TRACK_ZONE_ADJACENCY))for(const neighbor of [...neighbors])if(!TRACK_ZONE_ADJACENCY[neighbor].includes(id))TRACK_ZONE_ADJACENCY[neighbor].push(id);
 function trackSectorIsOpen(id){const sector=TRACK_SECTORS.find(item=>item.id===id);return Boolean(sector)&&(!sector.field||state?.event?.fieldOpen===true)&&state?.event?.courseZones?.[id]!==false}
 function selectAllOpenTrackSectors(){selectedTrackSectors.clear();TRACK_SECTORS.filter(sector=>trackSectorIsOpen(sector.id)).forEach(sector=>selectedTrackSectors.add(sector.id));renderTrackControl()}
@@ -825,6 +825,8 @@ $("sprint-add-time").onclick=()=>adjustSprintTimer(Math.max(0,Number($("sprint-a
 document.querySelectorAll("[data-sprint-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.sprintFlag));
 document.querySelectorAll("[data-grip-condition]").forEach(b=>b.onclick=()=>issueGrip(b.dataset.gripCondition));
 installGripControls();
+document.querySelectorAll("[data-workspace-target]").forEach(button=>button.onclick=()=>{const target=button.dataset.workspaceTarget.split(" ").map(id=>$(id)).find(item=>item&&!item.classList.contains("hidden"));if(target?.tagName==="DETAILS")target.open=true;target?.scrollIntoView({behavior:"smooth",block:"start"})});
+document.querySelector("[data-workspace-action=course]").onclick=()=>{const panel=$("track-control");if(trackSignalAllowed()&&panel&&!panel.open)panel.showModal()};
 document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.quickFlag));
 $("more-signals").onclick=()=>{signalsExpanded=!signalsExpanded;const secondaryActive=new Set(["move-over","checkered","clear"]).has(state?.activeFlag);$("secondary-signals").classList.toggle("hidden",!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More"};
 $("start-finding").onclick=startFinding;
