@@ -56,7 +56,7 @@ test("post-session White remains available only before the proceed order",()=>{
 });
 
 test("disqualification terminates through the official outcome workflow",()=>{
- const control=fs.readFileSync("control.js","utf8");
+ const control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8");
  assert.match(control,/function resolvePenaltyForm/);
  assert.match(control,/state\?\.systemState!=="violation-review"/);
  assert.match(control,/decision==="disqualification"\?"disqualification":"checkered"/);
@@ -65,6 +65,10 @@ test("disqualification terminates through the official outcome workflow",()=>{
  assert.match(control,/type:"decision",status:"decided"/);
  assert.match(control,/review\.violationId\|\|`v\$\{Date\.now\(\)\}`/);
  assert.match(control,/closed-no-action/);
+ assert.match(control,/PENALTY — DISQUALIFICATION/);
+ assert.match(control,/Penalty Issued — Disqualification/);
+ assert.match(display,/"PENALTY ISSUED"/);
+ assert.match(display,/DISQUALIFICATION •/);
 });
 
 test("infraction warning has the physical white and folded-yellow display",async()=>{
@@ -73,6 +77,8 @@ test("infraction warning has the physical white and folded-yellow display",async
  assert.match(signals["infraction-warning"].instruction,/WHITE \+ FOLDED YELLOW/);
  assert.equal(signals["under-review"].label,"MRA STEWARD");
  assert.equal(signals["under-review"].instruction,"INCIDENT UNDER INVESTIGATION");
+ assert.equal(signals.disqualification.label,"PENALTY ISSUED");
+ assert.equal(signals.disqualification.instruction,"DISQUALIFICATION • RETURN TO STARTING ZONE");
  const css=fs.readFileSync("styles.css","utf8");
  assert.match(css,/\.violation,\.flag-infraction-warning/);
 });

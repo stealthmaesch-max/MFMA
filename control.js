@@ -12,7 +12,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
-import { signals } from "./signals.js?v=94";
+import { signals } from "./signals.js?v=95";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound } from "./sounds.js?v=76";
 import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=53";
@@ -719,7 +719,7 @@ function render(){
  const flagsAllowed=testMode||standby||sprintLive||(live&&!awaiting)||safetyTerm,trackOnly=testMode||safetyTerm;$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-panel").classList.toggle("track-only",trackOnly);$("quick-flag-status").textContent=testMode?"TEST ONLY":(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  const permittedFlags=trackOnly?new Set():standby?new Set(["yellow","move-over","red","safety-car","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","checkered"]),secondaryFlags=new Set(["move-over","checkered","clear"]),secondaryActive=secondaryFlags.has(state.activeFlag);
  document.querySelectorAll("[data-quick-flag]").forEach(button=>{const permitted=permittedFlags.has(button.dataset.quickFlag);button.classList.toggle("hidden",!permitted);button.disabled=!permitted;button.classList.toggle("active",button.dataset.quickFlag===state.activeFlag)});$("more-signals").classList.toggle("hidden",trackOnly);$("secondary-signals").classList.toggle("hidden",trackOnly||!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More";renderTrackControl();
- $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=whiteTerm?"DISQUALIFICATION":review?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
+ $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=whiteTerm?"PENALTY — DISQUALIFICATION":review?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):qualifyingLive?fmtQualifying(qualifyingTime(state.event.qualifying)):live?fmt(state.session?.remainingMs||0):review?"HELD":(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
  renderScore("scoreboard");renderCircuit("sidebar-circuit");$("sidebar-status").textContent=awaiting?"Hiding complete — confirmation required":live?`${state.session?.format?.replaceAll("-"," ")||"Session"} • Session ${state.session?.number||""}`:state.event?.courseLap?.status==="complete"?"✓ Course Lap Complete":"Ready for competition";
  if(!testMode)renderReports();
@@ -737,7 +737,7 @@ function render(){
  }
  if(safetyTerm||review||whiteTerm){
   $("review-resume").classList.toggle("hidden",!review);$("review-disqualify").classList.toggle("hidden",!review);$("termination-standby").classList.toggle("hidden",review);$("termination-restart").classList.toggle("hidden",review);
-  E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":review?"MRA Steward — Incident Under Investigation":"Disqualification";
+  E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":review?"MRA Steward — Incident Under Investigation":"Penalty Issued — Disqualification";
   E.terminationDetail.textContent=state.session?.terminationDetail||state.session?.provisionalReason||"Session terminated.";
  }
  if(sprintLive){

@@ -2,7 +2,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/12.1.0/firebas
 import { getDatabase, ref, onValue, get, update, push, serverTimestamp } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-database.js";
 import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
-import { signals } from "./signals.js?v=94";
+import { signals } from "./signals.js?v=95";
 import { getRenderMode } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playSound, playStateTransition } from "./sounds.js?v=76";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
@@ -43,13 +43,13 @@ function showLive(){const sig=signals[state.activeFlag]||signals.clear,s=state.s
 function showStandbyFlag(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear;
  if(flag==="clear"){showStatus("STANDBY","Event active. No session is live.",state.event.name);return}
- const copy={yellow:["CAUTION","OPERATIONAL SIGNAL"],"move-over":["MOVE OVER","ALLOW FASTER VEHICLE TO PASS"],red:["STOP","AWAIT RACE CONTROL INSTRUCTIONS"],"safety-car":["SAFETY CAR","FOLLOW SAFETY CAR • NO OVERTAKING"],"infraction-warning":["INFRACTION WARNING","WHITE + FOLDED YELLOW"],disqualification:["DISQUALIFIED","RETURN TO STARTING ZONE"],checkered:["CHECKERED","OPERATIONAL SIGNAL"]}[flag]||[sig.label,sig.instruction];
+ const copy={yellow:["CAUTION","OPERATIONAL SIGNAL"],"move-over":["MOVE OVER","ALLOW FASTER VEHICLE TO PASS"],red:["STOP","AWAIT RACE CONTROL INSTRUCTIONS"],"safety-car":["SAFETY CAR","FOLLOW SAFETY CAR • NO OVERTAKING"],"infraction-warning":["INFRACTION WARNING","WHITE + FOLDED YELLOW"],disqualification:["PENALTY ISSUED","DISQUALIFICATION • RETURN TO STARTING ZONE"],checkered:["CHECKERED","OPERATIONAL SIGNAL"]}[flag]||[sig.label,sig.instruction];
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`standby:${flag}`);
  label.textContent=copy[0];instruction.textContent=copy[1];sessionLine.textContent=`${state.event.name} • STANDBY`;timer.textContent="--:--";theme.content=sig.theme;
 }
 function showSprint(){
  const flag=state.activeFlag||"clear",sig=signals[flag]||signals.clear,s=state.sprint||{};
- const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW","grip-deterioration":"GRIP DETERIORATION","move-over":"MOVE OVER",red:"RED","safety-car":"SAFETY CAR","infraction-warning":"INFRACTION WARNING",disqualification:"DISQUALIFIED",checkered:"CHECKERED"};
+ const labels={clear:"CLEAR",green:"GREEN",yellow:"YELLOW","grip-deterioration":"GRIP DETERIORATION","move-over":"MOVE OVER",red:"RED","safety-car":"SAFETY CAR","infraction-warning":"INFRACTION WARNING",disqualification:"PENALTY ISSUED",checkered:"CHECKERED"};
  statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`sprint:${flag}`);
  label.textContent=labels[flag]||flag.toUpperCase();instruction.textContent=flag==="safety-car"?"FOLLOW SAFETY CAR • NO OVERTAKING":flag==="grip-deterioration"?"GRIP • GRIP • GRIP":"MFMA SPRINT • OPERATIONAL SIGNAL";sessionLine.textContent="MFMA SPRINT • FLAG OPERATIONS";timer.textContent=s.timerMode==="none"?"NO FORMAL SESSION":fmt(sprintTime(s));theme.content=sig.theme;
 }
@@ -128,8 +128,8 @@ if(mode==="safety-car-termination"){
 if(mode==="violation-review"||mode==="white-termination"){
  statusView.classList.add("hidden");liveView.classList.remove("hidden");
  applyDisplayClass(`display flag-white ${mode==="white-termination"?"flag-disqualified":"flag-under-review"}`,mode);
- label.textContent=mode==="violation-review"?"MRA STEWARD":"DISQUALIFIED";
- instruction.textContent=mode==="violation-review"?"INCIDENT UNDER INVESTIGATION":state.session?.provisionalReason||"RETURN TO STARTING ZONE";
+ label.textContent=mode==="violation-review"?"MRA STEWARD":"PENALTY ISSUED";
+ instruction.textContent=mode==="violation-review"?"INCIDENT UNDER INVESTIGATION":`DISQUALIFICATION • RETURN TO STARTING ZONE${state.session?.provisionalReason?` • ${state.session.provisionalReason}`:""}`;
  sessionLine.textContent=`SESSION ${state.session?.number||""}`;
  timer.textContent="ENDED";theme.content="#ffffff";return
 }
