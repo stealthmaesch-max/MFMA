@@ -480,10 +480,8 @@ function openWhiteDialog(){
 
 function syncViolationForm(){
  const type=$("violation-type").value;
- const disqualification=type==="disqualification";
- $("disqualification-options").classList.toggle("hidden",!disqualification);
- $("violation-guidance").textContent=disqualification?"Records the MRA Steward's decision and opens the official outcome workflow.":type==="review"?"Displays White, pauses the session, and directs everyone to the starting zone for review.":"Displays white crossed with folded yellow for 10 seconds, then returns to Green during a session or the prior signal outside one.";
- $("issue-violation-submit").textContent=disqualification?"Issue Disqualification":type==="review"?"Begin Review":"Issue 10-Second Warning";
+ $("violation-guidance").textContent=type==="review"?"Creates an investigation case, displays White, pauses the session, and directs everyone to the starting zone.":"Displays white crossed with folded yellow for 10 seconds, then returns to Green during a session or the prior signal outside one.";
+ $("issue-violation-submit").textContent=type==="review"?"Open Investigation":"Issue 10-Second Warning";
 }
 
 function closeViolationDialog(){const overlay=$("white-review-overlay");overlay.classList.add("hidden");overlay.style.display="";document.body.classList.remove("modal-open")}
@@ -494,10 +492,7 @@ async function resolveWhiteForm(){
  const violationType=$("violation-type").value;
  const dq=$("dq-team").value;
  const reason=$("dq-reason").value;
- const additionalPenalty=$("penalty-type").value;
- const outcome=$("white-outcome").value;
  const names=state?.session?.teamNames||state?.event?.teamNames||currentTeams().names;
- const opponent=Object.keys(names).find(key=>key!==dq);
 
  const violationId=`v${Date.now()}`;
  if(violationType==="warning"){
@@ -507,7 +502,7 @@ async function resolveWhiteForm(){
   const detail=`Infraction warning for ${names[dq]}. Reason: ${reason}.`;
   const violation={type:"warning",team:dq,reason,detail,previousFlag,previousState:state.systemState,issuedAt:serverTimestamp(),expiresAt};
   const updates={activeFlag:"infraction-warning","event/activeWarning":violation,[`event/violations/${violationId}`]:violation,updatedAt:serverTimestamp()};
-  if(state.systemState==="session-live"&&state.session){updates["session/flag"]="infraction-warning";updates["session/remainingMs"]=currentSessionRemaining();updates["session/lastTickAt"]=state.session.running?Date.now():null;updates["session/violationReview"]=violation}
+  if(state.systemState==="session-live"&&state.session){updates["session/flag"]="infraction-warning";updates["session/remainingMs"]=currentSessionRemaining();updates["session/lastTickAt"]=state.session.running?Date.now():null}
   await update(stateRef,updates);
   closeViolationDialog();return;
  }
@@ -515,67 +510,29 @@ async function resolveWhiteForm(){
  if(violationType==="review"){
   if(!new Set(["session-live","provisional","session-complete"]).has(state.systemState)){alert("A review is only available before the Proceed to Starting Line order.");return}
   const previousState=state.systemState,previousFlag=state.activeFlag||"checkered",wasRunning=Boolean(state.session.running);
-  const detail=`${names[dq]} placed under review. Reason: ${reason}. Return to the starting zone and await the MRA Steward.`;
-  const violation={type:"review",team:dq,reason,detail,previousState,previousFlag,wasRunning,issuedAt:serverTimestamp()};
+  const caseId=`MRA-${new Date().toISOString().slice(0,10).replaceAll("-","")}-${Date.now().toString(36).toUpperCase()}`;
+  const detail=`Case ${caseId} • ${names[dq]} under investigation. Allegation: ${reason}. Return to the starting zone and await the MRA Steward.`;
+  const violation={violationId,type:"review",status:"open",caseId,team:dq,teamName:names[dq],reason,detail,previousState,previousFlag,wasRunning,openedAt:serverTimestamp(),issuedAt:serverTimestamp()};
   await update(stateRef,{systemState:"violation-review",activeFlag:"under-review","session/running":false,"session/remainingMs":currentSessionRemaining(),"session/lastTickAt":null,"session/flag":"under-review","session/violationReview":violation,"session/terminationType":"review","session/terminationDetail":detail,[`event/violations/${violationId}`]:violation,updatedAt:serverTimestamp()});
   closeViolationDialog();return;
  }
-
- let winner=null;
- let nextState="white-termination";
- let pendingAdjustment=null;
-
- let detail=`${names[dq]} disqualified after review. Reason: ${reason}.`;
-
- if(additionalPenalty==="time"){
-  pendingAdjustment={
-   againstTeam:dq,
-   benefitingTeam:$("benefiting-team").value,
-   remedy:$("time-remedy").value,
-   seconds:Number($("time-seconds").value),
-   reason
-  };
-
-  detail+=
-   ` Additional penalty: ${
-    pendingAdjustment.remedy==="reduce-hide"
-     ?"hiding time reduced"
-     :"finding time increased"
-   } by ${pendingAdjustment.seconds} seconds for ${names[pendingAdjustment.benefitingTeam]}.`;
- }
-
- if(outcome==="award-opponent")winner=opponent;
- if(outcome==="preserve")winner=state.session.provisionalWinner;
- if(outcome==="restart")nextState="standby";
- if(outcome==="no-result")winner=null;
-
- await update(stateRef,{
-  systemState:nextState,
-  activeFlag:nextState==="standby"?"clear":"disqualification",
-  "session/running":false,
-  "session/violationReview":{
-   type:"disqualification",
-   dq,
-   reason,
-   additionalPenalty,
-   outcome,
-   detail
-  },
-  "session/provisionalWinner":winner,
-  "session/provisionalReason":detail,
-  "session/terminationType":"disqualification",
-  "session/terminationDetail":detail,
-  [`event/violations/${violationId}`]:{type:"disqualification",team:dq,reason,detail,issuedAt:serverTimestamp()},
-  "event/pendingAdjustment":pendingAdjustment,
-  updatedAt:serverTimestamp()
- });
-
- closeViolationDialog();
 }
 
-async function resumeViolationReview(){if(!requireAuthenticatedWrite()||state?.systemState!=="violation-review")return;const review=state.session?.violationReview||{},live=review.previousState==="session-live",flag=live?"green":review.previousFlag||"return-to-start";await update(stateRef,{systemState:review.previousState||"provisional",activeFlag:flag,"session/running":live&&review.wasRunning,"session/flag":flag,"session/lastTickAt":live&&review.wasRunning?Date.now():null,"session/terminationType":null,"session/terminationDetail":null,updatedAt:serverTimestamp()})}
-function openDisqualificationReview(){if(state?.systemState!=="violation-review")return;openWhiteDialog();$("violation-type").value="disqualification";syncViolationForm()}
-async function noResultViolationReview(){if(!requireAuthenticatedWrite()||state?.systemState!=="violation-review")return;const detail="No result following violation review.";await update(stateRef,{systemState:"provisional",activeFlag:"checkered","session/running":false,"session/provisionalWinner":null,"session/provisionalReason":detail,"session/terminationType":null,"session/terminationDetail":null,updatedAt:serverTimestamp()})}
+function openPenaltyDialog(){if(state?.systemState!=="violation-review")return;populateWhite();const review=state.session?.violationReview||{};$("penalty-case-summary").textContent=`${review.caseId||"Open case"} • ${review.teamName||"Team"} • ${review.reason||"Review"}`;$("penalty-rationale").value=review.reason||"";$("penalty-dialog").showModal()}
+async function resolvePenaltyForm(){
+ if(!requireAuthenticatedWrite()||state?.systemState!=="violation-review")return;
+ const review=state.session?.violationReview||{},decision=$("penalty-decision").value,additionalPenalty=$("penalty-type").value,names=state.session?.teamNames||{},dq=review.team,opponent=Object.keys(names).find(key=>key!==dq),rationale=String($("penalty-rationale").value||"").trim();
+ if(!rationale)return;
+ let winner=decision==="disqualification"?opponent:null,nextState=decision==="restart"?"standby":decision==="no-result"?"provisional":"white-termination",pendingAdjustment=null;
+ let detail=`${review.caseId||"MRA case"} decision: ${decision.replaceAll("-"," ")}. ${rationale}`;
+ if(additionalPenalty==="time"){pendingAdjustment={againstTeam:dq,benefitingTeam:$("benefiting-team").value,remedy:$("time-remedy").value,seconds:Math.max(1,Number($("time-seconds").value)||1),reason:rationale};detail+=` Time remedy: ${pendingAdjustment.seconds} seconds for ${names[pendingAdjustment.benefitingTeam]}.`}
+ const violationId=review.violationId||`v${Date.now()}`,record={...review,violationId,type:"decision",status:"decided",decision,rationale,additionalPenalty,detail,decidedAt:serverTimestamp()};
+ await update(stateRef,{systemState:nextState,activeFlag:nextState==="standby"?"clear":decision==="disqualification"?"disqualification":"checkered","session/running":false,"session/violationReview":null,"session/provisionalWinner":winner,"session/provisionalReason":detail,"session/terminationType":decision,"session/terminationDetail":detail,[`event/violations/${violationId}`]:record,"event/pendingAdjustment":pendingAdjustment,updatedAt:serverTimestamp()});
+ $("penalty-dialog").close();
+}
+
+async function resumeViolationReview(){if(!requireAuthenticatedWrite()||state?.systemState!=="violation-review")return;const review=state.session?.violationReview||{},live=review.previousState==="session-live",flag=live?"green":review.previousFlag||"return-to-start",updates={systemState:review.previousState||"provisional",activeFlag:flag,"session/running":live&&review.wasRunning,"session/flag":flag,"session/violationReview":null,"session/lastTickAt":live&&review.wasRunning?Date.now():null,"session/terminationType":null,"session/terminationDetail":null,updatedAt:serverTimestamp()};if(review.violationId){updates[`event/violations/${review.violationId}/status`]="closed-no-action";updates[`event/violations/${review.violationId}/decision`]="no-action";updates[`event/violations/${review.violationId}/decidedAt`]=serverTimestamp()}await update(stateRef,updates)}
+function openDisqualificationReview(){openPenaltyDialog()}
 
 function scheduleWarningReturn(){
  if(warningTimer){clearTimeout(warningTimer);warningTimer=null}
@@ -779,7 +736,7 @@ function render(){
   E.courseLapStatus.textContent="Course lap in progress. Follow the Safety Car; no overtaking.";
  }
  if(safetyTerm||review||whiteTerm){
-  $("review-resume").classList.toggle("hidden",!review);$("review-disqualify").classList.toggle("hidden",!review);$("review-no-result").classList.toggle("hidden",!review);$("termination-standby").classList.toggle("hidden",review);$("termination-restart").classList.toggle("hidden",review);
+  $("review-resume").classList.toggle("hidden",!review);$("review-disqualify").classList.toggle("hidden",!review);$("termination-standby").classList.toggle("hidden",review);$("termination-restart").classList.toggle("hidden",review);
   E.terminationTitle.textContent=safetyTerm?"Safety Car Termination":review?"MRA Steward — Incident Under Investigation":"Disqualification";
   E.terminationDetail.textContent=state.session?.terminationDetail||state.session?.provisionalReason||"Session terminated.";
  }
@@ -833,6 +790,7 @@ $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("restart-at-line").onclick=restartTerminatedSession;
 $("post-white").onclick=openWhiteDialog;document.querySelectorAll("[data-violation-open]").forEach(button=>button.onclick=openWhiteDialog);$("close-white").onclick=closeViolationDialog;$("violation-type").onchange=syncViolationForm;$("penalty-type").onchange=()=>$("time-penalty-options").classList.toggle("hidden",$("penalty-type").value!=="time");$("white-form").onsubmit=e=>{e.preventDefault();resolveWhiteForm()};syncViolationForm();
+$("penalty-form").onsubmit=e=>{e.preventDefault();resolvePenaltyForm()};$("penalty-close").onclick=()=>$("penalty-dialog").close();
 $("swap-next-roles").onclick=swapNextRoles;$("return-to-start-order").onclick=issueReturnToStart;$("finalize-result").onclick=finalizeResult;$("next-session").onclick=advanceNextSession;$("start-next-countdown").onclick=startNextCountdown;$("return-standby").onclick=()=>update(stateRef,{systemState:"standby",activeFlag:"clear",session:null,updatedAt:serverTimestamp()});$("show-scoreboard").onclick=()=>update(stateRef,{showScoreboard:true,updatedAt:serverTimestamp()});
 
 
@@ -840,7 +798,7 @@ $("start-course-lap").onclick=startCourseLap;
 $("complete-course-lap").onclick=completeCourseLap;
 $("termination-standby").onclick=returnFromTermination;
 $("termination-restart").onclick=restartTerminatedSession;
-$("review-resume").onclick=resumeViolationReview;$("review-disqualify").onclick=openDisqualificationReview;$("review-no-result").onclick=noResultViolationReview;
+$("review-resume").onclick=resumeViolationReview;$("review-disqualify").onclick=openDisqualificationReview;
 $("safety-message-open").onclick=openSafetyMessage;$("close-safety-message").onclick=()=>$("safety-message-dialog").close();$("safety-message-form").onsubmit=e=>{e.preventDefault();saveSafetyMessage($("safety-message-input").value)};$("clear-safety-message").onclick=()=>saveSafetyMessage("");document.querySelectorAll("[data-safety-preset]").forEach(button=>button.onclick=()=>{$("safety-message-input").value=button.dataset.safetyPreset;$("safety-message-input").focus()});
 document.querySelectorAll("[data-management-tab]").forEach(button=>button.onclick=()=>{document.querySelectorAll("[data-management-tab]").forEach(item=>item.classList.toggle("active",item===button));document.querySelectorAll(".management-view").forEach(view=>view.classList.toggle("hidden",view.id!==`management-${button.dataset.managementTab}`))});$("standings-season").onchange=renderStandings;$("standings-type").onchange=renderStandings;$("points-adjustment-form").onsubmit=submitPointsAdjustment;
 

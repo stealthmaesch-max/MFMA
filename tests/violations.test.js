@@ -6,8 +6,10 @@ test("Issue Violation replaces legacy White Flag controls",()=>{
  const html=fs.readFileSync("control.html","utf8");
  assert.match(html,/Issue Violation/);
  assert.match(html,/value="warning">Infraction Warning/);
- assert.match(html,/value="review">Begin Review \/ Investigation/);
+ assert.match(html,/value="review">Open Investigation/);
  assert.match(html,/id="review-disqualify"/);
+ assert.match(html,/id="penalty-dialog"/);
+ assert.doesNotMatch(html,/id="review-no-result"/);
  assert.doesNotMatch(html,/responsible-party|Responsible Party/);
  assert.match(html,/quick-flag-bar[\s\S]*data-violation-open/);
  assert.doesNotMatch(html,/data-(?:quick-flag|sprint-flag|flag)="white"|Issue White Flag|White Flag Review/);
@@ -31,6 +33,8 @@ test("white begins a paused review before any disqualification decision",()=>{
  const review=control.match(/if\(violationType==="review"\)\{([\s\S]*?)\n \}/)?.[1]||"";
  assert.match(review,/systemState:"violation-review"/);
  assert.match(review,/activeFlag:"under-review"/);
+ assert.match(review,/caseId/);
+ assert.match(review,/status:"open"/);
  assert.match(review,/"session\/running":false/);
  assert.match(control,/review-resume/);
  assert.match(control,/review-disqualify/);
@@ -53,10 +57,14 @@ test("post-session White remains available only before the proceed order",()=>{
 
 test("disqualification terminates through the official outcome workflow",()=>{
  const control=fs.readFileSync("control.js","utf8");
- assert.match(control,/activeFlag:nextState==="standby"\?"clear":"disqualification"/);
+ assert.match(control,/function resolvePenaltyForm/);
+ assert.match(control,/state\?\.systemState!=="violation-review"/);
+ assert.match(control,/decision==="disqualification"\?"disqualification":"checkered"/);
  assert.match(control,/"session\/running":false/);
- assert.match(control,/"session\/terminationType":"disqualification"/);
- assert.match(control,/type:"disqualification"/);
+ assert.match(control,/"session\/terminationType":decision/);
+ assert.match(control,/type:"decision",status:"decided"/);
+ assert.match(control,/review\.violationId\|\|`v\$\{Date\.now\(\)\}`/);
+ assert.match(control,/closed-no-action/);
 });
 
 test("infraction warning has the physical white and folded-yellow display",async()=>{
