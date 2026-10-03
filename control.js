@@ -15,7 +15,7 @@ import { vehicles } from "./personnel.js?v=41";
 import { signals } from "./signals.js?v=96";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound } from "./sounds.js?v=79";
-import { getCircuitStatus, applyOfficialSessionResult } from "./circuit-model.js?v=53";
+import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=8";
 import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, teamBranding } from "./competition-model.js?v=90";
@@ -530,11 +530,13 @@ async function resolvePenaltyForm(){
  if(!rationale)return;
  const sprintReview=review.previousState==="sprint-live";let winner=decision==="disqualification"?opponent:null,nextState=decision==="restart"?(sprintReview?"sprint-live":"standby"):decision==="no-result"?"provisional":"white-termination",pendingAdjustment=null;
  let detail=`${review.caseId||"MRA case"} decision: ${decision.replaceAll("-"," ")}. ${rationale}`;
+ if(decision==="disqualification"&&state.session&&opponent)detail+=` ${names[opponent]||"The opposing team"} is awarded the session win.`;
  if(additionalPenalty==="time"){pendingAdjustment={againstTeam:dq,benefitingTeam:$("benefiting-team").value,remedy:$("time-remedy").value,seconds:Math.max(1,Number($("time-seconds").value)||1),reason:rationale};detail+=` Time remedy: ${pendingAdjustment.seconds} seconds for ${names[pendingAdjustment.benefitingTeam]}.`}
  const violationId=review.violationId||`v${Date.now()}`,record={...review,violationId,type:"decision",status:"decided",decision,rationale,additionalPenalty,detail,decidedAt:serverTimestamp()},updates={systemState:nextState,activeFlag:nextState==="sprint-live"?(review.previousFlag||"clear"):nextState==="standby"?"clear":decision==="disqualification"?"disqualification":"checkered","event/activeInvestigation":null,"event/activePenalty":record,[`event/violations/${violationId}`]:record,"event/pendingAdjustment":pendingAdjustment,updatedAt:serverTimestamp()};
  if(nextState==="sprint-live")Object.assign(updates,{"sprint/running":false,"sprint/lastTickAt":null});
  if(state.session)Object.assign(updates,{"session/running":false,"session/violationReview":null,"session/provisionalWinner":winner,"session/provisionalReason":detail,"session/terminationType":decision,"session/terminationDetail":detail});
  await update(stateRef,updates);
+ if(decision==="disqualification"&&state.session)await runTransaction(stateRef,current=>applyDisqualificationWin(current,dq,detail));
  $("penalty-dialog").close();
 }
 

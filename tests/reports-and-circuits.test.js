@@ -165,6 +165,23 @@ test("official finalization increments roles exactly once",async()=>{
  assert.strictEqual(twice,once);
 });
 
+test("a disqualification immediately awards the opposing team an official win",async()=>{
+ const {applyDisqualificationWin}=await importModule("circuit-model.js");
+ const initial={systemState:"white-termination",activeFlag:"disqualification",event:{scores:{a:0,b:0},circuit:{roles:{}},vehicleReports:{}},session:{number:1,teamNames:{a:"A",b:"B"},pursuitTeam:"a",evadingTeam:"b",provisionalWinner:null,resultOfficial:false,running:false}};
+ const result=applyDisqualificationWin(initial,"a","A disqualified");
+ assert.equal(result.systemState,"white-termination");assert.equal(result.activeFlag,"disqualification");
+ assert.equal(result.session.provisionalWinner,"b");assert.equal(result.session.resultOfficial,true);assert.equal(result.event.scores.b,1);
+ assert.equal(result.event.sessionResults[0].winnerSide,"b");assert.equal(result.event.sessionResults[0].entrants.find(entry=>entry.side==="a").outcome,"dq");
+});
+
+test("a post-session disqualification reverses an already-finalized win exactly once",async()=>{
+ const {applyDisqualificationWin}=await importModule("circuit-model.js");
+ const initial={systemState:"session-complete",activeFlag:"checkered",event:{scores:{a:1,b:0},sessionResults:[{sessionNumber:1,winnerSide:"a",entrants:[{side:"a",position:1,outcome:"winner"},{side:"b",position:2,outcome:"classified"}]}]},session:{number:1,teamNames:{a:"A",b:"B"},provisionalWinner:"a",resultOfficial:true,running:false}};
+ const once=applyDisqualificationWin(initial,"a","A disqualified"),twice=applyDisqualificationWin(once,"a","A disqualified");
+ assert.deepEqual(once.event.scores,{a:0,b:1});assert.equal(once.event.sessionResults[0].winnerSide,"b");assert.equal(once.event.sessionResults[0].entrants[0].outcome,"dq");
+ assert.deepEqual(twice.event.scores,{a:0,b:1},"retrying the transaction cannot award a duplicate win");
+});
+
 test("legacy circuit booleans normalize to numeric counts",async()=>{
  const {normalizeCircuitRoles}=await importModule("circuit-model.js");
  assert.deepEqual(normalizeCircuitRoles({a:{pursuit:true,evading:false},b:{pursuit:false,evading:true}}),{a:{pursuitCount:1,evadingCount:0},b:{pursuitCount:0,evadingCount:1}});

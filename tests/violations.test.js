@@ -87,6 +87,8 @@ test("disqualification terminates through the official outcome workflow",()=>{
  assert.match(control,/decision==="disqualification"\?"disqualification":"checkered"/);
  assert.match(control,/"session\/running":false/);
  assert.match(control,/"session\/terminationType":decision/);
+ assert.match(control,/applyDisqualificationWin\(current,dq,detail\)/);
+ assert.match(control,/is awarded the session win/);
  assert.match(control,/type:"decision",status:"decided"/);
  assert.match(control,/review\.violationId\|\|`v\$\{Date\.now\(\)\}`/);
  assert.match(control,/closed-no-action/);

@@ -52,3 +52,20 @@ export function applyOfficialSessionResult(root){
  const sessionResults=[...(root.event.sessionResults||[]),sessionResult];
  return {...root,systemState:"session-complete",activeFlag:root.activeFlag==="return-to-start"?"return-to-start":"checkered",session:{...session,running:false,resultOfficial:true},event:{...root.event,scores,participationSessions,sessionResults,circuit:{...(root.event.circuit||{}),roles}}};
 }
+
+export function applyDisqualificationWin(root,disqualifiedSide,reason="Disqualification"){
+ if(!root?.event||!root?.session||!disqualifiedSide)return root;
+ const teamIds=Object.keys(root.session.teamNames||{}),winnerSide=teamIds.find(side=>side!==disqualifiedSide);
+ if(!winnerSide)return root;
+ const wasOfficial=Boolean(root.session.resultOfficial),sessionNumber=root.session.number||root.event.sessionNumber||1;
+ let next=wasOfficial?root:applyOfficialSessionResult({...root,session:{...root.session,provisionalWinner:winnerSide,provisionalReason:reason,resultOfficial:false}});
+ const sessionResults=[...(next.event.sessionResults||[])],resultIndex=sessionResults.findLastIndex(result=>Number(result.sessionNumber)===Number(sessionNumber));
+ if(resultIndex<0)return root;
+ const prior=sessionResults[resultIndex],scores={...(next.event.scores||{})};
+ if(wasOfficial&&prior.winnerSide!==winnerSide){
+  if(prior.winnerSide)scores[prior.winnerSide]=Math.max(0,(scores[prior.winnerSide]||0)-1);
+  scores[winnerSide]=(scores[winnerSide]||0)+1;
+ }
+ sessionResults[resultIndex]={...prior,winnerSide,reason,entrants:(prior.entrants||[]).map(entry=>({...entry,position:entry.side===winnerSide?1:2,outcome:entry.side===winnerSide?"winner":entry.side===disqualifiedSide?"dq":"classified"}))};
+ return {...next,systemState:"white-termination",activeFlag:"disqualification",session:{...next.session,running:false,resultOfficial:true,provisionalWinner:winnerSide,provisionalReason:reason,terminationType:"disqualification",terminationDetail:reason},event:{...next.event,scores,sessionResults}};
+}
