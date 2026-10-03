@@ -165,11 +165,11 @@ export function soundForStateTransition(previous,current){
  if(previousPhase!=="awaiting-finding-start"&&currentPhase==="awaiting-finding-start")return "awaitingFinding";
  if(previousPhase==="awaiting-finding-start"&&currentPhase==="finding")return "findingStart";
  if(currentMode==="provisional"&&current.session?.provisionalReason==="Finding period expired")return "timerExpired";
- const flagSounds={green:"green",yellow:"yellow","grip-deterioration":"grip","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered","qualifying-halfway":"qualifyingHalfway",clear:"clear"},hasGrip=Object.values(current.trackSignals||{}).some(signal=>new Set(["rain","debris"]).has(signal?.type)),layeredGripSound=hasGrip?(current.activeFlag==="safety-car"?"safetyCarGrip":current.activeFlag==="yellow"?"yellowGrip":current.activeFlag==="green"?"grip":null):null;
+ const flagSounds={green:"green",yellow:"yellow","grip-deterioration":"grip","return-to-start":"yellow","proceed-to-start":"green","move-over":"moveOver",red:"red","safety-car":"safetyCar","infraction-warning":"white","under-review":"white",disqualification:"white",checkered:"checkered","qualifying-halfway":"qualifyingHalfway",clear:"clear"},hasGrip=new Set(["rain","debris"]).has(current.gripCondition?.type)||Object.values(current.trackSignals||{}).some(signal=>new Set(["rain","debris"]).has(signal?.type)),layeredGripSound=hasGrip?(current.activeFlag==="safety-car"?"safetyCarGrip":current.activeFlag==="yellow"?"yellowGrip":current.activeFlag==="green"||current.activeFlag==="clear"?"grip":null):null;
  if(previous.activeFlag!==current.activeFlag){
   return layeredGripSound||flagSounds[current.activeFlag]||null;
  }
- const signature=value=>Object.entries(value||{}).filter(([,signal])=>signal?.type).map(([sector,signal])=>`${sector}:${signal.type}`).sort().join("|"),previousTrack=signature(previous.trackSignals),currentTrack=signature(current.trackSignals);
+ const signature=value=>Object.entries(value||{}).filter(([,signal])=>signal?.type).map(([sector,signal])=>`${sector}:${signal.type}`).sort().join("|"),previousTrack=`${previous.gripCondition?.type||""}|${signature(previous.trackSignals)}`,currentTrack=`${current.gripCondition?.type||""}|${signature(current.trackSignals)}`;
  if(previousTrack!==currentTrack){if(layeredGripSound)return layeredGripSound;if(hasGrip)return current.activeFlag==="red"?"red":"grip";const hasLocalYellow=Object.values(current.trackSignals||{}).some(signal=>signal?.type==="yellow");if(hasLocalYellow)return current.activeFlag==="safety-car"?"safetyCar":"yellow";return flagSounds[current.activeFlag]||"clear"}
  return null;
 }
@@ -186,7 +186,7 @@ export async function playStateTransition(previous,current){
 
 export async function playCurrentState(current){
  if(!current||!context)return null;
- const baseline={systemState:"audio-armed",activeFlag:"__none__",session:{},sprint:{},trackSignals:{}};
+ const baseline={...current,activeFlag:"__none__",gripCondition:null,trackSignals:{}};
  return playStateTransition(baseline,current);
 }
 

@@ -96,4 +96,6 @@ test("public sector and GPS controls are withheld while MRA calibration continue
  assert.match(source,/if\(!PUBLIC_TRACK_SECTORS\)\{\$\("track-advisory"\)\?\.remove\(\);return\}/);
  assert.match(html,/id="driver-course-open" class="dock-action hidden"/);
  assert.match(html,/id="driver-speed" class="driver-speed hidden"/);
+ assert.match(source,/function renderGlobalGripAdvisory/);
+ assert.match(source,/state\?\.gripCondition\?\.type\|\|legacy/);
 });

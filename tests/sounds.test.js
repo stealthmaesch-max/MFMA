@@ -110,6 +110,9 @@ test("production flag transitions play once and resume an enabled context",async
  const yellowGrip={...grip,activeFlag:"yellow"},safetyCarGrip={...grip,activeFlag:"safety-car"};
  assert.equal(await sounds.playStateTransition(grip,yellowGrip),"yellowGrip","Yellow remains part of the combined Grip warning");
  assert.equal(await sounds.playStateTransition(yellowGrip,safetyCarGrip),"safetyCarGrip","Safety Car remains part of the combined Grip warning");
+ const globalGrip={...green,gripCondition:{type:"rain",issuedAt:2}};
+ assert.equal(await sounds.playStateTransition(green,globalGrip),"grip","global Grip sounds without any sector signal");
+ assert.equal(await sounds.playCurrentState(globalGrip),"grip","an already-active global Grip warning replays when Driver audio is enabled or resumed");
  sounds.stopSounds();
 });
 
