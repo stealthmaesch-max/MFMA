@@ -89,3 +89,11 @@ test("Driver Portal exposes limited-connection safety fallbacks",()=>{
  assert.match(worker,/event\.request\.mode==="navigate"/);
  assert.match(worker,/new URL\(event\.request\.url\)\.origin!==self\.location\.origin/);
 });
+
+test("public sector and GPS controls are withheld while MRA calibration continues",()=>{
+ const source=readFileSync(new URL("../display.js",import.meta.url),"utf8"),html=readFileSync(new URL("../display.html",import.meta.url),"utf8");
+ assert.match(source,/const PUBLIC_TRACK_SECTORS=false/);
+ assert.match(source,/if\(!PUBLIC_TRACK_SECTORS\)\{\$\("track-advisory"\)\?\.remove\(\);return\}/);
+ assert.match(html,/id="driver-course-open" class="dock-action hidden"/);
+ assert.match(html,/id="driver-speed" class="driver-speed hidden"/);
+});

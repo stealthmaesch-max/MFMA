@@ -9,6 +9,7 @@ export const soundLabels={
 let context=null;
 let volume=readNumber(VOLUME_KEY,.85);
 let lastSound=null;
+let gripUtterance=null;
 const activeOscillators=new Set();
 const activeGains=new Set();
 const activeTimeouts=new Set();
@@ -107,7 +108,7 @@ const moveOverCommand=[
  {frequency:988,start:.25,duration:.27,type:"triangle",gain:.3,endFrequency:880,attack:.008,release:.065}
 ];
 function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),natural=/\b(enhanced|premium|natural)\b/i,male=/\b(evan|daniel|aaron|alex|tom|guy|reed|male)\b/i;return english.find(voice=>natural.test(voice.name)&&male.test(voice.name))||english.find(voice=>male.test(voice.name))||english.find(voice=>natural.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
-function speakGrip(){try{if(!window.speechSynthesis||typeof SpeechSynthesisUtterance==="undefined")return;window.speechSynthesis.cancel();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=1.02;message.pitch=.93;message.volume=Math.max(.88,volume);window.speechSynthesis.speak(message)}catch{}}
+function speakGrip(){try{const speech=window.speechSynthesis;if(!speech||typeof SpeechSynthesisUtterance==="undefined")return;speech.resume?.();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");gripUtterance=message;message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=1.02;message.pitch=.93;message.volume=Math.max(.88,volume);message.onend=message.onerror=()=>{if(gripUtterance===message)gripUtterance=null};speech.speak(message);const retry=setTimeout(()=>{activeTimeouts.delete(retry);if(gripUtterance===message&&!speech.speaking&&!speech.pending){try{speech.speak(message)}catch{}}},250);activeTimeouts.add(retry)}catch{gripUtterance=null}}
 
 export const soundDefinitions={
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
@@ -137,6 +138,7 @@ function playTestTone(){stopSounds();schedulePattern([{frequency:660,start:0,dur
 
 export function stopSounds(){
  try{window.speechSynthesis?.cancel()}catch{}
+ gripUtterance=null;
  for(const timeout of activeTimeouts)clearTimeout(timeout);
  for(const interval of activeIntervals)clearInterval(interval);
  activeTimeouts.clear();activeIntervals.clear();

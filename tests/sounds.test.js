@@ -152,3 +152,12 @@ test("enabling Driver audio replays an already-active warning",async()=>{
  const source=fs.readFileSync("sounds.js","utf8"),sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// current warning").toString("base64")}`);await sounds.enableSounds();
  assert.equal(await sounds.playCurrentState({systemState:"session-live",activeFlag:"safety-car",session:{phase:"finding"}}),"safetyCar");sounds.stopSounds();
 });
+
+test("Grip speech is retained, resumed, and retried for iOS reliability",()=>{
+ const source=fs.readFileSync("sounds.js","utf8"),display=fs.readFileSync("display.js","utf8");
+ assert.match(source,/let gripUtterance=null/);
+ assert.match(source,/speech\.resume\?\.\(\)/);
+ assert.match(source,/!speech\.speaking&&!speech\.pending/);
+ assert.match(display,/replayPersistentDriverAudio/);
+ assert.match(display,/addEventListener\("pageshow",replayPersistentDriverAudio\)/);
+});

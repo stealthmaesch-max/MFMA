@@ -58,7 +58,7 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
    timer:document.querySelector("#display-timer").getBoundingClientRect().toJSON(),
    tools:document.querySelector("#driver-tools").getBoundingClientRect().toJSON(),
    dock:document.querySelector(".driver-dock").getBoundingClientRect().toJSON(),
-   dockButtons:[...document.querySelectorAll(".driver-dock button")].map(button=>button.getBoundingClientRect().toJSON())
+   dockButtons:[...document.querySelectorAll(".driver-dock button")].filter(button=>button.getClientRects().length).map(button=>button.getBoundingClientRect().toJSON())
   }));
   assert.equal(metrics.scrollWidth,metrics.clientWidth,"no horizontal scrolling");
   for(const key of ["label","timer","tools","dock"]){
