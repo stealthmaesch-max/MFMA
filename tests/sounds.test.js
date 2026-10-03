@@ -31,6 +31,12 @@ class FakeAudioContext{
  async resume(){this.state="running"}
 }
 
+class FakeMediaAudio{
+ constructor(src){this.src=src;this.currentTime=0;this.volume=1;this.muted=false;this.paused=true;this.playCount=0;FakeMediaAudio.latest=this}
+ async play(){this.paused=false;this.playCount++;return undefined}
+ pause(){this.paused=true}
+}
+
 test("preview repetitions replace prior playback and clean up completely",async()=>{
  const storage=new Map();
  global.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};
@@ -163,4 +169,14 @@ test("Grip speech is retained, resumed, and retried for iOS reliability",()=>{
  assert.match(source,/!speech\.speaking&&!speech\.pending/);
  assert.match(display,/replayPersistentDriverAudio/);
  assert.match(display,/addEventListener\("pageshow",replayPersistentDriverAudio\)/);
+});
+
+test("Driver Grip uses a preloaded and user-unlocked iOS media callout",async()=>{
+ global.localStorage={getItem:()=>null,setItem:()=>{}};global.window={AudioContext:FakeAudioContext,Audio:FakeMediaAudio};
+ const source=fs.readFileSync("sounds.js","utf8"),sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// media callout").toString("base64")}`);
+ await sounds.enableSounds();
+ assert.match(FakeMediaAudio.latest.src,/assets\/audio\/grip-callout\.m4a/);assert.equal(FakeMediaAudio.latest.playCount,1,"the user gesture primes the media element");
+ const current={systemState:"session-live",activeFlag:"green",gripCondition:{type:"rain",issuedAt:1},session:{phase:"finding"}};
+ assert.equal(await sounds.playCurrentState(current),"grip");assert.equal(FakeMediaAudio.latest.playCount,2,"the active Grip warning uses the unlocked media callout");
+ assert(fs.statSync("assets/audio/grip-callout.m4a").size>1000,"the bundled callout asset is present");sounds.stopSounds();
 });

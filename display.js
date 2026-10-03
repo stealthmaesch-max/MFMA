@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gsta
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=95";
 import { getRenderMode } from "./display-state.js?v=87";
-import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playSound, playStateTransition } from "./sounds.js?v=78";
+import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playSound, playStateTransition } from "./sounds.js?v=79";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { TRACK_SECTORS, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=8";
 import {distanceToZone,gpsConfidence,gpsWarningRadius,locateTrackPosition,smoothGpsFix} from "./gps-assist.js?v=5";
