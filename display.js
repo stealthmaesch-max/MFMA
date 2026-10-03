@@ -9,7 +9,7 @@ import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { TRACK_SECTORS, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=8";
 import {distanceToZone,gpsConfidence,gpsWarningRadius,locateTrackPosition,smoothGpsFix} from "./gps-assist.js?v=5";
 import {calibrationExport,summarizeCalibrationSamples} from "./gps-calibration.js?v=1";
-import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=89";
+import { LEGACY_VEHICLES, applyStandingsAdjustments, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings } from "./competition-model.js?v=90";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);const LAST_STATE_KEY="mfma-last-known-state",PENDING_KEY="mfma-pending-driver-actions";let state=(()=>{try{return JSON.parse(localStorage.getItem(LAST_STATE_KEY)||"null")}catch{return null}})(),wake=null,networkConnected=null;
@@ -91,7 +91,7 @@ function stopGpsAssist(){
  const button=$("driver-course-status")?.querySelector("[data-gps-toggle]");
  if(button)button.textContent="Enable GPS Assist";
  updateGpsReadout();
- renderCalibration();
+ if(typeof renderCalibration==="function")renderCalibration();
 }
 function toggleGpsAssist(){
  if(gpsWatchId!==null){stopGpsAssist();return}
