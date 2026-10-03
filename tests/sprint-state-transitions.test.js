@@ -25,9 +25,11 @@ assert.match(sprintBranch,/update\(stateRef,\{activeFlag:flag,\.\.\.clearInstruc
 for(const forbidden of ["automaticCheckered","openWhiteDialog","safety-car-termination","session/","event/"])assert(!sprintBranch.includes(forbidden),`Sprint flags exclude ${forbidden}`);
 
 const sprintFunctions=["startSprint","terminateSprint","setSprintTimerMode","configureSprintDuration","startSprintTimer","pauseSprintTimer","resetSprintTimer","adjustSprintTimer","setSprintTimer","sprintTick"].map(functionSource).join("\n");
-for(const forbidden of ["event/scores","event/sessionNumber","event/circuit","session/provisionalWinner","session/provisionalReason","session/resultOfficial","session/whiteReview","session/terminationType","session/terminationDetail","teamNames","pursuitTeam","evadingTeam"]){
+for(const forbidden of ["event/scores","event/sessionNumber","event/circuit","session/provisionalWinner","session/provisionalReason","session/resultOfficial","session/whiteReview","session/terminationType","session/terminationDetail","session/teamNames","pursuitTeam","evadingTeam"]){
  assert(!sprintFunctions.includes(forbidden),`Sprint actions never write or create ${forbidden}`);
 }
+assert.match(functionSource("startSprint"),/"event\/teamNames":teams\.names/,
+ "Sprint stores event-level team names for enforcement citations");
 for(const mode of ["none","count-up","count-down"])assert(sprintFunctions.includes(`"${mode}"`),`${mode} timer mode is implemented`);
 
 function sprintTime(s,now){
