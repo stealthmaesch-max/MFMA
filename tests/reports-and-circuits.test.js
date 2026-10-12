@@ -187,12 +187,13 @@ test("legacy circuit booleans normalize to numeric counts",async()=>{
  assert.deepEqual(normalizeCircuitRoles({a:{pursuit:true,evading:false},b:{pursuit:false,evading:true}}),{a:{pursuitCount:1,evadingCount:0},b:{pursuitCount:0,evadingCount:1}});
 });
 
-test("Mechanical Incident is a persistent red and folded-white proceed-to-shop signal",async()=>{
+test("Mechanical Incident is a persistent red signal with a diagonal white stripe",async()=>{
  const {signals}=await importModule("signals.js"),html=fs.readFileSync("control.html","utf8"),control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8"),css=fs.readFileSync("styles.css","utf8");
  assert.deepEqual(signals["mechanical-incident"],{className:"flag-mechanical-incident",label:"MECHANICAL INCIDENT",instruction:"VEHICLE DAMAGE • PROCEED TO SHOP NOW",flash:true,theme:"#b00000"});
  for(const attribute of ["data-test-flag","data-quick-flag","data-sprint-flag","data-flag"])assert.match(html,new RegExp(`${attribute}="mechanical-incident"`));
  assert.match(control,/flag==="mechanical-incident"[\s\S]*"session\/running":false[\s\S]*"session\/remainingMs":currentSessionRemaining\(\)[\s\S]*MECHANICAL INCIDENT — PROCEED TO SHOP/);
  assert.match(display,/"mechanical-incident":\["MECHANICAL INCIDENT","VEHICLE DAMAGE • PROCEED TO SHOP NOW"\]/);
  assert.match(display,/flag==="clear"\?"DISPLAY \/ SOUND VERIFICATION • NOT AN ACTIVE EVENT":sig\.instruction/);
- assert.match(css,/\.flag-mechanical-incident::after[\s\S]*clip-path/);
+ assert.match(css,/\.flag-mechanical-incident::before[\s\S]*background:#fff[\s\S]*rotate\(-24deg\)/);
+ assert.doesNotMatch(html,/FOLDED WHITE/);
 });
