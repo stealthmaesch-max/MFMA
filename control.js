@@ -12,9 +12,9 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
-import { signals } from "./signals.js?v=96";
+import { signals } from "./signals.js?v=97";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
-import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound } from "./sounds.js?v=79";
+import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound } from "./sounds.js?v=80";
 import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=8";
@@ -40,7 +40,7 @@ function finishConfirmation(confirmed=false){const resolve=confirmationResolve;c
 const escapeHtml=value=>String(value??"").replace(/[&<>"']/g,character=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"})[character]);
 let state=null,sessionType="vehicle-vehicle",roleIndex=0,currentUser=null,warningTimer=null,nextStartTimer=null,competition={},requests={},requestsUnsubscribe=null,managerBindingUnsubscribe=null,managerBinding=null,managementEventKey=null,signalsExpanded=false;
 const selectedTrackSectors=new Set(["sector-1"]);
-const safetyManagementFlags=new Set(["yellow","grip-deterioration","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
+const safetyManagementFlags=new Set(["yellow","grip-deterioration","move-over","red","mechanical-incident","safety-car","return-to-start","infraction-warning","under-review","disqualification"]);
 
 const E={connection:$("connection"),noEvent:$("no-event"),eventArea:$("event-area"),testMode:$("test-mode-panel"),standby:$("standby-panel"),setup:$("setup-panel"),sprint:$("sprint-panel"),qualifying:$("qualifying-panel"),live:$("live-panel"),provisional:$("provisional-panel"),nextStart:$("next-start-panel"),eventName:$("event-name"),eventMeta:$("event-meta"),roleSummary:$("role-summary"),hide:$("hide-seconds"),find:$("find-seconds"),validation:$("validation"),phase:$("phase-name"),timer:$("timer"),sessionLabel:$("session-label"),roles:$("roles"),active:$("active-state"),badge:$("live-badge"),findingStart:$("finding-start-panel"),spots:$("spot-buttons"),scoreboard:$("scoreboard"),between:$("between-scoreboard"),circuit:$("circuit-progress"),provisionalDetail:$("provisional-detail"),resultTitle:$("result-title"),finalize:$("finalize-result"),next:$("next-session"),courseLap:$("course-lap-panel"),courseLapStatus:$("course-lap-status"),termination:$("termination-panel"),terminationTitle:$("termination-title"),terminationDetail:$("termination-detail")};
 
@@ -345,13 +345,13 @@ function clearInstructionPatch(){return {"event/currentInstruction":null,"event/
 async function issueFlag(flag){
  if(!requireAuthenticatedWrite())return;
  if(state?.systemState==="sprint-live"){
-  const sprintFlags=new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]);
+  const sprintFlags=new Set(["green","yellow","move-over","red","mechanical-incident","safety-car","checkered","clear"]);
   if(!state?.sprint?.active||!sprintFlags.has(flag))return;
   await update(stateRef,{activeFlag:flag,...clearInstructionPatch(),updatedAt:serverTimestamp()});
   return;
  }
  if(state?.systemState==="standby"){
-  const standbyFlags=new Set(["yellow","move-over","red","safety-car","checkered","clear"]);
+  const standbyFlags=new Set(["yellow","move-over","red","mechanical-incident","safety-car","checkered","clear"]);
   if(!standbyFlags.has(flag))return;
   await update(stateRef,{activeFlag:flag,...clearInstructionPatch(),updatedAt:serverTimestamp()});
   return;
@@ -361,10 +361,11 @@ async function issueFlag(flag){
  if(flag==="move-over"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"move-over",...clearInstructionPatch(),updatedAt:serverTimestamp()});return}
  if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),...clearInstructionPatch(),updatedAt:serverTimestamp()});return}
  if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,...instructionPatch("red","STOP — AWAIT RACE CONTROL"),updatedAt:serverTimestamp()});return}
+ if(flag==="mechanical-incident"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"mechanical-incident","session/flag":"mechanical-incident","session/running":false,"session/remainingMs":currentSessionRemaining(),"session/lastTickAt":null,...instructionPatch("mechanical-incident","MECHANICAL INCIDENT — STOP SAFELY"),updatedAt:serverTimestamp()});return}
  if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",...instructionPatch("safety-car","SAFETY CAR — FOLLOW OFFICIAL VEHICLE"),updatedAt:serverTimestamp()});return}
  if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered(null,"Manual Checkered");
 }
-function trackSignalAllowed(){return new Set(["standby","sprint-live","session-live","safety-car-termination","test-mode"]).has(state?.systemState)&&!new Set(["red","checkered","under-review","disqualification","infraction-warning"]).has(state?.activeFlag)}
+function trackSignalAllowed(){return new Set(["standby","sprint-live","session-live","safety-car-termination","test-mode"]).has(state?.systemState)&&!new Set(["red","mechanical-incident","checkered","under-review","disqualification","infraction-warning"]).has(state?.activeFlag)}
 const TRACK_ZONE_ADJACENCY={"sector-1":["sector-2","sector-9"],"sector-2":["sector-1","sector-3","sector-8"],"sector-3":["sector-2","sector-4","sector-8"],"sector-4":["sector-3","sector-5","sector-8"],"sector-5":["sector-4","sector-6","sector-8"],"sector-6":["sector-5","sector-8","sector-10"],"sector-7":["sector-9","sector-10"],"sector-8":["sector-2","sector-3","sector-4","sector-5","sector-6","sector-9","sector-10"],"sector-9":["sector-1","sector-7","sector-8","sector-10"],"sector-10":["sector-6","sector-7","sector-8","sector-9"],"field-west":["sector-2","sector-3"],"field-north":["sector-3","sector-4","sector-5"],"field-east":["sector-5","sector-6","sector-7","sector-10"]};
 for(const [id,neighbors] of Object.entries(TRACK_ZONE_ADJACENCY))for(const neighbor of [...neighbors])if(!TRACK_ZONE_ADJACENCY[neighbor].includes(id))TRACK_ZONE_ADJACENCY[neighbor].push(id);
 function trackSectorIsOpen(id){const sector=TRACK_SECTORS.find(item=>item.id===id);return Boolean(sector)&&(!sector.field||state?.event?.fieldOpen===true)&&state?.event?.courseZones?.[id]!==false}
@@ -746,7 +747,7 @@ function render(){
  E.setup.classList.toggle("hidden",!standby||eventFormat!=="regular");$("event-score-panel").classList.toggle("hidden",eventFormat!=="regular"||!(standby||(live&&!awaiting)));
  document.querySelector(".sprint-roster-card")?.classList.toggle("hidden",eventFormat!=="sprint");$("start-sprint").classList.toggle("hidden",eventFormat!=="sprint");document.querySelector(".qualifying-launch")?.classList.toggle("hidden",eventFormat==="sprint");
  const flagsAllowed=testMode||standby||sprintLive||(live&&!awaiting)||safetyTerm,trackOnly=testMode||safetyTerm;$("quick-flag-panel").classList.toggle("hidden",!flagsAllowed);$("quick-flag-panel").classList.toggle("track-only",trackOnly);$("quick-flag-status").textContent=testMode?"TEST ONLY":(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
- const permittedFlags=trackOnly?new Set():standby?new Set(["yellow","move-over","red","safety-car","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","safety-car","checkered","clear"]):new Set(["green","yellow","move-over","red","safety-car","checkered"]),secondaryFlags=new Set(["move-over","checkered","clear"]),secondaryActive=secondaryFlags.has(state.activeFlag);
+ const permittedFlags=trackOnly?new Set():standby?new Set(["yellow","move-over","red","mechanical-incident","safety-car","checkered","clear"]):sprintLive?new Set(["green","yellow","move-over","red","mechanical-incident","safety-car","checkered","clear"]):new Set(["green","yellow","move-over","red","mechanical-incident","safety-car","checkered"]),secondaryFlags=new Set(["move-over","mechanical-incident","checkered","clear"]),secondaryActive=secondaryFlags.has(state.activeFlag);
  document.querySelectorAll("[data-quick-flag]").forEach(button=>{const permitted=permittedFlags.has(button.dataset.quickFlag);button.classList.toggle("hidden",!permitted);button.disabled=!permitted;button.classList.toggle("active",button.dataset.quickFlag===state.activeFlag)});$("more-signals").classList.toggle("hidden",trackOnly);$("secondary-signals").classList.toggle("hidden",trackOnly||!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More";renderTrackControl();
  $("toolbar-event-name").textContent=state.event.name;$("toolbar-state").textContent=whiteTerm?"PENALTY — DISQUALIFICATION":review?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":mode.replaceAll("-"," ").toUpperCase();$("toolbar-flag").textContent=(state.activeFlag||"clear").replaceAll("-"," ").toUpperCase();
  $("toolbar-timer").textContent=sprintLive?(state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime())):qualifyingLive?fmtQualifying(qualifyingTime(state.event.qualifying)):live?fmt(state.session?.remainingMs||0):review?"HELD":(prov||complete||safetyTerm||whiteTerm)?"ENDED":"--:--";
@@ -815,7 +816,7 @@ renderGlobalGripControls();
 document.querySelectorAll("[data-workspace-target]").forEach(button=>button.onclick=()=>{const target=button.dataset.workspaceTarget.split(" ").map(id=>$(id)).find(item=>item&&!item.classList.contains("hidden"));if(target?.tagName==="DETAILS")target.open=true;target?.scrollIntoView({behavior:"smooth",block:"start"})});
 document.querySelector("[data-workspace-action=course]").onclick=()=>{const panel=$("track-control");if(trackSignalAllowed()&&panel&&!panel.open)panel.showModal()};
 document.querySelectorAll("[data-quick-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.quickFlag));
-$("more-signals").onclick=()=>{signalsExpanded=!signalsExpanded;const secondaryActive=new Set(["move-over","checkered","clear"]).has(state?.activeFlag);$("secondary-signals").classList.toggle("hidden",!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More"};
+$("more-signals").onclick=()=>{signalsExpanded=!signalsExpanded;const secondaryActive=new Set(["move-over","mechanical-incident","checkered","clear"]).has(state?.activeFlag);$("secondary-signals").classList.toggle("hidden",!signalsExpanded&&!secondaryActive);$("more-signals").querySelector("strong").textContent=signalsExpanded||secondaryActive?"Less":"More"};
 $("start-finding").onclick=startFinding;
 document.querySelectorAll("[data-flag]").forEach(b=>b.onclick=()=>issueFlag(b.dataset.flag));
 $("restart-at-line").onclick=restartTerminatedSession;

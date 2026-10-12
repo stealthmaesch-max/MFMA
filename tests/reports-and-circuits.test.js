@@ -65,7 +65,7 @@ test("Safety Car uses the original persistent high-contrast display with no over
 
 test("operational signals flash while Green and infractions remain steady",async()=>{
  const {signals}=await importModule("signals.js");
- for(const name of ["yellow","grip-deterioration","move-over","safety-car","red","checkered","return-to-start"])assert.equal(signals[name].flash,true,`${name} flashes`);
+ for(const name of ["yellow","grip-deterioration","move-over","safety-car","red","mechanical-incident","checkered","return-to-start"])assert.equal(signals[name].flash,true,`${name} flashes`);
  for(const name of ["green","proceed-to-start","infraction-warning","under-review","disqualification"])assert.equal(signals[name].flash,false,`${name} remains steady`);
  const display=fs.readFileSync("display.js","utf8"),css=fs.readFileSync("styles.css","utf8");
  assert.match(display,/flag-safety-car flash/);
@@ -100,7 +100,7 @@ test("critical instructions expose secure Driver acknowledgement and MRA status"
 test("MRA safety information is scoped to the currently active management signal",()=>{
  const control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("control.html","utf8"),driverHtml=fs.readFileSync("display.html","utf8");
  assert.match(html,/id="safety-message-dialog"/);assert.match(html,/maxlength="100"/);assert.match(html,/data-safety-preset/);
- assert.match(control,/safetyManagementFlags=new Set\(\["yellow","grip-deterioration","move-over","red","safety-car","return-to-start","infraction-warning","under-review","disqualification"\]\)/);
+ assert.match(control,/safetyManagementFlags=new Set\(\["yellow","grip-deterioration","move-over","red","mechanical-incident","safety-car","return-to-start","infraction-warning","under-review","disqualification"\]\)/);
  assert.match(control,/safetyMessage:clean\?\{text:clean,flag:state\.activeFlag,updatedAt:Date\.now\(\)\}:null/);
  assert.match(display,/state\.safetyMessage\?\.flag===state\.activeFlag/);
  assert.match(display,/panel\.classList\.toggle\("hidden",!message\)/);
@@ -185,4 +185,13 @@ test("a post-session disqualification reverses an already-finalized win exactly 
 test("legacy circuit booleans normalize to numeric counts",async()=>{
  const {normalizeCircuitRoles}=await importModule("circuit-model.js");
  assert.deepEqual(normalizeCircuitRoles({a:{pursuit:true,evading:false},b:{pursuit:false,evading:true}}),{a:{pursuitCount:1,evadingCount:0},b:{pursuitCount:0,evadingCount:1}});
+});
+
+test("Mechanical Incident is a persistent red and folded-white stop signal",async()=>{
+ const {signals}=await importModule("signals.js"),html=fs.readFileSync("control.html","utf8"),control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8"),css=fs.readFileSync("styles.css","utf8");
+ assert.deepEqual(signals["mechanical-incident"],{className:"flag-mechanical-incident",label:"MECHANICAL INCIDENT",instruction:"STOP SAFELY • AWAIT MRA STEWARD",flash:true,theme:"#b00000"});
+ for(const attribute of ["data-test-flag","data-quick-flag","data-sprint-flag","data-flag"])assert.match(html,new RegExp(`${attribute}="mechanical-incident"`));
+ assert.match(control,/flag==="mechanical-incident"[\s\S]*"session\/running":false[\s\S]*"session\/remainingMs":currentSessionRemaining\(\)[\s\S]*MECHANICAL INCIDENT — STOP SAFELY/);
+ assert.match(display,/"mechanical-incident":\["MECHANICAL INCIDENT","STOP SAFELY • AWAIT MRA STEWARD"\]/);
+ assert.match(css,/\.flag-mechanical-incident::after[\s\S]*clip-path/);
 });

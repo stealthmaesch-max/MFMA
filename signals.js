@@ -6,6 +6,7 @@ export const signals = {
   "move-over":{className:"flag-move-over",label:"MOVE OVER",instruction:"ALLOW FASTER VEHICLE TO PASS",flash:true,theme:"#0756a5"},
   "safety-car":{className:"flag-safety-car",label:"SAFETY CAR",instruction:"FOLLOW SAFETY CAR • NO OVERTAKING",flash:true,theme:"#050505"},
   red:{className:"flag-red",label:"STOP",instruction:"AWAIT RD INSTRUCTIONS",flash:true,theme:"#d40000"},
+  "mechanical-incident":{className:"flag-mechanical-incident",label:"MECHANICAL INCIDENT",instruction:"STOP SAFELY • AWAIT MRA STEWARD",flash:true,theme:"#b00000"},
   "infraction-warning":{className:"flag-infraction-warning",label:"INFRACTION WARNING",instruction:"WHITE + FOLDED YELLOW • CONTINUE WITH CAUTION",flash:false,theme:"#f4f4f4"},
   "under-review":{className:"flag-white",label:"MRA STEWARD",instruction:"STEWARD INVESTIGATING INCIDENT",flash:false,theme:"#ffffff"},
   disqualification:{className:"flag-white",label:"PENALTY ISSUED",instruction:"DISQUALIFICATION • RETURN TO STARTING ZONE",flash:false,theme:"#ffffff"},
