@@ -12,7 +12,7 @@ import {
 } from "https://www.gstatic.com/firebasejs/12.1.0/firebase-auth.js";
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
-import { signals } from "./signals.js?v=97";
+import { signals } from "./signals.js?v=98";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound } from "./sounds.js?v=80";
 import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
@@ -361,7 +361,7 @@ async function issueFlag(flag){
  if(flag==="move-over"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"move-over",...clearInstructionPatch(),updatedAt:serverTimestamp()});return}
  if(flag==="green"&&state.systemState==="session-live"&&state.session.phase!=="awaiting-finding-start"){await update(stateRef,{activeFlag:"green","session/flag":"green","session/running":true,"session/lastTickAt":Date.now(),...clearInstructionPatch(),updatedAt:serverTimestamp()});return}
  if(flag==="red"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"red","session/flag":"red","session/running":false,...instructionPatch("red","STOP — AWAIT RACE CONTROL"),updatedAt:serverTimestamp()});return}
- if(flag==="mechanical-incident"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"mechanical-incident","session/flag":"mechanical-incident","session/running":false,"session/remainingMs":currentSessionRemaining(),"session/lastTickAt":null,...instructionPatch("mechanical-incident","MECHANICAL INCIDENT — STOP SAFELY"),updatedAt:serverTimestamp()});return}
+ if(flag==="mechanical-incident"&&state.systemState==="session-live"){await update(stateRef,{activeFlag:"mechanical-incident","session/flag":"mechanical-incident","session/running":false,"session/remainingMs":currentSessionRemaining(),"session/lastTickAt":null,...instructionPatch("mechanical-incident","MECHANICAL INCIDENT — PROCEED TO SHOP"),updatedAt:serverTimestamp()});return}
  if(flag==="safety-car"&&state.systemState==="session-live"){await update(stateRef,{systemState:"safety-car-termination",activeFlag:"safety-car","session/running":false,"session/terminationType":"safety-car","session/terminationDetail":"Session terminated by Safety Car. Follow the Official Vehicle.",...instructionPatch("safety-car","SAFETY CAR — FOLLOW OFFICIAL VEHICLE"),updatedAt:serverTimestamp()});return}
  if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered(null,"Manual Checkered");
 }

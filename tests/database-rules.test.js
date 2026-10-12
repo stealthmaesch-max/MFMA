@@ -48,6 +48,8 @@ test("Approved team devices can acknowledge only the current MRA instruction",as
  await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,type:"red"}));
  await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,vehicleId:"unapproved"}));
  await assertFails(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,teamId:"other-team"}));
+ await set(ref(rd,"mfma/state/event/currentInstruction"),{id:9002,type:"mechanical-incident",label:"MECHANICAL INCIDENT — PROCEED TO SHOP",issuedAt:9002});
+ await assertSucceeds(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,instructionId:9002,type:"mechanical-incident",acknowledgedAt:9200}));
 });
 
 test("Driver cannot change Race Director state",async()=>{
