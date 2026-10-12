@@ -49,9 +49,9 @@ test("GPS errors clear the watcher and old callbacks cannot revive it",()=>{
  const source=readFileSync(new URL("../display.js",import.meta.url),"utf8");
  const code=source.slice(source.indexOf("let gpsGeneration=0;"),source.indexOf("setInterval(()=>{if(gpsFix"));
  let success,failure,cleared=[],updates=0;
- const context=vm.createContext({gpsWatchId:null,gpsFix:null,lastNearbySignal:"",
+ const context=vm.createContext({gpsWatchId:null,gpsFix:null,lastNearbySignal:"",trackLimitsEnabled:false,TRACK_LIMITS_KEY:"test",localStorage:{setItem(){},removeItem(){}},
   navigator:{geolocation:{watchPosition(ok,fail){success=ok;failure=fail;return 42},clearWatch(id){cleared.push(id)}}},
-  $:()=>({querySelector:()=>({textContent:""})}),updateGpsReadout:()=>updates++,
+  $:()=>({querySelector:()=>({textContent:""})}),updateGpsReadout:()=>updates++,renderTrackLimitsControl(){},processTrackLimitFix(){},renderCalibration(){},
   locateTrackPosition:()=>({x:1,y:2})});
  vm.runInContext(code,context);
  vm.runInContext("toggleGpsAssist()",context);
@@ -90,12 +90,15 @@ test("Driver Portal exposes limited-connection safety fallbacks",()=>{
  assert.match(worker,/new URL\(event\.request\.url\)\.origin!==self\.location\.origin/);
 });
 
-test("public sector and GPS controls are withheld while MRA calibration continues",()=>{
- const source=readFileSync(new URL("../display.js",import.meta.url),"utf8"),html=readFileSync(new URL("../display.html",import.meta.url),"utf8");
+test("public sectors stay hidden while the review-only track limits detector remains available",()=>{
+ const source=readFileSync(new URL("../display.js",import.meta.url),"utf8"),html=readFileSync(new URL("../display.html",import.meta.url),"utf8"),control=readFileSync(new URL("../control.js",import.meta.url),"utf8");
  assert.match(source,/const PUBLIC_TRACK_SECTORS=false/);
  assert.match(source,/if\(!PUBLIC_TRACK_SECTORS\)\{\$\("track-advisory"\)\?\.remove\(\);return\}/);
  assert.match(html,/id="driver-course-open" class="dock-action hidden"/);
  assert.match(html,/id="driver-speed" class="driver-speed hidden"/);
+ assert.match(html,/id="track-limits-control"/);
+ assert.match(source,/evaluateTrackLimitFix/);
+ assert.match(control,/NO AUTOMATIC PENALTIES/);
  assert.match(source,/function renderGlobalGripAdvisory/);
  assert.match(source,/state\?\.gripCondition\?\.type\|\|legacy/);
 });

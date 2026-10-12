@@ -95,6 +95,26 @@ test("expanded team controls stay contained on compact iPhone portrait",async()=
  await browser.close();
 });
 
+test("track limits opt-in stays compact in the iPhone Driver Portal",async()=>{
+ const browser=await chromium.launch({headless:true});
+ const page=await signedDriverPage(browser,{width:393,height:852});
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const metrics=await page.evaluate(()=>{
+  document.querySelector("#driver-portal-controls").classList.remove("hidden");
+  const sheet=document.querySelector("#driver-portal-controls .driver-sheet-card").getBoundingClientRect();
+  const control=document.querySelector("#track-limits-control").getBoundingClientRect();
+  const button=document.querySelector("#track-limits-toggle").getBoundingClientRect();
+  return {width:document.documentElement.scrollWidth,sheet:{left:sheet.left,right:sheet.right,top:sheet.top,bottom:sheet.bottom},control:{left:control.left,right:control.right,height:control.height},button:{left:button.left,right:button.right,height:button.height},status:document.querySelector("#track-limits-status").textContent};
+ });
+ assert.equal(metrics.width,393,"track limits does not create horizontal scrolling");
+ assert(metrics.sheet.left>=0&&metrics.sheet.right<=393&&metrics.sheet.top>=0&&metrics.sheet.bottom<=852,"Driver Portal sheet stays inside the viewport");
+ assert(metrics.control.left>=metrics.sheet.left&&metrics.control.right<=metrics.sheet.right,"track limits card stays inside the Driver Portal");
+ assert(metrics.control.height<120,"track limits card remains compact");
+ assert(metrics.button.left>=metrics.control.left&&metrics.button.right<=metrics.control.right&&metrics.button.height>=44,"track limits toggle is contained and touch-safe");
+ assert.match(metrics.status,/MRA review/);
+ await browser.close();
+});
+
 test("start lights are the sole central focus on iPhone portrait",async()=>{
  const browser=await chromium.launch({headless:true});
  const page=await signedDriverPage(browser,{width:390,height:844});

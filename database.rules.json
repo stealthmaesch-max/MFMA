@@ -110,6 +110,30 @@
               "$other": { ".validate": false }
             }
           },
+          "trackLimitReports": {
+            "$uid": {
+              "$reportId": {
+                ".write": "auth != null && ((auth.uid === $uid && auth.token.firebase.sign_in_provider === 'anonymous' && !data.exists() && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && newData.child('driverName').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('name').val() && newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('teamId').val() && (newData.child('teamId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() || newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val()) && newData.child('status').val() === 'review') || auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+                ".validate": "newData.hasChildren(['driverId','driverName','teamId','teamName','vehicleId','nearestZoneId','distance','accuracy','sampleCount','durationMs','latitude','longitude','status','createdAt'])",
+                "driverId": { ".validate": "newData.isString()" },
+                "driverName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50" },
+                "teamId": { ".validate": "newData.isString()" },
+                "teamName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50" },
+                "vehicleId": { ".validate": "newData.val() === 'ranger' || newData.val() === 'shelly' || newData.val() === 'gator'" },
+                "nearestZoneId": { ".validate": "newData.val() === 'sector-1' || newData.val() === 'sector-2' || newData.val() === 'sector-3' || newData.val() === 'sector-4' || newData.val() === 'sector-5' || newData.val() === 'sector-6' || newData.val() === 'sector-7' || newData.val() === 'sector-8-north' || newData.val() === 'sector-8-south' || newData.val() === 'sector-9' || newData.val() === 'field-west' || newData.val() === 'field-north' || newData.val() === 'field-east'" },
+                "distance": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500" },
+                "accuracy": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 15" },
+                "sampleCount": { ".validate": "newData.isNumber() && newData.val() >= 3 && newData.val() <= 30" },
+                "durationMs": { ".validate": "newData.isNumber() && newData.val() >= 4000 && newData.val() <= 120000" },
+                "latitude": { ".validate": "newData.isNumber() && newData.val() >= 41.2984 && newData.val() <= 41.3004" },
+                "longitude": { ".validate": "newData.isNumber() && newData.val() >= -93.2757 && newData.val() <= -93.2729" },
+                "status": { ".validate": "newData.isString() && (newData.val() === 'review' || newData.val() === 'dismissed' || newData.val() === 'confirmed')" },
+                "createdAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+                "resolvedAt": { ".validate": "newData.isNumber() && newData.val() <= now + 60000" },
+                "$other": { ".validate": false }
+              }
+            }
+          },
           "hazards": {
             "$hazardId": {
               ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && !data.exists() && (root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('teamId').val() || root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('teamId').val()) && newData.child('mraNumber').val() === root.child('mfma').child('competition').child('drivers').child(newData.child('driverId').val()).child('mraNumber').val() && newData.child('status').val() === 'open' && !newData.hasChild('acknowledgedAt') && !newData.hasChild('resolvedAt') && !newData.hasChild('rdNotes') && (newData.child('vehicleId').val() === 'ranger' || newData.child('vehicleId').val() === 'shelly' || newData.child('vehicleId').val() === 'gator')",

@@ -52,6 +52,19 @@ test("Approved team devices can acknowledge only the current MRA instruction",as
  await assertSucceeds(set(ref(driver,"mfma/state/event/instructionAcks/driver-device"),{...acknowledgement,instructionId:9002,type:"mechanical-incident",acknowledgedAt:9200}));
 });
 
+test("Track-limit GPS observations are review-only and remain MRA authoritative",async()=>{
+ await authorizeDriver();
+ const path="mfma/state/event/trackLimitReports/driver-device/limit-1",valid={driverId:"d1",driverName:"Stealth",teamId:"team-one",teamName:"Team One",vehicleId:"ranger",nearestZoneId:"sector-1",distance:14.2,accuracy:5.4,sampleCount:3,durationMs:4200,latitude:41.2989,longitude:-93.2752,status:"review",createdAt:100};
+ await assertSucceeds(set(ref(driver,path),valid));
+ await assertFails(set(ref(driver,"mfma/state/event/trackLimitReports/driver-device/limit-2"),{...valid,status:"confirmed"}));
+ await assertFails(set(ref(driver,"mfma/state/event/trackLimitReports/driver-device/limit-3"),{...valid,accuracy:25}));
+ await assertFails(set(ref(driver,"mfma/state/event/trackLimitReports/another-device/limit-4"),valid));
+ await assertFails(set(ref(driver,"mfma/state/event/trackLimitReports/driver-device/limit-5"),{...valid,nearestZoneId:"unknown-zone"}));
+ await assertFails(set(ref(driver,"mfma/state/event/trackLimitReports/driver-device/limit-6"),{...valid,latitude:40}));
+ await assertFails(update(ref(driver,path),{status:"dismissed"}));
+ await assertSucceeds(update(ref(rd,path),{status:"dismissed",resolvedAt:200}));
+});
+
 test("Driver cannot change Race Director state",async()=>{
  for(const [path,value] of [
   ["activeFlag","red"],
