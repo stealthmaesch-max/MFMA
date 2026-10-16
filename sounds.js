@@ -4,13 +4,14 @@ const MIN_GAIN=.0001;
 const GRIP_MEDIA_URL="./assets/audio/grip-callout.m4a?v=1";
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",qualifyingHalfway:"Qualifying Halfway",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",stewardNotice:"MRA Steward Notice",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",qualifyingHalfway:"Qualifying Halfway",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
 };
 
 let context=null;
 let volume=readNumber(VOLUME_KEY,.85);
 let lastSound=null;
 let gripUtterance=null;
+let stewardUtterance=null;
 let gripMedia=null;
 let gripMediaUnlocked=false;
 const activeOscillators=new Set();
@@ -130,8 +131,20 @@ function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()
 function speakGripFallback(){try{const speech=window.speechSynthesis;if(!speech||typeof SpeechSynthesisUtterance==="undefined")return;speech.resume?.();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");gripUtterance=message;message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=1.02;message.pitch=.93;message.volume=Math.max(.88,volume);message.onend=message.onerror=()=>{if(gripUtterance===message)gripUtterance=null};speech.speak(message);const retry=setTimeout(()=>{activeTimeouts.delete(retry);if(gripUtterance===message&&!speech.speaking&&!speech.pending){try{speech.speak(message)}catch{}}},250);activeTimeouts.add(retry)}catch{gripUtterance=null}}
 function speakGrip(){const media=ensureGripMedia();if(!media||!gripMediaUnlocked){speakGripFallback();return}try{media.pause();media.currentTime=0;media.volume=Math.max(.9,volume);const playback=media.play();if(playback?.catch)playback.catch(speakGripFallback)}catch{speakGripFallback()}}
 
+export function speakStewardNotice(notice={}){
+ if(!context||context.state!=="running")return false;
+ try{
+  const speech=window.speechSynthesis;if(!speech||typeof SpeechSynthesisUtterance==="undefined")return false;
+  const messages={noted:"Incident noted",pending:"Investigation pending post session",closed:"No further investigation"},team=String(notice.teamName||"").trim();
+  const message=new SpeechSynthesisUtterance(`${messages[notice.type]||"M R A Steward notice"}.${team?` ${team}.`:""}`);
+  stewardUtterance=message;message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=.96;message.pitch=.94;message.volume=Math.max(.92,volume);message.onend=message.onerror=()=>{if(stewardUtterance===message)stewardUtterance=null};
+  const callout=setTimeout(()=>{activeTimeouts.delete(callout);if(stewardUtterance!==message)return;speech.resume?.();speech.speak(message)},450);activeTimeouts.add(callout);return true;
+ }catch{stewardUtterance=null;return false}
+}
+
 export const soundDefinitions={
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
+ stewardNotice:{description:"one-shot MRA Steward attention cue",play:()=>schedulePattern([{frequency:988,start:0,duration:.14,type:"triangle",gain:.25},{frequency:1319,start:.19,duration:.2,type:"triangle",gain:.28}])},
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
  yellow:{description:"engine-cutting persistent caution",repetitions:3,reminderMs:6500,play:()=>repeatPattern(yellowCaution,3,.9)},
  grip:{description:"repeating surface grip warning with spoken callout",repetitions:3,reminderMs:4200,play:()=>{speakGrip();return repeatPattern([{frequency:880,start:0,duration:.18,type:"triangle",gain:.3},{frequency:880,start:.32,duration:.18,type:"triangle",gain:.3},{frequency:880,start:.64,duration:.18,type:"triangle",gain:.3}],1,1)}},
@@ -160,7 +173,7 @@ function playTestTone(){stopSounds();schedulePattern([{frequency:660,start:0,dur
 export function stopSounds(){
  try{window.speechSynthesis?.cancel()}catch{}
  if(gripMedia){try{gripMedia.pause();gripMedia.currentTime=0}catch{}}
- gripUtterance=null;
+ gripUtterance=null;stewardUtterance=null;
  for(const timeout of activeTimeouts)clearTimeout(timeout);
  for(const interval of activeIntervals)clearInterval(interval);
  activeTimeouts.clear();activeIntervals.clear();
