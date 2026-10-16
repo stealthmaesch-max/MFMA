@@ -309,3 +309,18 @@ test("MRA instruction status remains compact and readable on iPhone",async()=>{
  const metrics=await page.evaluate(()=>{document.querySelector("#auth-gate")?.classList.add("hidden");document.querySelector("#secured-control")?.classList.remove("hidden");document.querySelector("#event-area")?.classList.remove("hidden");const panel=document.querySelector("#instruction-sync-panel");panel.classList.remove("hidden");document.querySelector("#instruction-sync-title").textContent="EVERYONE RETURN TO STARTING ZONE";document.querySelector("#instruction-sync-summary").textContent="1 of 2 signed-in Driver displays acknowledged.";document.querySelector("#instruction-sync-list").innerHTML='<span class="acknowledged">✓ Ranger • Driver One</span><span>○ Shelly • Driver Two</span>';const box=panel.getBoundingClientRect();return {width:document.documentElement.scrollWidth,panel:{left:box.left,right:box.right,height:box.height},chips:[...panel.querySelectorAll("span")].map(item=>item.getBoundingClientRect().toJSON())}});
  assert.equal(metrics.width,393);assert(metrics.panel.left>=0&&metrics.panel.right<=393,"status widget is contained");assert(metrics.panel.height<240,"status widget does not dominate the MRA screen");assert(metrics.chips.every(chip=>chip.left>=metrics.panel.left&&chip.right<=metrics.panel.right),"acknowledgement chips stay contained");await browser.close();
 });
+
+test("five-second Steward notices stay glanceable without covering the live signal",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const metrics=await page.evaluate(()=>{
+  document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");
+  document.querySelector("#label").textContent="GREEN";document.querySelector("#display-timer").textContent="01:24";
+  const notice=document.querySelector("#steward-notice");notice.classList.remove("hidden");notice.dataset.type="pending";
+  document.querySelector("#steward-notice-title").textContent="INVESTIGATION PENDING POST-SESSION";
+  document.querySelector("#steward-notice-detail").textContent="MONARCH • CONTACT AT NORTH RETURN";
+  const box=notice.getBoundingClientRect(),label=document.querySelector("#label").getBoundingClientRect(),timer=document.querySelector("#display-timer").getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();
+  return {width:document.documentElement.scrollWidth,notice:{left:box.left,right:box.right,top:box.top,bottom:box.bottom,height:box.height},label:{top:label.top,bottom:label.bottom},timer:{top:timer.top,bottom:timer.bottom},toolsTop:tools.top,title:document.querySelector("#steward-notice-title").textContent};
+ });
+ assert.equal(metrics.width,393);assert(metrics.notice.left>=0&&metrics.notice.right<=393,"notice is horizontally contained");assert(metrics.notice.height<110,"notice remains compact");assert(metrics.notice.bottom<metrics.toolsTop,"notice stays above Driver tools");assert(metrics.label.bottom<=metrics.toolsTop&&metrics.timer.bottom<=metrics.toolsTop,"live signal and timer remain presented");assert.equal(metrics.title,"INVESTIGATION PENDING POST-SESSION");await browser.close();
+});
