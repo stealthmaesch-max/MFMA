@@ -76,7 +76,7 @@ export async function enableSounds(){
  }catch(error){notify();throw error}
 }
 
-export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endFrequency=null,attack=.012,release=.045,percussive=false,maxGain=.32}={}){
+export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endFrequency=null,attack=.012,release=.045,maxGain=.32}={}){
  const oscillator=context.createOscillator();
  const gainNode=context.createGain();
  const begins=context.currentTime+start;
@@ -87,7 +87,7 @@ export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endF
  const peak=Math.max(MIN_GAIN,Math.min(maxGain,gain)*volume);
  gainNode.gain.setValueAtTime(MIN_GAIN,begins);
  gainNode.gain.exponentialRampToValueAtTime(peak,begins+Math.min(attack,duration/3));
- if(!percussive)gainNode.gain.setValueAtTime(peak,Math.max(begins,ends-release));
+ gainNode.gain.setValueAtTime(peak,Math.max(begins,ends-release));
  gainNode.gain.exponentialRampToValueAtTime(MIN_GAIN,ends);
  oscillator.connect(gainNode).connect(context.destination);
  activeOscillators.add(oscillator);activeGains.add(gainNode);
@@ -108,21 +108,6 @@ export function schedulePattern(pattern,offset=0){
 export function repeatPattern(pattern,repetitions,cycleDuration,offset=0){
  let end=offset;
  for(let index=0;index<repetitions;index++)end=Math.max(end,schedulePattern(pattern,offset+index*cycleDuration));
- return end;
-}
-
-function monitorStrike(frequency,start=0,{gain=.25,duration=.3}={}){
- return schedulePattern([
-  {frequency,start,duration,type:"triangle",gain,attack:.002,release:duration*.8,percussive:true,maxGain:.56},
-  {frequency:frequency*1.52,start:start+.002,duration:duration*.68,type:"sine",gain:gain*.48,attack:.0015,release:duration*.62,percussive:true,maxGain:.4},
-  {frequency:frequency*2.18,start:start+.003,duration:duration*.38,type:"triangle",gain:gain*.25,attack:.001,release:duration*.34,percussive:true,maxGain:.3},
-  {frequency:frequency*2.72,start,duration:.035,type:"square",gain:gain*.16,attack:.001,release:.025,percussive:true,maxGain:.18}
- ]);
-}
-
-function repeatMonitorStrikes(strikes,repetitions,cycleDuration){
- let end=0;
- for(let repeat=0;repeat<repetitions;repeat++)for(const strike of strikes)end=Math.max(end,monitorStrike(strike.frequency,repeat*cycleDuration+(strike.start||0),strike));
  return end;
 }
 
@@ -158,14 +143,14 @@ export function speakStewardNotice(notice={}){
 }
 
 export const soundDefinitions={
- proAttention:{description:"electronic double-hit attention alert",play:()=>{monitorStrike(900,0,{gain:.5,duration:.25});return monitorStrike(1120,.19,{gain:.48,duration:.3})}},
- proCaution:{description:"changing three-hit caution cluster",play:()=>repeatMonitorStrikes([{frequency:880,gain:.51,duration:.23},{frequency:880,start:.23,gain:.48,duration:.22},{frequency:1080,start:.5,gain:.51,duration:.28}],2,1.04)},
- proSafetyCar:{description:"commanding asymmetric Safety Car cluster",play:()=>repeatMonitorStrikes([{frequency:760,gain:.53,duration:.27},{frequency:1080,start:.23,gain:.51,duration:.24},{frequency:760,start:.45,gain:.53,duration:.27},{frequency:760,start:.76,gain:.5,duration:.24}],2,1.27)},
- proCritical:{description:"escalating seven-hit critical alarm",play:()=>{repeatMonitorStrikes([{frequency:760,gain:.55,duration:.21},{frequency:1120,start:.18,gain:.54,duration:.2}],2,.39);return repeatMonitorStrikes([{frequency:1120,start:.92,gain:.55,duration:.2},{frequency:760,start:1.1,gain:.55,duration:.23},{frequency:1120,start:1.3,gain:.55,duration:.25}],1,1.6)}},
- proMoveOver:{description:"three-step descending passing command",play:()=>repeatMonitorStrikes([{frequency:1240,gain:.51,duration:.22},{frequency:980,start:.2,gain:.5,duration:.23},{frequency:760,start:.41,gain:.52,duration:.28}],2,.86)},
- proGreen:{description:"clean two-step electronic release",play:()=>{monitorStrike(780,0,{gain:.43,duration:.24});return monitorStrike(1160,.2,{gain:.5,duration:.34})}},
- proFinish:{description:"decisive two-short one-long ending",play:()=>{monitorStrike(980,0,{gain:.48,duration:.22});monitorStrike(980,.22,{gain:.48,duration:.22});return monitorStrike(720,.48,{gain:.53,duration:.44})}},
- proConfirm:{description:"brief electronic acknowledgement",play:()=>{monitorStrike(860,0,{gain:.34,duration:.17});return monitorStrike(1060,.14,{gain:.38,duration:.21})}},
+ proAttention:{description:"clean electric double-beep",play:()=>schedulePattern([{frequency:1050,start:0,duration:.19,type:"triangle",gain:.5,attack:.002,release:.035,maxGain:.56},{frequency:1320,start:.23,duration:.23,type:"triangle",gain:.52,attack:.002,release:.04,maxGain:.56}])},
+ proCaution:{description:"alternating electric caution alarm",play:()=>repeatPattern([{frequency:980,start:0,duration:.2,type:"triangle",gain:.52,attack:.002,release:.035,maxGain:.56},{frequency:1260,start:.25,duration:.2,type:"triangle",gain:.52,attack:.002,release:.035,maxGain:.56}],3,.58)},
+ proSafetyCar:{description:"four-beat electric Safety Car alarm",play:()=>repeatPattern([{frequency:1220,start:0,duration:.2,type:"triangle",gain:.54,attack:.002,release:.035,maxGain:.58},{frequency:820,start:.24,duration:.23,type:"triangle",gain:.54,attack:.002,release:.04,maxGain:.58}],4,.56)},
+ proCritical:{description:"rapid electric critical alarm",play:()=>repeatPattern([{frequency:760,start:0,duration:.15,type:"square",gain:.48,attack:.001,release:.025,maxGain:.52},{frequency:1120,start:.18,duration:.16,type:"square",gain:.48,attack:.001,release:.025,maxGain:.52}],5,.39)},
+ proMoveOver:{description:"descending electric passing command",play:()=>repeatPattern([{frequency:1450,start:0,duration:.25,type:"triangle",gain:.53,endFrequency:980,attack:.002,release:.04,maxGain:.57},{frequency:920,start:.29,duration:.27,type:"triangle",gain:.53,endFrequency:720,attack:.002,release:.045,maxGain:.57}],3,.65)},
+ proGreen:{description:"bright electric release sequence",play:()=>schedulePattern([{frequency:780,start:0,duration:.17,type:"triangle",gain:.46,attack:.002,release:.03,maxGain:.52},{frequency:1080,start:.15,duration:.2,type:"triangle",gain:.5,attack:.002,release:.035,maxGain:.55},{frequency:1450,start:.33,duration:.27,type:"triangle",gain:.54,attack:.002,release:.045,maxGain:.58}])},
+ proFinish:{description:"decisive electric finish sequence",play:()=>schedulePattern([{frequency:1120,start:0,duration:.2,type:"triangle",gain:.5,attack:.002,release:.035,maxGain:.55},{frequency:1120,start:.24,duration:.2,type:"triangle",gain:.5,attack:.002,release:.035,maxGain:.55},{frequency:720,start:.5,duration:.43,type:"triangle",gain:.55,attack:.002,release:.065,maxGain:.59}])},
+ proConfirm:{description:"short electric confirmation",play:()=>schedulePattern([{frequency:920,start:0,duration:.12,type:"sine",gain:.38,attack:.002,release:.025,maxGain:.44},{frequency:1180,start:.14,duration:.16,type:"sine",gain:.42,attack:.002,release:.03,maxGain:.48}])},
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
  stewardNotice:{description:"one-shot MRA Steward attention cue",play:()=>schedulePattern([{frequency:988,start:0,duration:.14,type:"triangle",gain:.25},{frequency:1319,start:.19,duration:.2,type:"triangle",gain:.28}])},
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
