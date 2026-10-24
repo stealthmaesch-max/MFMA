@@ -1,4 +1,4 @@
-import {enableSounds,getSoundStatus,onSoundStatus,playSound,replayLastSound,stopSounds} from "./sounds.js?v=82";
+import {enableSounds,getSoundStatus,onSoundStatus,playSound,replayLastSound,stopSounds} from "./sounds.js?v=83";
 
 const enableButton=document.getElementById("sound-lab-enable");
 const status=document.getElementById("sound-lab-status");
