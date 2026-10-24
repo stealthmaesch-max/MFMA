@@ -101,7 +101,8 @@ test("public sectors stay hidden while the review-only track limits detector rem
  assert.match(html,/id="track-limit-warning"/);
  assert.match(source,/playSupplementalSound\("returnCourse"\)/);
  assert.match(source,/outsideCount>=2/);
- assert.match(source,/now-lastBoundarySoundAt>=5000/);
+ assert.match(source,/now-lastBoundarySoundAt>=3000/);
+ assert.match(html,/CONTINUED EXIT MAY RESULT IN DISQUALIFICATION/);
  assert.match(control,/NO AUTOMATIC PENALTIES/);
  assert.match(source,/function renderGlobalGripAdvisory/);
  assert.match(source,/state\?\.gripCondition\?\.type\|\|legacy/);
