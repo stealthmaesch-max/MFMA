@@ -4,7 +4,7 @@ const MIN_GAIN=.0001;
 const GRIP_MEDIA_URL="./assets/audio/grip-callout.m4a?v=1";
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",stewardNotice:"MRA Steward Notice",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",qualifyingHalfway:"Qualifying Halfway",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated",proAttention:"Cab Attention",proCaution:"Cab Caution",proSafetyCar:"Cab Safety Car",proCritical:"Cab Critical",proMoveOver:"Cab Move Over",proGreen:"Cab Green",proFinish:"Cab Finish",proConfirm:"Cab Confirm"
+ green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",stewardNotice:"MRA Steward Notice",returnCourse:"Return to Course",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",qualifyingHalfway:"Qualifying Halfway",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated",proAttention:"Cab Attention",proCaution:"Cab Caution",proSafetyCar:"Cab Safety Car",proCritical:"Cab Critical",proMoveOver:"Cab Move Over",proGreen:"Cab Green",proFinish:"Cab Finish",proConfirm:"Cab Confirm"
 };
 
 let context=null;
@@ -151,6 +151,7 @@ export const soundDefinitions={
  proGreen:{description:"bright electric release sequence",play:()=>schedulePattern([{frequency:780,start:0,duration:.17,type:"triangle",gain:.46,attack:.002,release:.03,maxGain:.52},{frequency:1080,start:.15,duration:.2,type:"triangle",gain:.5,attack:.002,release:.035,maxGain:.55},{frequency:1450,start:.33,duration:.27,type:"triangle",gain:.54,attack:.002,release:.045,maxGain:.58}])},
  proFinish:{description:"decisive electric finish sequence",play:()=>schedulePattern([{frequency:1120,start:0,duration:.2,type:"triangle",gain:.5,attack:.002,release:.035,maxGain:.55},{frequency:1120,start:.24,duration:.2,type:"triangle",gain:.5,attack:.002,release:.035,maxGain:.55},{frequency:720,start:.5,duration:.43,type:"triangle",gain:.55,attack:.002,release:.065,maxGain:.59}])},
  proConfirm:{description:"short electric confirmation",play:()=>schedulePattern([{frequency:920,start:0,duration:.12,type:"sine",gain:.38,attack:.002,release:.025,maxGain:.44},{frequency:1180,start:.14,duration:.16,type:"sine",gain:.42,attack:.002,release:.03,maxGain:.48}])},
+ returnCourse:{description:"three-hit electric boundary warning",play:()=>repeatPattern([{frequency:760,start:0,duration:.28,type:"triangle",gain:.55,endFrequency:660,attack:.002,release:.05,maxGain:.59}],3,.4)},
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
  stewardNotice:{description:"one-shot MRA Steward attention cue",play:()=>schedulePattern([{frequency:988,start:0,duration:.14,type:"triangle",gain:.25},{frequency:1319,start:.19,duration:.2,type:"triangle",gain:.28}])},
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
@@ -240,6 +241,13 @@ export function playSound(name){
  stopSounds();lastSound=name;definition.play();
  if(definition.reminderMs){const interval=setInterval(()=>{if(lastSound===name&&context?.state==="running")definition.play()},definition.reminderMs);activeIntervals.add(interval)}
  return name;
+}
+
+export function playSupplementalSound(name){
+ const definition=soundDefinitions[name];
+ if(!definition)throw new Error(`Unknown sound: ${name}`);
+ if(!context||context.state!=="running"){notify();throw new Error("Tap to Enable Sounds")}
+ definition.play();return name;
 }
 
 export function replayLastSound(){

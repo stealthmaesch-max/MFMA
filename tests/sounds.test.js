@@ -95,6 +95,7 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.proGreen.description,"bright electric release sequence");
  assert.equal(sounds.soundDefinitions.proFinish.description,"decisive electric finish sequence");
  assert.equal(sounds.soundDefinitions.proConfirm.description,"short electric confirmation");
+ assert.equal(sounds.soundDefinitions.returnCourse.description,"three-hit electric boundary warning");
  await sounds.enableSounds();
  sounds.playSound("startLights");
  assert.equal(sounds.getActiveSoundState().oscillators,5,"the five red-light pairs each receive one synchronized tone");
