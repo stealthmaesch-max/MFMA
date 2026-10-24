@@ -4,7 +4,7 @@ const MIN_GAIN=.0001;
 const GRIP_MEDIA_URL="./assets/audio/grip-callout.m4a?v=1";
 
 export const soundLabels={
- green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",stewardNotice:"MRA Steward Notice",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",qualifyingHalfway:"Qualifying Halfway",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated"
+ green:"Green",yellow:"Yellow",grip:"Grip Deterioration",yellowGrip:"Yellow + Grip",safetyCarGrip:"Safety Car + Grip",moveOver:"Move Over",red:"Red",safetyCar:"Safety Car",hazard:"Driver Hazard",stewardNotice:"MRA Steward Notice",white:"Violation",checkered:"Checkered",clear:"Clear / Standby",qualifyingHalfway:"Qualifying Halfway",startLights:"Start Lights",courseLapStart:"Course Lap Start",awaitingFinding:"Awaiting Finding",findingStart:"Finding Start",timerExpired:"Timer Expired",sprintStart:"Sprint Start",sprintTimerZero:"Sprint Timer Zero",sprintTerminated:"Sprint Terminated",proAttention:"Monitor Attention",proCaution:"Monitor Caution",proCritical:"Monitor Critical",proConfirm:"Monitor Confirm"
 };
 
 let context=null;
@@ -143,6 +143,10 @@ export function speakStewardNotice(notice={}){
 }
 
 export const soundDefinitions={
+ proAttention:{description:"single firm monitor attention tone",play:()=>schedulePattern([{frequency:1047,start:0,duration:.24,type:"triangle",gain:.27,attack:.006,release:.045}])},
+ proCaution:{description:"three measured agricultural monitor pulses",play:()=>repeatPattern([{frequency:932,start:0,duration:.2,type:"triangle",gain:.29,attack:.006,release:.04}],3,.38)},
+ proCritical:{description:"urgent alternating monitor alarm",play:()=>repeatPattern([{frequency:1175,start:0,duration:.16,type:"triangle",gain:.3,attack:.005,release:.035},{frequency:784,start:.2,duration:.18,type:"triangle",gain:.3,attack:.005,release:.04}],3,.48)},
+ proConfirm:{description:"short positive monitor acknowledgement",play:()=>schedulePattern([{frequency:784,start:0,duration:.11,type:"triangle",gain:.23,attack:.006,release:.03},{frequency:1047,start:.14,duration:.17,type:"triangle",gain:.25,attack:.006,release:.04}])},
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
  stewardNotice:{description:"one-shot MRA Steward attention cue",play:()=>schedulePattern([{frequency:988,start:0,duration:.14,type:"triangle",gain:.25},{frequency:1319,start:.19,duration:.2,type:"triangle",gain:.28}])},
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},

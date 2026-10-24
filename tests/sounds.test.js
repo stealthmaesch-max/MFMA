@@ -87,6 +87,10 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.red.reminderMs,4000);
  assert.equal(sounds.soundDefinitions.safetyCar.reminderMs,5000);
  assert.equal(sounds.soundDefinitions.white.reminderMs,7000);
+ assert.equal(sounds.soundDefinitions.proAttention.description,"single firm monitor attention tone");
+ assert.equal(sounds.soundDefinitions.proCaution.description,"three measured agricultural monitor pulses");
+ assert.equal(sounds.soundDefinitions.proCritical.description,"urgent alternating monitor alarm");
+ assert.equal(sounds.soundDefinitions.proConfirm.description,"short positive monitor acknowledgement");
  await sounds.enableSounds();
  sounds.playSound("startLights");
  assert.equal(sounds.getActiveSoundState().oscillators,5,"the five red-light pairs each receive one synchronized tone");

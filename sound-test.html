@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#090b0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>MFMA Sound Lab</title>
+<link rel="stylesheet" href="styles.css?v=126">
+</head>
+<body class="sound-lab-page">
+<main class="sound-lab-shell">
+  <header class="sound-lab-header">
+    <img src="assets/branding/mra-logo.png" alt="MFMA Race Authority">
+    <div><p class="eyebrow">MRA Development Tool</p><h1>Sound Lab</h1></div>
+  </header>
+  <section class="sound-lab-intro">
+    <p>Original monitor-style alarm candidates inspired by the direct, functional character of agricultural displays. These are not copied Case IH recordings.</p>
+    <button id="sound-lab-enable" class="sound-lab-enable" type="button">Enable Audio</button>
+    <p id="sound-lab-status" class="sound-lab-status" role="status">Tap once to unlock sound on this device.</p>
+  </section>
+  <section class="sound-lab-grid" aria-label="Alarm candidates">
+    <button type="button" data-preview-sound="proAttention"><span>01</span><strong>Attention</strong><small>One firm notification</small></button>
+    <button type="button" data-preview-sound="proCaution"><span>02</span><strong>Caution</strong><small>Measured triple pulse</small></button>
+    <button type="button" data-preview-sound="proCritical"><span>03</span><strong>Critical</strong><small>Urgent alternating alarm</small></button>
+    <button type="button" data-preview-sound="proConfirm"><span>04</span><strong>Confirm</strong><small>Positive acknowledgement</small></button>
+  </section>
+  <section class="sound-lab-controls">
+    <button id="sound-lab-replay" type="button">Replay Last</button>
+    <button id="sound-lab-stop" type="button">Stop</button>
+  </section>
+  <p class="sound-lab-note">Test at normal device volume first. These candidates intentionally avoid speech, melodies, and harsh science-fiction effects.</p>
+</main>
+<script type="module" src="sound-test.js?v=1"></script>
+</body>
+</html>
