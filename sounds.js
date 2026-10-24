@@ -115,7 +115,8 @@ function monitorStrike(frequency,start=0,{gain=.25,duration=.3}={}){
  return schedulePattern([
   {frequency,start,duration,type:"triangle",gain,attack:.002,release:duration*.8,percussive:true,maxGain:.56},
   {frequency:frequency*1.52,start:start+.002,duration:duration*.68,type:"sine",gain:gain*.48,attack:.0015,release:duration*.62,percussive:true,maxGain:.4},
-  {frequency:frequency*2.18,start:start+.003,duration:duration*.38,type:"triangle",gain:gain*.25,attack:.001,release:duration*.34,percussive:true,maxGain:.3}
+  {frequency:frequency*2.18,start:start+.003,duration:duration*.38,type:"triangle",gain:gain*.25,attack:.001,release:duration*.34,percussive:true,maxGain:.3},
+  {frequency:frequency*2.72,start,duration:.035,type:"square",gain:gain*.16,attack:.001,release:.025,percussive:true,maxGain:.18}
  ]);
 }
 
@@ -157,14 +158,14 @@ export function speakStewardNotice(notice={}){
 }
 
 export const soundDefinitions={
- proAttention:{description:"sharp single cab-monitor strike",play:()=>monitorStrike(820,0,{gain:.5,duration:.36})},
- proCaution:{description:"sharp two-strike cab caution",play:()=>repeatMonitorStrikes([{frequency:760,gain:.5,duration:.28},{frequency:760,start:.27,gain:.46,duration:.26}],2,.79)},
- proSafetyCar:{description:"sharp three-strike Safety Car command",play:()=>repeatMonitorStrikes([{frequency:700,gain:.52,duration:.3},{frequency:960,start:.25,gain:.5,duration:.27},{frequency:700,start:.51,gain:.52,duration:.31}],2,1.02)},
- proCritical:{description:"urgent sharp alternating cab alarm",play:()=>repeatMonitorStrikes([{frequency:650,gain:.54,duration:.27},{frequency:920,start:.22,gain:.52,duration:.25}],3,.51)},
- proMoveOver:{description:"sharp descending directional cue",play:()=>repeatMonitorStrikes([{frequency:1050,gain:.5,duration:.26},{frequency:740,start:.24,gain:.5,duration:.29}],2,.68)},
- proGreen:{description:"sharp rising release chime",play:()=>{monitorStrike(740,0,{gain:.44,duration:.27});return monitorStrike(1020,.22,{gain:.5,duration:.37})}},
- proFinish:{description:"sharp three-strike ending",play:()=>{monitorStrike(880,0,{gain:.46,duration:.27});monitorStrike(880,.25,{gain:.46,duration:.27});return monitorStrike(680,.51,{gain:.52,duration:.4})}},
- proConfirm:{description:"concise positive cab acknowledgement",play:()=>{monitorStrike(780,0,{gain:.38,duration:.2});return monitorStrike(980,.16,{gain:.42,duration:.24})}},
+ proAttention:{description:"electronic double-hit attention alert",play:()=>{monitorStrike(900,0,{gain:.5,duration:.25});return monitorStrike(1120,.19,{gain:.48,duration:.3})}},
+ proCaution:{description:"changing three-hit caution cluster",play:()=>repeatMonitorStrikes([{frequency:880,gain:.51,duration:.23},{frequency:880,start:.23,gain:.48,duration:.22},{frequency:1080,start:.5,gain:.51,duration:.28}],2,1.04)},
+ proSafetyCar:{description:"commanding asymmetric Safety Car cluster",play:()=>repeatMonitorStrikes([{frequency:760,gain:.53,duration:.27},{frequency:1080,start:.23,gain:.51,duration:.24},{frequency:760,start:.45,gain:.53,duration:.27},{frequency:760,start:.76,gain:.5,duration:.24}],2,1.27)},
+ proCritical:{description:"escalating seven-hit critical alarm",play:()=>{repeatMonitorStrikes([{frequency:760,gain:.55,duration:.21},{frequency:1120,start:.18,gain:.54,duration:.2}],2,.39);return repeatMonitorStrikes([{frequency:1120,start:.92,gain:.55,duration:.2},{frequency:760,start:1.1,gain:.55,duration:.23},{frequency:1120,start:1.3,gain:.55,duration:.25}],1,1.6)}},
+ proMoveOver:{description:"three-step descending passing command",play:()=>repeatMonitorStrikes([{frequency:1240,gain:.51,duration:.22},{frequency:980,start:.2,gain:.5,duration:.23},{frequency:760,start:.41,gain:.52,duration:.28}],2,.86)},
+ proGreen:{description:"clean two-step electronic release",play:()=>{monitorStrike(780,0,{gain:.43,duration:.24});return monitorStrike(1160,.2,{gain:.5,duration:.34})}},
+ proFinish:{description:"decisive two-short one-long ending",play:()=>{monitorStrike(980,0,{gain:.48,duration:.22});monitorStrike(980,.22,{gain:.48,duration:.22});return monitorStrike(720,.48,{gain:.53,duration:.44})}},
+ proConfirm:{description:"brief electronic acknowledgement",play:()=>{monitorStrike(860,0,{gain:.34,duration:.17});return monitorStrike(1060,.14,{gain:.38,duration:.21})}},
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
  stewardNotice:{description:"one-shot MRA Steward attention cue",play:()=>schedulePattern([{frequency:988,start:0,duration:.14,type:"triangle",gain:.25},{frequency:1319,start:.19,duration:.2,type:"triangle",gain:.28}])},
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
