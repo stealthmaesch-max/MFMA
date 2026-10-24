@@ -170,7 +170,7 @@ test("Grip speech is retained, resumed, and retried for iOS reliability",()=>{
  assert.match(source,/speech\.resume\?\.\(\)/);
  assert.match(source,/!speech\.speaking&&!speech\.pending/);
  assert.match(display,/replayPersistentDriverAudio/);
- assert.match(display,/addEventListener\("pageshow",replayPersistentDriverAudio\)/);
+ assert.match(display,/addEventListener\("pageshow",\(\)=>\{awake\(\);replayPersistentDriverAudio\(\)\}\)/);
 });
 
 test("Driver Grip uses a preloaded and user-unlocked iOS media callout",async()=>{
