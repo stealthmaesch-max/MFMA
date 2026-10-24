@@ -76,7 +76,7 @@ export async function enableSounds(){
  }catch(error){notify();throw error}
 }
 
-export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endFrequency=null,attack=.012,release=.045,percussive=false}={}){
+export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endFrequency=null,attack=.012,release=.045,percussive=false,maxGain=.32}={}){
  const oscillator=context.createOscillator();
  const gainNode=context.createGain();
  const begins=context.currentTime+start;
@@ -84,7 +84,7 @@ export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endF
  oscillator.type=type;
  oscillator.frequency.setValueAtTime(frequency,begins);
  if(endFrequency)oscillator.frequency.exponentialRampToValueAtTime(endFrequency,ends);
- const peak=Math.max(MIN_GAIN,Math.min(.32,gain)*volume);
+ const peak=Math.max(MIN_GAIN,Math.min(maxGain,gain)*volume);
  gainNode.gain.setValueAtTime(MIN_GAIN,begins);
  gainNode.gain.exponentialRampToValueAtTime(peak,begins+Math.min(attack,duration/3));
  if(!percussive)gainNode.gain.setValueAtTime(peak,Math.max(begins,ends-release));
@@ -113,9 +113,9 @@ export function repeatPattern(pattern,repetitions,cycleDuration,offset=0){
 
 function monitorStrike(frequency,start=0,{gain=.25,duration=.3}={}){
  return schedulePattern([
-  {frequency,start,duration,type:"sine",gain,attack:.004,release:duration*.8,percussive:true},
-  {frequency:frequency*1.49,start:start+.004,duration:duration*.72,type:"sine",gain:gain*.42,attack:.003,release:duration*.65,percussive:true},
-  {frequency:frequency*2.11,start:start+.006,duration:duration*.46,type:"sine",gain:gain*.18,attack:.002,release:duration*.4,percussive:true}
+  {frequency,start,duration,type:"triangle",gain,attack:.002,release:duration*.8,percussive:true,maxGain:.56},
+  {frequency:frequency*1.52,start:start+.002,duration:duration*.68,type:"sine",gain:gain*.48,attack:.0015,release:duration*.62,percussive:true,maxGain:.4},
+  {frequency:frequency*2.18,start:start+.003,duration:duration*.38,type:"triangle",gain:gain*.25,attack:.001,release:duration*.34,percussive:true,maxGain:.3}
  ]);
 }
 
@@ -157,14 +157,14 @@ export function speakStewardNotice(notice={}){
 }
 
 export const soundDefinitions={
- proAttention:{description:"warm single cab-monitor strike",play:()=>monitorStrike(560,0,{gain:.28,duration:.42})},
- proCaution:{description:"measured two-strike cab caution",play:()=>repeatMonitorStrikes([{frequency:510,gain:.28,duration:.34},{frequency:510,start:.32,gain:.25,duration:.3}],2,.92)},
- proSafetyCar:{description:"deliberate three-strike Safety Car command",play:()=>repeatMonitorStrikes([{frequency:470,gain:.3,duration:.36},{frequency:650,start:.3,gain:.28,duration:.32},{frequency:470,start:.61,gain:.3,duration:.38}],2,1.2)},
- proCritical:{description:"urgent low alternating cab alarm",play:()=>repeatMonitorStrikes([{frequency:390,gain:.31,duration:.34},{frequency:540,start:.27,gain:.3,duration:.31}],3,.62)},
- proMoveOver:{description:"descending directional cab cue",play:()=>repeatMonitorStrikes([{frequency:680,gain:.28,duration:.31},{frequency:490,start:.29,gain:.28,duration:.35}],2,.79)},
- proGreen:{description:"confident rising release chime",play:()=>{monitorStrike(500,0,{gain:.24,duration:.3});return monitorStrike(690,.25,{gain:.28,duration:.46})}},
- proFinish:{description:"authoritative three-strike ending",play:()=>{monitorStrike(590,0,{gain:.25,duration:.3});monitorStrike(590,.3,{gain:.25,duration:.3});return monitorStrike(440,.62,{gain:.29,duration:.5})}},
- proConfirm:{description:"quiet positive cab acknowledgement",play:()=>{monitorStrike(520,0,{gain:.18,duration:.22});return monitorStrike(650,.18,{gain:.2,duration:.29})}},
+ proAttention:{description:"sharp single cab-monitor strike",play:()=>monitorStrike(820,0,{gain:.5,duration:.36})},
+ proCaution:{description:"sharp two-strike cab caution",play:()=>repeatMonitorStrikes([{frequency:760,gain:.5,duration:.28},{frequency:760,start:.27,gain:.46,duration:.26}],2,.79)},
+ proSafetyCar:{description:"sharp three-strike Safety Car command",play:()=>repeatMonitorStrikes([{frequency:700,gain:.52,duration:.3},{frequency:960,start:.25,gain:.5,duration:.27},{frequency:700,start:.51,gain:.52,duration:.31}],2,1.02)},
+ proCritical:{description:"urgent sharp alternating cab alarm",play:()=>repeatMonitorStrikes([{frequency:650,gain:.54,duration:.27},{frequency:920,start:.22,gain:.52,duration:.25}],3,.51)},
+ proMoveOver:{description:"sharp descending directional cue",play:()=>repeatMonitorStrikes([{frequency:1050,gain:.5,duration:.26},{frequency:740,start:.24,gain:.5,duration:.29}],2,.68)},
+ proGreen:{description:"sharp rising release chime",play:()=>{monitorStrike(740,0,{gain:.44,duration:.27});return monitorStrike(1020,.22,{gain:.5,duration:.37})}},
+ proFinish:{description:"sharp three-strike ending",play:()=>{monitorStrike(880,0,{gain:.46,duration:.27});monitorStrike(880,.25,{gain:.46,duration:.27});return monitorStrike(680,.51,{gain:.52,duration:.4})}},
+ proConfirm:{description:"concise positive cab acknowledgement",play:()=>{monitorStrike(780,0,{gain:.38,duration:.2});return monitorStrike(980,.16,{gain:.42,duration:.24})}},
  hazard:{description:"clean dispatch alert",reminderMs:3000,play:()=>schedulePattern([{frequency:880,start:0,duration:.16,type:"sine",gain:.16},{frequency:659,start:.21,duration:.2,type:"sine",gain:.17},{frequency:880,start:.46,duration:.18,type:"sine",gain:.16}])},
  stewardNotice:{description:"one-shot MRA Steward attention cue",play:()=>schedulePattern([{frequency:988,start:0,duration:.14,type:"triangle",gain:.25},{frequency:1319,start:.19,duration:.2,type:"triangle",gain:.28}])},
  green:{description:"loud rising release cue",play:()=>schedulePattern([{frequency:784,start:0,duration:.2,type:"triangle",gain:.27,attack:.008},{frequency:988,start:.14,duration:.22,type:"triangle",gain:.29,attack:.008},{frequency:1319,start:.3,duration:.3,type:"triangle",gain:.31,attack:.008,release:.07}])},
