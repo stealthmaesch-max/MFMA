@@ -120,7 +120,7 @@
                 "teamId": { ".validate": "newData.isString()" },
                 "teamName": { ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 50" },
                 "vehicleId": { ".validate": "newData.val() === 'ranger' || newData.val() === 'shelly' || newData.val() === 'gator'" },
-                "nearestZoneId": { ".validate": "newData.val() === 'sector-1' || newData.val() === 'sector-2' || newData.val() === 'sector-3' || newData.val() === 'sector-4' || newData.val() === 'sector-5' || newData.val() === 'sector-6' || newData.val() === 'sector-7' || newData.val() === 'sector-8-north' || newData.val() === 'sector-8-south' || newData.val() === 'sector-9' || newData.val() === 'field-west' || newData.val() === 'field-north' || newData.val() === 'field-east'" },
+                "nearestZoneId": { ".validate": "newData.val() === 'course-boundary'" },
                 "distance": { ".validate": "newData.isNumber() && newData.val() >= 0 && newData.val() <= 500" },
                 "accuracy": { ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= 15" },
                 "sampleCount": { ".validate": "newData.isNumber() && newData.val() >= 3 && newData.val() <= 30" },

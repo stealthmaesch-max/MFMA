@@ -54,7 +54,7 @@ test("Approved team devices can acknowledge only the current MRA instruction",as
 
 test("Track-limit GPS observations are review-only and remain MRA authoritative",async()=>{
  await authorizeDriver();
- const path="mfma/state/event/trackLimitReports/driver-device/limit-1",valid={driverId:"d1",driverName:"Stealth",teamId:"team-one",teamName:"Team One",vehicleId:"ranger",nearestZoneId:"sector-1",distance:14.2,accuracy:5.4,sampleCount:3,durationMs:4200,latitude:41.2989,longitude:-93.2752,status:"review",createdAt:100};
+ const path="mfma/state/event/trackLimitReports/driver-device/limit-1",valid={driverId:"d1",driverName:"Stealth",teamId:"team-one",teamName:"Team One",vehicleId:"ranger",nearestZoneId:"course-boundary",distance:14.2,accuracy:5.4,sampleCount:3,durationMs:4200,latitude:41.2989,longitude:-93.2752,status:"review",createdAt:100};
  await assertSucceeds(set(ref(driver,path),valid));
  await assertFails(set(ref(driver,"mfma/state/event/trackLimitReports/driver-device/limit-2"),{...valid,status:"confirmed"}));
  await assertFails(set(ref(driver,"mfma/state/event/trackLimitReports/driver-device/limit-3"),{...valid,accuracy:25}));

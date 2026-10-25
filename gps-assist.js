@@ -1,4 +1,4 @@
-import {TRACK_SECTORS} from "./track-signals.js";
+import {COURSE_BOUNDARY_ID} from "./track-signals.js";
 
 const anchors={
  start:{lat:41.298980556,lon:-93.275166667,x:64,y:244},
@@ -11,19 +11,7 @@ const anchors={
 };
 
 export const TRACK_ZONE_POLYGONS=Object.freeze({
- "sector-1":[[31,208],[112,208],[125,267],[123,337],[34,267]],
- "sector-2":[[29,92],[112,92],[112,208],[31,208],[21,164]],
- "sector-3":[[112,74],[230,80],[218,148],[112,208],[112,148]],
- "sector-4":[[230,80],[230,50],[361,35],[417,60],[459,89],[371,103],[230,103]],
- "sector-5":[[371,103],[459,89],[482,139],[451,179],[357,169]],
- "sector-6":[[357,169],[451,179],[453,220],[326,219]],
- "sector-7":[[125,267],[350,266],[417,313],[342,337],[123,337]],
- "sector-8":[[230,80],[230,103],[371,103],[357,169],[326,219],[112,208],[218,148]],
- "sector-9":[[112,208],[326,219],[350,266],[125,267]],
- "sector-10":[[326,219],[453,220],[455,268],[350,266]],
- "field-west":[[5,8],[112,8],[112,74],[29,92],[21,164],[31,208],[34,267],[123,337],[5,337]],
- "field-north":[[112,8],[430,8],[417,60],[361,35],[230,50],[112,74]],
- "field-east":[[430,8],[495,8],[495,352],[430,352],[417,313],[455,268],[482,139],[459,89],[417,60]]
+ [COURSE_BOUNDARY_ID]:[[5,8],[430,8],[462,21],[485,48],[495,72],[495,352],[430,352],[388,347],[342,337],[123,337],[65,344],[5,337]]
 });
 
 function barycentric(lat,lon){const a=anchors.start,b=anchors.northwest,c=anchors.northeast,px=lon-a.lon,py=lat-a.lat,bx=b.lon-a.lon,by=b.lat-a.lat,cx=c.lon-a.lon,cy=c.lat-a.lat,det=bx*cy-by*cx;if(!det)return null;return {u:(px*cy-py*cx)/det,v:(bx*py-by*px)/det}}
@@ -33,7 +21,7 @@ export function geographicToTrackPoint(lat,lon){lat=Number(lat);lon=Number(lon);
 function pointInPolygon(point,polygon){let inside=false;for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){const [xi,yi]=polygon[i],[xj,yj]=polygon[j],cross=yi>point.y!==yj>point.y&&point.x<(xj-xi)*(point.y-yi)/(yj-yi)+xi;if(cross)inside=!inside}return inside}
 function segmentDistance(point,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],length=dx*dx+dy*dy,t=length?Math.max(0,Math.min(1,((point.x-a[0])*dx+(point.y-a[1])*dy)/length)):0;return Math.hypot(point.x-(a[0]+t*dx),point.y-(a[1]+t*dy))}
 export function drawingDistanceToZone(point,id){const polygon=TRACK_ZONE_POLYGONS[id];if(!point||!polygon)return Infinity;if(pointInPolygon(point,polygon))return 0;return Math.min(...polygon.map((vertex,index)=>segmentDistance(point,vertex,polygon[(index+1)%polygon.length])))}
-export function locateTrackPosition(lat,lon,accuracy=Infinity){const point=geographicToTrackPoint(lat,lon);if(!point)return null;const zone=TRACK_SECTORS.find(item=>pointInPolygon(point,TRACK_ZONE_POLYGONS[item.id]));return {...point,latitude:Number(lat),longitude:Number(lon),zoneId:zone?.id||null,zoneLabel:zone?.label||"OFF MAP",zoneName:zone?.name||"Outside mapped grounds",accuracy:Number(accuracy)||Infinity}}
+export function locateTrackPosition(lat,lon,accuracy=Infinity){const point=geographicToTrackPoint(lat,lon);if(!point)return null;const inside=pointInPolygon(point,TRACK_ZONE_POLYGONS[COURSE_BOUNDARY_ID]);return {...point,latitude:Number(lat),longitude:Number(lon),zoneId:inside?COURSE_BOUNDARY_ID:null,zoneLabel:inside?"IN BOUNDS":"OFF MAP",zoneName:inside?"MFMA Grounds":"Outside mapped grounds",accuracy:Number(accuracy)||Infinity}}
 export function gpsConfidence(accuracy,ageMs=0){accuracy=Number(accuracy);if(!Number.isFinite(accuracy)||accuracy<=0)return "unavailable";if(ageMs>15000)return "stale";if(accuracy<=15)return "precise";if(accuracy<=35)return "approximate";if(accuracy<=75)return "poor";return "unavailable"}
 export function gpsWarningRadius(accuracy,ageMs=0){const confidence=gpsConfidence(accuracy,ageMs);if(confidence==="precise")return 15;if(confidence==="approximate")return Math.min(50,Math.max(25,Number(accuracy)+10));return Infinity}
 export function smoothGpsFix(previous,next){if(!previous||!next||Date.now()-(previous.timestamp||0)>8000)return next;const weight=Math.max(.25,Math.min(.8,(previous.accuracy||20)/((previous.accuracy||20)+(next.accuracy||20))));return {...next,x:previous.x*(1-weight)+next.x*weight,y:previous.y*(1-weight)+next.y*weight,latitude:previous.latitude*(1-weight)+next.latitude*weight,longitude:previous.longitude*(1-weight)+next.longitude*weight}}

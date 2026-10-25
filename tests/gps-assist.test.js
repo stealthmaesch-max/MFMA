@@ -9,8 +9,8 @@ test("GPS calibration maps the three supplied site anchors",()=>{
  assert.deepEqual([Math.round(start.x),Math.round(start.y)],[64,244]);
  assert.deepEqual([Math.round(nw.x),Math.round(nw.y)],[29,92]);
  assert.deepEqual([Math.round(ne.x),Math.round(ne.y)],[361,35]);
- assert.equal(locateTrackPosition(41.298980556,-93.275166667,5).zoneId,"sector-1");
- assert.equal(distanceToZone(start,"sector-1"),0);
+ assert.equal(locateTrackPosition(41.298980556,-93.275166667,5).zoneId,"course-boundary");
+ assert.equal(distanceToZone(start,"course-boundary"),0);
 });
 
 test("additional venue landmarks locally correct the GPS map",()=>{
@@ -23,13 +23,14 @@ test("additional venue landmarks locally correct the GPS map",()=>{
  for(const [lat,lon,x,y] of points){const actual=geographicToTrackPoint(lat,lon);assert.deepEqual([Math.round(actual.x),Math.round(actual.y)],[x,y])}
 });
 
-test("interior gaps belong to a zone and invalid fixes are rejected",()=>{
- for(const point of [{x:300,y:130},{x:80,y:290}])assert(Object.keys(TRACK_ZONE_POLYGONS).some(id=>distanceToZone(point,id)===0));
+test("the GPS model has one continuous outer boundary and rejects invalid fixes",()=>{
+ assert.deepEqual(Object.keys(TRACK_ZONE_POLYGONS),["course-boundary"]);
+ for(const point of [{x:300,y:130},{x:80,y:290}])assert.equal(distanceToZone(point,"course-boundary"),0);
  assert.equal(geographicToTrackPoint(NaN,0),null);
  assert.equal(geographicToTrackPoint(91,0),null);
  const fix=locateTrackPosition(41.298980556,-93.275166667,5);
- assert.equal(distanceToZone(fix,"sector-1"),0);
- assert(Number.isFinite(distanceToZone(fix,"sector-6")));
+ assert.equal(distanceToZone(fix,"course-boundary"),0);
+ assert.equal(distanceToZone(fix,"sector-6"),Infinity);
 });
 
 test("GPS confidence expands warnings safely as data quality falls",()=>{

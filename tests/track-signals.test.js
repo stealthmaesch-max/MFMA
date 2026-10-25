@@ -1,23 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {TRACK_SECTORS,activeTrackSignals,cleanTrackSignals,hasGripSignal,trackOutlineMarkup} from "../track-signals.js";
+import {COURSE_BOUNDARY_ID,TRACK_SECTORS,activeTrackSignals,cleanTrackSignals,hasGripSignal,trackOutlineMarkup} from "../track-signals.js";
 
-test("track outline exposes ten core sectors and three optional field zones",()=>{
- assert.equal(TRACK_SECTORS.length,13);
- assert.deepEqual(TRACK_SECTORS.map(sector=>sector.name),["Starting Zone","West Grounds","Northwest Grounds","North Grounds","Northeast Grounds","East Loop","South Grounds","Central North","Central South","Shop Grounds","West Field","North Field","East Field"]);
+test("course mapping exposes one outer boundary without sectors",()=>{
+ assert.equal(COURSE_BOUNDARY_ID,"course-boundary");
+ assert.deepEqual(TRACK_SECTORS,[{id:"course-boundary",label:"BOUNDARY",name:"MFMA Grounds"}]);
  const markup=trackOutlineMarkup();
- for(const sector of TRACK_SECTORS)assert.match(markup,new RegExp(`data-track-sector="${sector.id}"`));
- for(const landmark of ["site-start","site-grass","field-zone","site-buildings","common-routes"])assert.match(markup,new RegExp(`class="${landmark}`));
- assert.doesNotMatch(markup,/site-bin/);
- assert.match(markup,/Buildings are legal hiding locations, not through routes/);
+ assert.match(markup,/data-course-boundary="true"/);
+ assert.match(markup,/aria-label="MFMA outer course boundary"/);
+ assert.doesNotMatch(markup,/data-track-sector|sector-labels|field-zone|site-buildings|common-routes/);
 });
 
-test("track signals retain valid local flags and reject unknown values",()=>{
- const raw={"sector-1":{type:"yellow",issuedAt:1},"sector-2":{type:"rain",issuedAt:2},"sector-3":{type:"unknown"},outside:{type:"debris"}};
- assert.deepEqual(cleanTrackSignals(raw),{"sector-1":{type:"yellow",issuedAt:1},"sector-2":{type:"rain",issuedAt:2}});
- const active=activeTrackSignals(raw);
- assert.deepEqual(active.map(signal=>[signal.id,signal.type]),[["sector-1","yellow"],["sector-2","rain"]]);
- assert.equal(hasGripSignal(raw),true);
- assert.equal(hasGripSignal({"sector-1":{type:"yellow"}}),false);
- assert.deepEqual(cleanTrackSignals({"sector-1":{type:"double-yellow"}}),{},"undefined Double Yellow is rejected");
+test("legacy local sector signals are ignored while global Grip remains separate",()=>{
+ const legacy={"sector-1":{type:"yellow",issuedAt:1},"sector-2":{type:"rain",issuedAt:2}};
+ assert.deepEqual(cleanTrackSignals(legacy),{});
+ assert.deepEqual(activeTrackSignals(legacy),[]);
+ assert.equal(hasGripSignal(legacy),false);
 });
