@@ -91,7 +91,7 @@ test("Driver Portal exposes limited-connection safety fallbacks",()=>{
  assert.match(worker,/new URL\(event\.request\.url\)\.origin!==self\.location\.origin/);
 });
 
-test("public sectors stay hidden while the review-only track limits detector remains available",()=>{
+test("public sectors stay hidden while the review-only boundary detector remains available",()=>{
  const source=readFileSync(new URL("../display.js",import.meta.url),"utf8"),html=readFileSync(new URL("../display.html",import.meta.url),"utf8"),control=readFileSync(new URL("../control.js",import.meta.url),"utf8");
  assert.match(source,/const PUBLIC_TRACK_SECTORS=false/);
  assert.match(source,/if\(!PUBLIC_TRACK_SECTORS\)\{\$\("track-advisory"\)\?\.remove\(\);return\}/);
@@ -103,7 +103,7 @@ test("public sectors stay hidden while the review-only track limits detector rem
  assert.match(source,/playSupplementalSound\("returnCourse"\)/);
  assert.match(source,/outsideCount>=2/);
  assert.match(source,/now-lastBoundarySoundAt>=3000/);
- assert.match(html,/CONTINUED EXIT MAY RESULT IN DISQUALIFICATION/);
+ assert.match(html,/GPS OBSERVATION • MRA REVIEW REQUIRED/);
  assert.match(control,/NO AUTOMATIC PENALTIES/);
  assert.match(source,/function renderGlobalGripAdvisory/);
  assert.match(source,/state\?\.gripCondition\?\.type\|\|legacy/);

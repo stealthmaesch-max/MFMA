@@ -95,7 +95,7 @@ test("expanded team controls stay contained on compact iPhone portrait",async()=
  await browser.close();
 });
 
-test("track limits opt-in stays compact in the iPhone Driver Portal",async()=>{
+test("boundary assist opt-in and diagnostics stay compact in the iPhone Driver Portal",async()=>{
  const browser=await chromium.launch({headless:true});
  const page=await signedDriverPage(browser,{width:393,height:852});
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
@@ -111,7 +111,7 @@ test("track limits opt-in stays compact in the iPhone Driver Portal",async()=>{
  assert(metrics.control.left>=metrics.sheet.left&&metrics.control.right<=metrics.sheet.right,"track limits card stays inside the Driver Portal");
  assert(metrics.control.height<120,"track limits card remains compact");
  assert(metrics.button.left>=metrics.control.left&&metrics.button.right<=metrics.control.right&&metrics.button.height>=44,"track limits toggle is contained and touch-safe");
- assert.match(metrics.status,/MRA review/);
+ assert.match(metrics.status,/outer boundary/);assert.equal(await page.locator("#gps-diagnostics").textContent(),"No GPS samples collected");
  await browser.close();
 });
 
