@@ -49,16 +49,16 @@ test("preview repetitions replace prior playback and clean up completely",async(
  assert.deepEqual(sounds.getActiveSoundState(),{oscillators:6,gains:6,timeouts:0,intervals:1},"Yellow schedules a clean sequence and persistent reminder");
 
  sounds.playSound("red");
- assert.deepEqual(sounds.getActiveSoundState(),{oscillators:8,gains:8,timeouts:0,intervals:1},"Red replaces Yellow with a firm persistent alarm");
+ assert.deepEqual(sounds.getActiveSoundState(),{oscillators:10,gains:10,timeouts:0,intervals:1},"Red replaces Yellow with a firm persistent alarm");
 
  sounds.playSound("safetyCar");
- assert.deepEqual(sounds.getActiveSoundState(),{oscillators:10,gains:10,timeouts:0,intervals:1},"Safety Car replaces Red with a clean persistent command");
+ assert.deepEqual(sounds.getActiveSoundState(),{oscillators:8,gains:8,timeouts:0,intervals:1},"Safety Car replaces Red with a clean persistent command");
  sounds.stopSounds();
  assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0},"Stop Sound cancels Safety Car immediately");
 
  sounds.replayLastSound();
- assert.equal(sounds.getActiveSoundState().oscillators,10,"Replay reproduces the complete Safety Car sequence");
- FakeAudioContext.latest.oscillators.slice(-10).forEach(oscillator=>oscillator.finish());
+ assert.equal(sounds.getActiveSoundState().oscillators,8,"Replay reproduces the complete Safety Car sequence");
+ FakeAudioContext.latest.oscillators.slice(-8).forEach(oscillator=>oscillator.finish());
  assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:1},"Natural playback completion keeps only the reminder timer");
  sounds.stopSounds();
 });
@@ -115,7 +115,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",8],["mechanical-incident",8,"mechanical"],["safety-car",10],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",4]];
+ const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",10],["mechanical-incident",8,"mechanical"],["safety-car",8],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",3]];
  for(const [flag,oscillators,expectedSound] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
