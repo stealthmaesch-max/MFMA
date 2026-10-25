@@ -316,3 +316,36 @@ test("five-second Steward notices stay glanceable without covering the live sign
  });
  assert.equal(metrics.width,393);assert(metrics.notice.left>=0&&metrics.notice.right<=393,"notice is horizontally contained");assert(metrics.notice.height<110,"notice remains compact");assert(metrics.notice.bottom<metrics.toolsTop,"notice stays above Driver tools");assert(metrics.label.bottom<=metrics.toolsTop&&metrics.timer.bottom<=metrics.toolsTop,"live signal and timer remain presented");assert.equal(metrics.title,"INVESTIGATION PENDING POST-SESSION");await browser.close();
 });
+
+test("every production signal graphic stays prominent and contained on short and current iPhones",async()=>{
+ const browser=await chromium.launch({headless:true});
+ const signals=["clear","green","yellow","red","safety-car","mechanical-incident","move-over","under-review","disqualification","checkered","proceed-to-start","qualifying-halfway"];
+ for(const viewport of [{width:375,height:667},{width:393,height:852},{width:402,height:874}]){
+  const page=await signedDriverPage(browser,viewport);await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+  for(const signal of signals){
+   const metrics=await page.evaluate(signal=>{
+    document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#driver-tools").classList.remove("hidden");
+    const display=document.querySelector("#display"),symbol=document.querySelector("#signal-symbol");display.className=`display flag-${signal}`;symbol.dataset.signal=signal;symbol.querySelector("span").textContent=signal==="green"||signal==="proceed-to-start"?"↑":signal==="safety-car"?"SC":signal==="mechanical-incident"?"!":signal==="move-over"?"↗":signal==="under-review"?"MRA":signal==="disqualification"?"DQ":"";
+    document.querySelector("#label").textContent=signal.replaceAll("-"," ").toUpperCase();document.querySelector("#display-timer").textContent="03:42";document.querySelector("#display-session").textContent="MFMA SPRINT • FLAG OPERATIONS";
+    const box=symbol.getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect(),style=getComputedStyle(symbol);return {pageWidth:document.documentElement.scrollWidth,box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom,width:box.width,height:box.height},toolsTop:tools.top,background:style.backgroundImage+style.backgroundColor,border:style.borderColor};
+   },signal);
+   assert.equal(metrics.pageWidth,viewport.width,`${signal} has no horizontal overflow at ${viewport.width}x${viewport.height}`);
+   assert(metrics.box.left>=0&&metrics.box.right<=viewport.width&&metrics.box.top>=0&&metrics.box.bottom<metrics.toolsTop,`${signal} is fully visible above Driver controls at ${viewport.width}x${viewport.height}`);
+   assert(metrics.box.width>=Math.min(205,viewport.width*.54),`${signal} remains glanceable instead of shrinking into dead space`);
+   assert(Math.abs(metrics.box.width-metrics.box.height)<2,`${signal} pictogram keeps a square aspect ratio`);
+   assert(metrics.background!=="nonergba(0, 0, 0, 0)"||metrics.border!=="rgba(0, 0, 0, 0)",`${signal} keeps a visible production treatment`);
+  }
+  await page.close();
+ }
+ await browser.close();
+});
+
+test("all Driver and team visual assets load and scale without distortion",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const sources=["assets/branding/mfma-logo.png","assets/branding/mra-logo.png","assets/branding/mfma-driver-portal-logo.png","assets/branding/monarch-mfma-team-logo-dignified.png","assets/branding/monarch-team-emblem.png","assets/branding/parakeet-mfma-team-logo-v2.png","assets/branding/parakeet-team-emblem-v2.png"];
+ const results=await page.evaluate(async sources=>Promise.all(sources.map(src=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve({src,loaded:true,width:image.naturalWidth,height:image.naturalHeight});image.onerror=()=>resolve({src,loaded:false,width:0,height:0});image.src=src}))),sources);
+ assert(results.every(result=>result.loaded&&result.width>0&&result.height>0),`every cached visual asset loads: ${JSON.stringify(results)}`);
+ const rendered=await page.evaluate(()=>{const logo=document.querySelector("#display-brand-logo");return {fit:getComputedStyle(logo).objectFit,box:logo.getBoundingClientRect().toJSON(),natural:{width:logo.naturalWidth,height:logo.naturalHeight}}});
+ assert(rendered.box.width>0&&rendered.box.right<=393,"MFMA display brand is visible and contained");assert(rendered.natural.width/rendered.natural.height>1,"wide brand asset retains its intended source proportion");
+ await browser.close();
+});

@@ -1843,3 +1843,17 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
 @keyframes driverNoticeIn{from{opacity:.2;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
 @media(prefers-reduced-motion:reduce){.display-top .safety-management,.display-top .steward-notice{animation:none}.display-top>.display-brand,.display-top>.display-tools{transition:none}}
 @media(max-width:430px){.display-top{min-height:52px}.display-top .safety-management,.display-top .steward-notice{min-height:52px;padding:5px 8px!important;gap:8px}.display-top .safety-management img,.display-top .steward-notice img{width:58px;height:30px}.display-top .safety-management strong,.display-top .steward-notice strong{font-size:14px}.display-top .steward-notice small{font-size:8px}.status-team-brand{gap:10px;padding:10px 12px}.status-team-brand img{height:48px}}
+
+/* Driver display v4.3: keep every instrument pictogram prominent in short Safari viewports. */
+@media(max-width:699px){
+ .instrument-panel .signal-symbol{width:clamp(220px,70vw,282px);max-width:100%;flex:0 0 auto}
+ .instrument-panel .signal-symbol span{max-width:100%;max-height:100%}
+}
+@media(max-width:699px) and (max-height:700px){
+ .live-view{padding-top:58px;padding-bottom:70px}
+ .instrument-panel{min-height:calc(100dvh - 146px);padding-block:4px;gap:3px}
+ .instrument-panel .signal-symbol{width:clamp(205px,62vw,242px);margin-block:2px}
+ .instrument-panel .signal-label{font-size:clamp(28px,8.5vw,34px)}
+ .instrument-panel .display-timer{font-size:clamp(28px,8.5vw,34px)}
+ .instrument-panel .multi-function-zone{padding-block:1px}
+}
