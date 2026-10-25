@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#090b0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>MFMA Sound Lab</title>
-<link rel="stylesheet" href="styles.css?v=128">
+<link rel="stylesheet" href="styles.css?v=129">
 </head>
 <body class="sound-lab-page">
 <main class="sound-lab-shell">
@@ -20,21 +20,24 @@
     <p id="sound-lab-status" class="sound-lab-status" role="status">Tap once to unlock sound on this device.</p>
   </section>
   <section class="sound-lab-grid" aria-label="Alarm candidates">
-    <button type="button" data-preview-sound="proAttention"><span>01</span><strong>Attention</strong><small>Steward and incident notices</small></button>
-    <button type="button" data-preview-sound="proCaution"><span>02</span><strong>Caution</strong><small>Yellow and grip warning</small></button>
-    <button type="button" data-preview-sound="proSafetyCar"><span>03</span><strong>Safety Car</strong><small>Persistent management command</small></button>
-    <button type="button" data-preview-sound="proCritical"><span>04</span><strong>Critical</strong><small>Red and mechanical incident</small></button>
-    <button type="button" data-preview-sound="proMoveOver"><span>05</span><strong>Move Over</strong><small>Directional passing cue</small></button>
-    <button type="button" data-preview-sound="proGreen"><span>06</span><strong>Green</strong><small>Positive release cue</small></button>
-    <button type="button" data-preview-sound="proFinish"><span>07</span><strong>Finish</strong><small>Authoritative session ending</small></button>
-    <button type="button" data-preview-sound="proConfirm"><span>08</span><strong>Confirm</strong><small>Quiet control acknowledgement</small></button>
-    <button type="button" data-preview-sound="returnCourse"><span>09</span><strong>Return to Course</strong><small>Long high-pitch boundary alarm</small></button>
-    <button type="button" data-preview-sound="penalty"><span>10</span><strong>Penalty Imposed</strong><small>Persistent enforcement alarm</small></button>
-    <button type="button" data-preview-sound="gpsDegraded"><span>11</span><strong>GPS Degraded</strong><small>Single reliability warning</small></button>
-    <button type="button" data-preview-sound="connectionLost"><span>12</span><strong>Connection Lost</strong><small>Urgent lost-link alarm</small></button>
-    <button type="button" data-preview-sound="returnToStart"><span>13</span><strong>Return to Start</strong><small>Descending movement command</small></button>
-    <button type="button" data-preview-sound="proceedToLine"><span>14</span><strong>Proceed to Line</strong><small>Rising movement command</small></button>
-    <button type="button" data-preview-sound="instructionAck"><span>15</span><strong>Acknowledged</strong><small>Short receipt confirmation</small></button>
+    <button type="button" data-preview-sound="green"><span>01</span><strong>Green</strong><small>Active signal: proceed</small></button>
+    <button type="button" data-preview-sound="yellow"><span>02</span><strong>Yellow</strong><small>Active signal: slow to 8 MPH</small></button>
+    <button type="button" data-preview-sound="grip"><span>03</span><strong>Grip Deterioration</strong><small>Active surface warning and callout</small></button>
+    <button type="button" data-preview-sound="safetyCar"><span>04</span><strong>Safety Car</strong><small>Active management command</small></button>
+    <button type="button" data-preview-sound="moveOver"><span>05</span><strong>Move Over</strong><small>Active passing command</small></button>
+    <button type="button" data-preview-sound="red"><span>06</span><strong>Stop</strong><small>Active Red signal</small></button>
+    <button type="button" data-preview-sound="mechanical"><span>07</span><strong>Mechanical Incident</strong><small>Same critical alarm as Stop</small></button>
+    <button type="button" data-preview-sound="checkered"><span>08</span><strong>Checkered</strong><small>Active session-complete signal</small></button>
+    <button type="button" data-preview-sound="white"><span>09</span><strong>MRA Steward Investigation</strong><small>Active incident review signal</small></button>
+    <button type="button" data-preview-sound="penalty"><span>10</span><strong>Penalty Issued</strong><small>Active penalty or disqualification</small></button>
+    <button type="button" data-preview-sound="returnCourse"><span>11</span><strong>Return to Course</strong><small>Active track-limit order</small></button>
+    <button type="button" data-preview-sound="returnToStart"><span>12</span><strong>Return to Start</strong><small>Active movement command</small></button>
+    <button type="button" data-preview-sound="proceedToLine"><span>13</span><strong>Proceed to Line</strong><small>Active movement command</small></button>
+    <button type="button" data-preview-sound="startLights"><span>14</span><strong>Start Lights</strong><small>Active starting sequence</small></button>
+    <button type="button" data-preview-sound="stewardNotice"><span>15</span><strong>MRA Steward Notice</strong><small>Active five-second notice tone</small></button>
+    <button type="button" data-preview-sound="instructionAck"><span>16</span><strong>Instruction Acknowledged</strong><small>Driver receipt confirmation</small></button>
+    <button type="button" data-preview-sound="gpsDegraded"><span>17</span><strong>GPS Limited</strong><small>Active GPS reliability warning</small></button>
+    <button type="button" data-preview-sound="connectionLost"><span>18</span><strong>Connection Lost</strong><small>Active lost-link warning</small></button>
   </section>
   <section class="sound-lab-controls">
     <button id="sound-lab-replay" type="button">Replay Last</button>
@@ -42,6 +45,6 @@
   </section>
   <p class="sound-lab-note">Test at normal device volume first, then over representative engine noise. Operational sounds are connected to their live Driver and MRA states.</p>
 </main>
-<script type="module" src="sound-test.js?v=12"></script>
+<script type="module" src="sound-test.js?v=13"></script>
 </body>
 </html>

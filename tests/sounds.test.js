@@ -80,7 +80,7 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.moveOver.repetitions,3);
  assert.equal(sounds.soundDefinitions.red.repetitions,4);
  assert.equal(sounds.soundDefinitions.mechanical.repetitions,4);
- assert.equal(sounds.soundDefinitions.mechanical.reminderMs,4500);
+ assert.equal(sounds.soundDefinitions.mechanical.reminderMs,4000);
  assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);
  assert.equal(sounds.soundDefinitions.yellow.reminderMs,6500);
  assert.equal(sounds.soundDefinitions.moveOver.reminderMs,4500);
@@ -115,7 +115,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",10],["mechanical-incident",8,"mechanical"],["safety-car",8],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",3]];
+ const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",10],["mechanical-incident",10,"mechanical"],["safety-car",8],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",3]];
  for(const [flag,oscillators,expectedSound] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
@@ -205,4 +205,20 @@ test("Driver Grip uses a preloaded and user-unlocked iOS media callout",async()=
  const current={systemState:"session-live",activeFlag:"green",gripCondition:{type:"rain",issuedAt:1},session:{phase:"finding"}};
  assert.equal(await sounds.playCurrentState(current),"grip");assert.equal(FakeMediaAudio.latest.playCount,2,"the active Grip warning uses the unlocked media callout");
  assert(fs.statSync("assets/audio/grip-callout.m4a").size>1000,"the bundled callout asset is present");sounds.stopSounds();
+});
+
+test("Sound Lab titles preview the actual production sounds",()=>{
+ const html=fs.readFileSync("sound-test.html","utf8");
+ for(const [sound,title] of [["green","Green"],["yellow","Yellow"],["grip","Grip Deterioration"],["safetyCar","Safety Car"],["moveOver","Move Over"],["red","Stop"],["mechanical","Mechanical Incident"],["checkered","Checkered"],["white","MRA Steward Investigation"],["penalty","Penalty Issued"]]){
+  assert.match(html,new RegExp(`data-preview-sound="${sound}"[^>]*><span>\\d+</span><strong>${title}</strong>`));
+ }
+ assert.doesNotMatch(html,/data-preview-sound="pro(?:Attention|Caution|SafetyCar|Critical|MoveOver|Green|Finish|Confirm)"/);
+});
+
+test("Stop and Mechanical Incident use the identical critical alarm",async()=>{
+ global.localStorage={getItem:()=>null,setItem:()=>{}};global.window={AudioContext:FakeAudioContext};
+ const source=fs.readFileSync("sounds.js","utf8"),sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// matching critical signals").toString("base64")}`);
+ await sounds.enableSounds();
+ sounds.playSound("red");const red=sounds.getActiveSoundState();sounds.playSound("mechanical");const mechanical=sounds.getActiveSoundState();
+ assert.deepEqual(mechanical,red);assert.equal(sounds.soundDefinitions.mechanical.reminderMs,sounds.soundDefinitions.red.reminderMs);sounds.stopSounds();
 });
