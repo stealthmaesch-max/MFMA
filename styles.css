@@ -1823,3 +1823,23 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
 #track-control-open,[data-workspace-action="course"]{display:none!important}
 .course-boundary{fill:rgba(43,215,119,.08);stroke:#42e183;stroke-width:7;vector-effect:non-scaling-stroke}
 @media(max-width:699px){.instrument-panel .signal-label{letter-spacing:.02em}.instrument-panel .display-timer{letter-spacing:-.025em}.instrument-panel .signal-instruction{letter-spacing:.025em}.signal-symbol[data-signal="yellow"] span::after,.signal-symbol[data-signal="red"] span::after,.signal-symbol[data-signal="infraction-warning"] span::after{inset:10%}}
+
+/* Driver display v4.2: multifunction overlays and signed-in standby identity. */
+.display-top{isolation:isolate;overflow:hidden;min-height:58px}
+.display-top>.display-brand,.display-top>.display-tools{transition:opacity .18s ease}
+.display-top:has(.steward-notice:not(.hidden))>.display-brand,.display-top:has(.steward-notice:not(.hidden))>.display-tools,.display-top:has(.safety-management:not(.hidden))>.display-brand,.display-top:has(.safety-management:not(.hidden))>.display-tools{opacity:0;pointer-events:none}
+.display-top .safety-management,.display-top .steward-notice{position:absolute!important;z-index:4;inset:0!important;display:flex;align-items:center;justify-content:center;gap:12px;width:100%!important;max-width:none!important;min-height:58px;margin:0!important;padding:7px 14px!important;transform:none!important;border:1px solid #ffffff2b;border-radius:16px;background:#10161d;box-sizing:border-box;overflow:hidden;animation:driverNoticeIn .24s ease-out}
+.display-top .steward-notice{z-index:5;border-color:#58b9ff66;background:#0b1821}
+.display-top .safety-management img,.display-top .steward-notice img{display:block;flex:0 0 auto;width:clamp(58px,13vw,116px);height:38px;object-fit:contain}
+.display-top .safety-management>div,.display-top .steward-notice>div{display:grid;min-width:0;gap:1px;text-align:left}
+.display-top .safety-management span,.display-top .steward-notice span{color:#9ba8b3;font-size:9px;font-weight:850;letter-spacing:.12em}
+.display-top .safety-management strong,.display-top .steward-notice strong{overflow:hidden;color:#fff;font-size:clamp(13px,2.6vw,20px);font-weight:850;line-height:1.05;text-overflow:ellipsis;white-space:nowrap}
+.display-top .steward-notice small{overflow:hidden;color:#aeb9c3;font-size:clamp(8px,1.8vw,11px);font-weight:750;text-overflow:ellipsis;white-space:nowrap}
+.multi-function-zone.multi-grip{padding:9px 12px!important;border:1px solid #d7783466!important;border-radius:15px!important;background:linear-gradient(110deg,#211b0b,#24100c)!important}
+.multi-function-zone.multi-grip strong{color:#fff!important}.multi-function-zone.multi-grip small{color:#f3c2a5!important}
+.status-team-brand{display:flex;align-items:center;justify-content:center;gap:14px;width:min(88vw,520px);margin:0 auto clamp(16px,3vh,28px);padding:12px 16px;border:1px solid color-mix(in srgb,var(--team-accent) 55%,#ffffff22);border-left:4px solid var(--team-accent);border-radius:16px;background:linear-gradient(110deg,color-mix(in srgb,var(--team-accent) 15%,#10151b),#0b0f14)}
+.status-team-brand img{display:block;width:min(46%,210px);height:62px;object-fit:contain}
+.status-team-brand>span{display:grid;min-width:0;text-align:left}.status-team-brand strong{overflow:hidden;color:#fff;font-size:clamp(16px,4vw,24px);font-weight:850;text-overflow:ellipsis;white-space:nowrap}.status-team-brand small{color:#99a5af;font-size:9px;font-weight:850;letter-spacing:.13em}
+@keyframes driverNoticeIn{from{opacity:.2;transform:translateY(-5px)}to{opacity:1;transform:translateY(0)}}
+@media(prefers-reduced-motion:reduce){.display-top .safety-management,.display-top .steward-notice{animation:none}.display-top>.display-brand,.display-top>.display-tools{transition:none}}
+@media(max-width:430px){.display-top{min-height:52px}.display-top .safety-management,.display-top .steward-notice{min-height:52px;padding:5px 8px!important;gap:8px}.display-top .safety-management img,.display-top .steward-notice img{width:58px;height:30px}.display-top .safety-management strong,.display-top .steward-notice strong{font-size:14px}.display-top .steward-notice small{font-size:8px}.status-team-brand{gap:10px;padding:10px 12px}.status-team-brand img{height:48px}}

@@ -108,6 +108,25 @@ test("MRA safety information is scoped to the currently active management signal
  assert.match(driverHtml,/id="safety-management"[\s\S]*mra-logo\.png[\s\S]*id="safety-message"/);
 });
 
+test("Driver multifunction areas preserve the primary signal while presenting Grip and Steward information",()=>{
+ const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8");
+ assert.match(display,/gripAllowed=grip&&!new Set/);
+ assert.match(display,/GRIP DETERIORATION/);
+ assert.match(display,/RAIN \/ WATER • REDUCE SPEED/);
+ assert.match(display,/LOOSE DEBRIS • REDUCE SPEED/);
+ assert.match(html,/display-top[\s\S]*id="safety-management"[\s\S]*id="steward-notice"/);
+});
+
+test("No Event and Standby can identify the approved signed-in team",()=>{
+ const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8"),worker=fs.readFileSync("sw.js","utf8");
+ assert.match(html,/id="status-team-brand"[\s\S]*id="status-team-name"/);
+ assert.match(display,/function renderStatusTeamBranding\(\)/);
+ assert.match(display,/new Set\(\["no-event","standby"\]\)/);
+ assert.match(display,/teamBranding\(driverProfile\.teamId\)/);
+ assert.match(worker,/monarch-mfma-team-logo-dignified\.png/);
+ assert.match(worker,/parakeet-mfma-team-logo-v2\.png/);
+});
+
 test("Driver Portal keeps an approved team device and switches registered drivers",()=>{
  const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8");
  assert.match(html,/mfma-driver-portal-logo\.png/);assert.match(html,/id="driver-signin-form"/);assert.match(html,/id="driver-sign-out"/);
