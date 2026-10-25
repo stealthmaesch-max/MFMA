@@ -67,10 +67,10 @@ test("GPS emphasis does not replace Red or Safety Car audio",()=>{
  const source=readFileSync(new URL("../display.js",import.meta.url),"utf8");
  const code=source.slice(source.indexOf("function updateGpsEmphasis()"),source.indexOf("function updateGpsReadout()"));
  let plays=0;
- const context=vm.createContext({gpsFix:{timestamp:Date.now(),accuracy:5},lastNearbySignal:"",
+ const context=vm.createContext({gpsFix:{timestamp:Date.now(),accuracy:5},lastNearbySignal:"",lastGpsQuality:null,
   state:{activeFlag:"red",trackSignals:{}},activeTrackSignals:()=>[{id:"sector-1",type:"rain",grip:true}],
   driverZoneOpen:()=>true,distanceToZone:()=>0,gpsConfidence,gpsWarningRadius,$:()=>({classList:{toggle(){}}}),
-  document:{hidden:false},playCurrentState:()=>{plays++;return Promise.resolve()}});
+  document:{hidden:false},playSupplementalSound:()=>{},playCurrentState:()=>{plays++;return Promise.resolve()}});
  vm.runInContext(code,context);
  for(const flag of ["red","safety-car","under-review"]){context.state.activeFlag=flag;context.lastNearbySignal="";vm.runInContext("updateGpsEmphasis()",context)}
  assert.equal(plays,0);

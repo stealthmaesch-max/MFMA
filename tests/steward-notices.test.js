@@ -28,7 +28,7 @@ test("incident records support both public five-second outcomes",()=>{
 
 test("each new Steward notice has a concise spoken Driver callout",()=>{
  assert.match(display,/speakStewardNotice\(notice\)/);
- assert.match(display,/playSound\("stewardNotice"\)/);
+ assert.match(display,/playSupplementalSound\("stewardNotice"\)/);
  assert.match(sounds,/export function speakStewardNotice/);
  assert.match(sounds,/stewardNotice:\{description:"one-shot MRA Steward attention cue"/);
  assert.doesNotMatch(sounds,/stewardNotice:\{[^}]*reminderMs/);

@@ -96,6 +96,12 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.proFinish.description,"decisive electric finish sequence");
  assert.equal(sounds.soundDefinitions.proConfirm.description,"short electric confirmation");
  assert.equal(sounds.soundDefinitions.returnCourse.description,"three-hit high-pitch boundary alarm");
+ assert.equal(sounds.soundDefinitions.penalty.description,"persistent penalty-imposed alarm");
+ assert.equal(sounds.soundDefinitions.gpsDegraded.description,"single GPS reliability warning");
+ assert.equal(sounds.soundDefinitions.connectionLost.description,"urgent lost-link double alarm");
+ assert.equal(sounds.soundDefinitions.returnToStart.reminderMs,6500);
+ assert.equal(sounds.soundDefinitions.proceedToLine.description,"rising proceed command");
+ assert.equal(sounds.soundDefinitions.instructionAck.description,"short instruction confirmation");
  await sounds.enableSounds();
  sounds.playSound("startLights");
  assert.equal(sounds.getActiveSoundState().oscillators,5,"the five red-light pairs each receive one synchronized tone");
@@ -109,7 +115,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"yellow"],["proceed-to-start",3,"green"],["move-over",6],["red",8],["mechanical-incident",8,"mechanical"],["safety-car",10],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",3,"white"],["checkered",4]];
+ const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",8],["mechanical-incident",8,"mechanical"],["safety-car",10],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",4]];
  for(const [flag,oscillators,expectedSound] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
@@ -180,6 +186,15 @@ test("Grip speech is retained, resumed, and retried for iOS reliability",()=>{
  assert.match(source,/!speech\.speaking&&!speech\.pending/);
  assert.match(display,/replayPersistentDriverAudio/);
  assert.match(display,/addEventListener\("pageshow",\(\)=>\{awake\(\);replayPersistentDriverAudio\(\)\}\)/);
+});
+
+test("Driver reliability and acknowledgement cues do not replace primary safety audio",()=>{
+ const display=fs.readFileSync("display.js","utf8");
+ assert.match(display,/playSupplementalSound\("gpsDegraded"\)/);
+ assert.match(display,/playSupplementalSound\("connectionLost"\)/);
+ assert.match(display,/playSupplementalSound\("instructionAck"\)/);
+ assert.match(display,/playSupplementalSound\("stewardNotice"\)/);
+ assert.doesNotMatch(display,/playSound\("stewardNotice"\)/);
 });
 
 test("Driver Grip uses a preloaded and user-unlocked iOS media callout",async()=>{
