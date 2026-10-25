@@ -5,6 +5,7 @@ import { vehicles } from "./personnel.js?v=41";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { getRenderMode } from "./display-state.js?v=87";
 import {qualifyingTime} from "./qualifying-model.js?v=85";
+import {standardizeTeamNames} from "./competition-model.js?v=92";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null;
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
@@ -37,5 +38,5 @@ function render(){
  if(vehicleIds)$("ops-assignments").innerHTML=vehicleIds.map(v=>`<article class="assignment"><h3>${vehicles[v]?.name||v} Team</h3></article>`).join("");
  else $("ops-assignments").innerHTML=`<article class="assignment"><h3>${s.teamNames[s.pursuitTeam]}</h3><p>Pursuit vehicle: ${vehicles[setup.pursuitVehicle]?.name||"—"}</p></article><article class="assignment"><h3>${s.teamNames[s.evadingTeam]}</h3><p>Evading on foot</p></article>`;
 }
-onValue(stateRef,s=>{state=s.val()||{};render()},e=>console.error(e));
+onValue(stateRef,s=>{state=standardizeTeamNames(s.val()||{});render()},e=>console.error(e));
 setInterval(()=>{if(state?.systemState==="sprint-live")$("ops-timer").textContent=state.sprint?.timerMode==="none"?"NO TIMER":fmt(sprintTime());if(state?.systemState==="qualifying-live")$("ops-timer").textContent=fmt(qualifyingTime(state.event.qualifying));if(state?.session&&getRenderMode(state)==="session-live"&&state.session.running){const factor=state.session.flag==="yellow"?0.5:1;$("ops-timer").textContent=fmt(Math.max(0,state.session.remainingMs-(Date.now()-(state.session.lastTickAt||Date.now()))*factor))}},250);

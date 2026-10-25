@@ -144,7 +144,7 @@ test("production listeners retain state history and restart changed flash signal
  const display=fs.readFileSync("display.js","utf8");
  const css=fs.readFileSync("styles.css","utf8");
  for(const source of [control,display]){
-  assert.match(source,/const previous=state;state=s\.val\(\)\|\|/,"Firebase snapshots preserve the previous immutable value");
+  assert.match(source,/const previous=state;state=(?:standardizeTeamNames\()?s\.val\(\)\|\|/,"Firebase snapshots preserve the previous immutable value");
   assert.match(source,/playStateTransition\(previous,state\)/,"each production listener evaluates the authoritative transition");
  }
  assert.match(display,/signal!==visualSignal&&display\.classList\.contains\("flash"\)/,"changed flashing signals restart their animation instance");
