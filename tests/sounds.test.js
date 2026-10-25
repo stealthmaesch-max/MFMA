@@ -68,7 +68,7 @@ test("urgent definitions expose the required repeat counts",async()=>{
  global.window={AudioContext:FakeAudioContext};
  const source=fs.readFileSync("sounds.js","utf8");
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// definitions").toString("base64")}`);
- assert.equal(sounds.getVolume(),.85,"missing volume storage uses the high-noise default");
+ assert.equal(sounds.getVolume(),1,"missing volume storage uses full internal output");
  assert.equal(sounds.soundDefinitions.yellow.repetitions,3);
  assert.equal(sounds.soundDefinitions.grip.repetitions,3);
  assert.equal(sounds.soundDefinitions.grip.reminderMs,4200);
