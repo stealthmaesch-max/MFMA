@@ -197,6 +197,11 @@ export function stopSounds(){
  activeOscillators.clear();activeGains.clear();
 }
 
+export function silencePersistentSound(name){
+ if(lastSound!==name)return false;
+ stopSounds();lastSound=null;return true;
+}
+
 export function getActiveSoundState(){
  return {oscillators:activeOscillators.size,gains:activeGains.size,timeouts:activeTimeouts.size,intervals:activeIntervals.size};
 }

@@ -65,6 +65,18 @@ test("Track-limit GPS observations are review-only and remain MRA authoritative"
  await assertSucceeds(update(ref(rd,path),{status:"dismissed",resolvedAt:200}));
 });
 
+test("Speed compliance observations are reliable, review-only, and MRA authoritative",async()=>{
+ await authorizeDriver();
+ const path="mfma/state/event/speedComplianceReports/driver-device/speed-1",valid={driverId:"d1",driverName:"Stealth",teamId:"team-one",teamName:"Team One",vehicleId:"ranger",signal:"yellow",limitMph:8,observedMph:12.4,accuracy:5.4,sampleCount:3,durationMs:5100,status:"review",createdAt:100};
+ await assertSucceeds(set(ref(driver,path),valid));
+ await assertFails(set(ref(driver,"mfma/state/event/speedComplianceReports/driver-device/speed-2"),{...valid,status:"confirmed"}));
+ await assertFails(set(ref(driver,"mfma/state/event/speedComplianceReports/driver-device/speed-3"),{...valid,signal:"red",limitMph:8}));
+ await assertFails(set(ref(driver,"mfma/state/event/speedComplianceReports/driver-device/speed-4"),{...valid,accuracy:25}));
+ await assertFails(set(ref(driver,"mfma/state/event/speedComplianceReports/another-device/speed-5"),valid));
+ await assertFails(update(ref(driver,path),{status:"confirmed"}));
+ await assertSucceeds(update(ref(rd,path),{status:"confirmed",resolvedAt:200}));
+});
+
 test("Driver cannot change Race Director state",async()=>{
  for(const [path,value] of [
   ["activeFlag","red"],
