@@ -100,6 +100,8 @@ test("critical instructions expose secure Driver acknowledgement and MRA status"
  const display=fs.readFileSync("display.html","utf8"),displayJs=fs.readFileSync("display.js","utf8"),control=fs.readFileSync("control.html","utf8"),controlJs=fs.readFileSync("control.js","utf8"),rules=fs.readFileSync("database.rules.json","utf8");
  assert.match(display,/id="instruction-ack"/);
  assert.match(displayJs,/instructionAcks\/\$\{user\.uid\}/);
+ assert.match(displayJs,/manualFallback=gpsWatchId===null/);
+ assert.match(displayJs,/!active\|\|!driverProfile\|\|!manualFallback/);
  assert.match(control,/id="instruction-sync-panel"/);
  assert.match(controlJs,/renderInstructionSync/);
  assert.match(rules,/"instructionAcks"/);
