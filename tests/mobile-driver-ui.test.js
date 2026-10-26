@@ -38,6 +38,24 @@ test("Driver Instrument Stack initializes without runtime render errors",async()
  await browser.close();
 });
 
+test("revised status bar enables sound and preserves long priority messages",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ await page.evaluate(()=>{document.querySelector("#driver-signin").classList.add("hidden");document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const bar=document.querySelector(".instrument-gauge-strip");bar.dataset.message="MRA STEWARD · INVESTIGATION PENDING POST-SESSION · MONARCH MFMA TEAM"});
+ const before=await page.evaluate(()=>{const bar=document.querySelector(".instrument-gauge-strip").getBoundingClientRect(),button=document.querySelector("#display-sound"),box=button.getBoundingClientRect();return {bar:bar.toJSON(),button:box.toJSON(),pointer:getComputedStyle(button).pointerEvents,message:document.querySelector(".instrument-gauge-strip").dataset.message}});
+ assert(before.button.width>=before.bar.width-2&&before.button.height>=44,"the full revised status bar remains a large sound control");assert.equal(before.pointer,"auto");assert.match(before.message,/INVESTIGATION PENDING POST-SESSION/);
+ await page.locator(".instrument-gauge-strip").click();await page.waitForTimeout(100);
+ assert.equal(await page.locator("#display-sound").getAttribute("aria-pressed"),"true","tapping the visible status slot arms Driver audio");
+ await browser.close();
+});
+
+test("every revised signal keeps a distinct shape, flag color, and appropriate flash behavior",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const result=await page.evaluate(()=>{document.querySelector("#driver-signin").classList.add("hidden");document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const display=document.querySelector("#display"),symbol=document.querySelector("#signal-symbol"),signals=["green","yellow","red","safety-car","mechanical-incident","move-over","under-review","disqualification","checkered","return-to-start","proceed-to-start"],flashing=new Set(["yellow","red","safety-car","mechanical-incident","move-over","under-review","disqualification","checkered","return-to-start"]),styles={};for(const signal of signals){display.className=`display flag-${signal}${flashing.has(signal)?" flash":""}`;symbol.dataset.signal=signal;const style=getComputedStyle(symbol);styles[signal]={background:style.backgroundImage+style.backgroundColor,border:style.borderColor,radius:style.borderRadius,transform:style.transform,width:style.width,height:style.height,animation:style.animationName}}return styles});
+ assert.equal(result.green.radius,"50%");assert.equal(result.disqualification.radius,"50%");assert.notEqual(result.yellow.border,result.red.border);assert.notEqual(result["safety-car"].background,result["move-over"].background);assert.notEqual(result["mechanical-incident"].width,result.yellow.width);assert.notEqual(result.checkered.background,result["under-review"].background);assert.equal(result.green.animation,"none");assert.match(result.yellow.animation,/revisedSignalFlash/);assert.match(result["under-review"].animation,/revisedSignalFlash/);assert.match(result.disqualification.animation,/revisedSignalFlash/);
+ await browser.close();
+});
+
 test("contextual MRA controls and dual-role Driver drawer fit iPhone 15",async()=>{
  const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:393,height:852}});await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
  await page.evaluate(()=>{document.querySelector("#auth-panel").classList.add("hidden");document.querySelector("#secured-control").classList.remove("hidden");document.querySelector("#quick-flag-panel").classList.remove("hidden");document.body.classList.add("flag-controls-active");document.querySelector("#driver-manager-fields").classList.remove("hidden");document.querySelector("#driver-manager-save").classList.remove("hidden");document.querySelector("#manager-driver").innerHTML='<option>Stealth • MRA 16</option>';document.querySelector("#manager-passenger").innerHTML='<option>No registered passenger</option>';document.querySelector("#driver-manager-dialog").showModal()});
@@ -350,8 +368,9 @@ test("every production signal graphic stays prominent and contained on short and
    },signal);
    assert.equal(metrics.pageWidth,viewport.width,`${signal} has no horizontal overflow at ${viewport.width}x${viewport.height}`);
    assert(metrics.box.left>=0&&metrics.box.right<=viewport.width&&metrics.box.top>=0&&metrics.box.bottom<metrics.toolsTop,`${signal} is fully visible above Driver controls at ${viewport.width}x${viewport.height}`);
-   assert(metrics.box.width>=118,`${signal} retains the approved Instrument Stack pictogram size`);
-   assert(Math.abs(metrics.box.width-metrics.box.height)<2,`${signal} pictogram keeps a square aspect ratio`);
+   assert(metrics.box.width>=108,`${signal} retains the approved revised-shell pictogram size`);
+   if(signal==="mechanical-incident")assert(metrics.box.width>metrics.box.height,`${signal} keeps its distinct horizontal flag proportion`);
+   else assert(Math.abs(metrics.box.width-metrics.box.height)<2,`${signal} pictogram keeps its intended square aspect ratio`);
    assert(metrics.background!=="nonergba(0, 0, 0, 0)"||metrics.border!=="rgba(0, 0, 0, 0)",`${signal} keeps a visible production treatment`);
   }
   await page.close();

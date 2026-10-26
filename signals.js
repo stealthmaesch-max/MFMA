@@ -5,11 +5,11 @@ export const signals = {
   "grip-deterioration":{className:"flag-grip",label:"GRIP DETERIORATION",instruction:"GRIP • GRIP • GRIP",flash:true,theme:"#d81f26"},
   "move-over":{className:"flag-move-over",label:"MOVE OVER",instruction:"ALLOW FASTER VEHICLE TO PASS",flash:true,theme:"#0756a5"},
   "safety-car":{className:"flag-safety-car",label:"SAFETY CAR",instruction:"FOLLOW SAFETY CAR • NO OVERTAKING",flash:true,theme:"#050505"},
-  red:{className:"flag-red",label:"STOP",instruction:"AWAIT RD INSTRUCTIONS",flash:true,theme:"#d40000"},
+  red:{className:"flag-red",label:"RED",instruction:"STOP VEHICLE • AWAIT MRA STEWARD",flash:true,theme:"#d40000"},
   "mechanical-incident":{className:"flag-mechanical-incident",label:"MECHANICAL INCIDENT",instruction:"VEHICLE DAMAGE • PROCEED TO SHOP NOW",flash:true,theme:"#b00000"},
   "infraction-warning":{className:"flag-infraction-warning",label:"INFRACTION WARNING",instruction:"WHITE + FOLDED YELLOW • CONTINUE WITH CAUTION",flash:false,theme:"#f4f4f4"},
-  "under-review":{className:"flag-white",label:"MRA STEWARD",instruction:"STEWARD INVESTIGATING INCIDENT",flash:false,theme:"#ffffff"},
-  disqualification:{className:"flag-white",label:"PENALTY ISSUED",instruction:"DISQUALIFICATION • RETURN TO STARTING ZONE",flash:false,theme:"#ffffff"},
+  "under-review":{className:"flag-white flag-under-review",label:"MRA STEWARD",instruction:"STEWARD INVESTIGATING INCIDENT",flash:true,theme:"#ffffff"},
+  disqualification:{className:"flag-white flag-disqualification",label:"PENALTY ISSUED",instruction:"DISQUALIFICATION • RETURN TO STARTING ZONE",flash:true,theme:"#ffffff"},
   checkered:{className:"flag-checkered",label:"CHECKERED",instruction:"SESSION COMPLETE",flash:true,theme:"#000000"}
   ,"return-to-start":{className:"movement-screen movement-return",label:"RETURN TO START",instruction:"EVERYONE RETURN TO THE STARTING ZONE",flash:true,theme:"#111820"}
   ,"proceed-to-start":{className:"movement-screen movement-proceed",label:"PROCEED TO LINE",instruction:"NEXT HIDING TEAM TO THE STARTING LINE",flash:false,theme:"#111820"}

@@ -74,12 +74,12 @@ test("Safety Car uses the original persistent high-contrast display with no over
 
 test("operational signals flash while Green and infractions remain steady",async()=>{
  const {signals}=await importModule("signals.js");
- for(const name of ["yellow","grip-deterioration","move-over","safety-car","red","mechanical-incident","checkered","return-to-start"])assert.equal(signals[name].flash,true,`${name} flashes`);
- for(const name of ["green","proceed-to-start","infraction-warning","under-review","disqualification"])assert.equal(signals[name].flash,false,`${name} remains steady`);
+ for(const name of ["yellow","grip-deterioration","move-over","safety-car","red","mechanical-incident","under-review","disqualification","checkered","return-to-start"])assert.equal(signals[name].flash,true,`${name} flashes`);
+ for(const name of ["green","proceed-to-start","infraction-warning"])assert.equal(signals[name].flash,false,`${name} remains steady`);
  const display=fs.readFileSync("display.js","utf8"),css=fs.readFileSync("styles.css","utf8");
  assert.match(display,/flag-safety-car flash/);
  assert.match(display,/flag-disqualified/);assert.match(display,/flag-under-review/);
- assert.match(css,/\.flash \.signal-label,[\s\S]*\.flash \.status-title/);
+ assert.match(css,/\.flash \.instrument-panel \.signal-label,\.flash \.instrument-panel \.signal-symbol/);
  assert.doesNotMatch(css,/\.flag-checkered \.signal-label[\s\S]*animation: none/);
 });
 
