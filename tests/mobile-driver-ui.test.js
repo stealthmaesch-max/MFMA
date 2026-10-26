@@ -76,6 +76,16 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
  });
 }
 
+test("Driver desktop keeps the approved Instrument Stack instead of the retired split layout",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:1440,height:900});
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ const metrics=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#driver-tools").classList.remove("hidden");const panel=document.querySelector(".instrument-panel").getBoundingClientRect(),title=document.querySelector("#label").getBoundingClientRect(),symbol=document.querySelector("#signal-symbol").getBoundingClientRect();return {panel:panel.toJSON(),title:title.toJSON(),symbol:symbol.toJSON(),gauges:document.querySelectorAll(".instrument-mini-gauge").length}});
+ assert(metrics.panel.width<=390,"desktop uses the same compact instrument cluster");
+ assert.equal(metrics.gauges,4,"approved four-gauge strip is present");
+ assert(Math.abs((metrics.title.left+metrics.title.width/2)-(metrics.symbol.left+metrics.symbol.width/2))<2,"signal title and symbol remain in one centered stack");
+ await browser.close();
+});
+
 test("expanded team controls stay contained on compact iPhone portrait",async()=>{
  const browser=await chromium.launch({headless:true});
  const page=await signedDriverPage(browser,{width:375,height:667});
@@ -331,7 +341,7 @@ test("every production signal graphic stays prominent and contained on short and
    },signal);
    assert.equal(metrics.pageWidth,viewport.width,`${signal} has no horizontal overflow at ${viewport.width}x${viewport.height}`);
    assert(metrics.box.left>=0&&metrics.box.right<=viewport.width&&metrics.box.top>=0&&metrics.box.bottom<metrics.toolsTop,`${signal} is fully visible above Driver controls at ${viewport.width}x${viewport.height}`);
-   assert(metrics.box.width>=Math.min(205,viewport.width*.54),`${signal} remains glanceable instead of shrinking into dead space`);
+   assert(metrics.box.width>=118,`${signal} retains the approved Instrument Stack pictogram size`);
    assert(Math.abs(metrics.box.width-metrics.box.height)<2,`${signal} pictogram keeps a square aspect ratio`);
    assert(metrics.background!=="nonergba(0, 0, 0, 0)"||metrics.border!=="rgba(0, 0, 0, 0)",`${signal} keeps a visible production treatment`);
   }
@@ -345,7 +355,7 @@ test("all Driver and team visual assets load and scale without distortion",async
  const sources=["assets/branding/mfma-logo.png","assets/branding/mra-logo.png","assets/branding/mfma-driver-portal-logo.png","assets/branding/monarch-mfma-team-logo-dignified.png","assets/branding/monarch-team-emblem.png","assets/branding/parakeet-mfma-team-logo-v2.png","assets/branding/parakeet-team-emblem-v2.png"];
  const results=await page.evaluate(async sources=>Promise.all(sources.map(src=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve({src,loaded:true,width:image.naturalWidth,height:image.naturalHeight});image.onerror=()=>resolve({src,loaded:false,width:0,height:0});image.src=src}))),sources);
  assert(results.every(result=>result.loaded&&result.width>0&&result.height>0),`every cached visual asset loads: ${JSON.stringify(results)}`);
- const rendered=await page.evaluate(()=>{const logo=document.querySelector("#display-brand-logo");return {fit:getComputedStyle(logo).objectFit,box:logo.getBoundingClientRect().toJSON(),natural:{width:logo.naturalWidth,height:logo.naturalHeight}}});
- assert(rendered.box.width>0&&rendered.box.right<=393,"MFMA display brand is visible and contained");assert(rendered.natural.width/rendered.natural.height>1,"wide brand asset retains its intended source proportion");
+ const rendered=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const brand=document.querySelector(".instrument-brand");return {box:brand.getBoundingClientRect().toJSON(),text:brand.textContent.trim()}});
+ assert(rendered.box.width>0&&rendered.box.right<=393,"approved MRA instrument brand is visible and contained");assert.equal(rendered.text,"MRA");
  await browser.close();
 });
