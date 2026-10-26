@@ -29,6 +29,15 @@ test("Race Control module starts and resolves the authentication status",async()
  await browser.close();
 });
 
+test("Driver Instrument Stack initializes without runtime render errors",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852}),errors=[];
+ page.on("pageerror",error=>errors.push(error.message));
+ await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+ await page.waitForTimeout(1200);
+ assert.deepEqual(errors,[]);
+ await browser.close();
+});
+
 test("contextual MRA controls and dual-role Driver drawer fit iPhone 15",async()=>{
  const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:393,height:852}});await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
  await page.evaluate(()=>{document.querySelector("#auth-panel").classList.add("hidden");document.querySelector("#secured-control").classList.remove("hidden");document.querySelector("#quick-flag-panel").classList.remove("hidden");document.body.classList.add("flag-controls-active");document.querySelector("#driver-manager-fields").classList.remove("hidden");document.querySelector("#driver-manager-save").classList.remove("hidden");document.querySelector("#manager-driver").innerHTML='<option>Stealth • MRA 16</option>';document.querySelector("#manager-passenger").innerHTML='<option>No registered passenger</option>';document.querySelector("#driver-manager-dialog").showModal()});
@@ -355,7 +364,7 @@ test("all Driver and team visual assets load and scale without distortion",async
  const sources=["assets/branding/mfma-logo.png","assets/branding/mra-logo.png","assets/branding/mfma-driver-portal-logo.png","assets/branding/monarch-mfma-team-logo-dignified.png","assets/branding/monarch-team-emblem.png","assets/branding/parakeet-mfma-team-logo-v2.png","assets/branding/parakeet-team-emblem-v2.png"];
  const results=await page.evaluate(async sources=>Promise.all(sources.map(src=>new Promise(resolve=>{const image=new Image();image.onload=()=>resolve({src,loaded:true,width:image.naturalWidth,height:image.naturalHeight});image.onerror=()=>resolve({src,loaded:false,width:0,height:0});image.src=src}))),sources);
  assert(results.every(result=>result.loaded&&result.width>0&&result.height>0),`every cached visual asset loads: ${JSON.stringify(results)}`);
- const rendered=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const brand=document.querySelector(".instrument-brand");return {box:brand.getBoundingClientRect().toJSON(),text:brand.textContent.trim()}});
- assert(rendered.box.width>0&&rendered.box.right<=393,"approved MRA instrument brand is visible and contained");assert.equal(rendered.text,"MRA");
+ const rendered=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const brand=document.querySelector(".instrument-brand");return {box:brand.getBoundingClientRect().toJSON(),text:brand.textContent.trim(),background:getComputedStyle(brand).backgroundImage}});
+ assert(rendered.box.width>0&&rendered.box.right<=393,"approved MRA instrument brand is visible and contained");assert.equal(rendered.text,"MRA");assert.match(rendered.background,/mra-logo\.png/,"instrument header renders the actual MRA branding asset instead of its draft mark");
  await browser.close();
 });

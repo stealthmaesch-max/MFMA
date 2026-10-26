@@ -1869,6 +1869,7 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
 .instrument-panel>*{grid-area:auto!important}
 .instrument-topbar{display:grid;grid-template-columns:1fr auto auto;align-items:center;gap:12px;padding:3px 8px;color:#9ba7ad}
 .instrument-brand{display:flex;align-items:center;gap:8px;color:#f4f7f8;font-size:22px;font-weight:500;letter-spacing:.04em}.instrument-brand-mark{display:inline-block;width:34px;height:15px;background:linear-gradient(165deg,transparent 0 22%,#ef3028 23% 43%,transparent 44% 52%,#f4f7f8 53% 72%,transparent 73%)}
+.instrument-brand{width:106px;height:36px;background:url("assets/branding/mra-logo.png") center/contain no-repeat;font-size:0}.instrument-brand>*{display:none!important}
 .instrument-panel .display-timer{order:initial!important;margin:0!important;color:#f4f7f8!important;font-size:24px!important;font-weight:500!important;font-variant-numeric:tabular-nums!important;line-height:1!important;letter-spacing:.04em!important;text-align:center!important}
 .instrument-system-icons{display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.08em}.instrument-sat-bars{display:flex;align-items:flex-end;gap:2px;height:16px}.instrument-sat-bars i{display:block;width:3px;background:#28d06f}.instrument-sat-bars i:nth-child(1){height:6px}.instrument-sat-bars i:nth-child(2){height:10px}.instrument-sat-bars i:nth-child(3){height:15px}
 .instrument-gauge-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;padding:8px 12px 9px;border-block:1px solid #283137;background:#090d0f}

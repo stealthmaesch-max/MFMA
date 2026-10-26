@@ -30,6 +30,7 @@ test("driver report submission waits for anonymous authentication",()=>{
 test("approved Instrument Stack rendering has no dependency on the removed legacy brand node",()=>{
  const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8");
  assert.doesNotMatch(display,/display-brand-logo/);
+ assert.match(display,/Number\.isFinite\(gpsFix\?\.accuracy\)\?Math\.round\(gpsFix\.accuracy\):null/);
  assert.match(html,/class="instrument-topbar"/);
  assert.match(html,/class="instrument-gauge-strip"/);
  assert.match(html,/class="instrument-signal-well"/);
