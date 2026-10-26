@@ -27,6 +27,14 @@ test("driver report submission waits for anonymous authentication",()=>{
  assert.doesNotMatch(display,/if\(!driverUser\).*Connecting securely/);
 });
 
+test("approved Instrument Stack rendering has no dependency on the removed legacy brand node",()=>{
+ const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8");
+ assert.doesNotMatch(display,/display-brand-logo/);
+ assert.match(html,/class="instrument-topbar"/);
+ assert.match(html,/class="instrument-gauge-strip"/);
+ assert.match(html,/class="instrument-signal-well"/);
+});
+
 test("hazards provide one-tap Safety Car and Red Flag requests",async()=>{
  const {cleanHazardReport}=await importModule("report-model.js");
  const neither=cleanHazardReport({id:"h1",vehicleId:"ranger",description:"Debris"},100);
