@@ -22,7 +22,8 @@ test("incident records support both public five-second outcomes",()=>{
  assert.match(control,/No Further Investigation/);
  assert.match(display,/INVESTIGATION PENDING POST-SESSION/);
  assert.match(display,/NO FURTHER INVESTIGATION/);
- assert.match(display,/setTimeout\(\(\)=>panel\.classList\.add\("hidden"\),remaining\)/);
+ assert.match(display,/noticeActive=notice&&Number\(notice\.expiresAt\|\|0\)>Date\.now\(\)/);
+ assert.match(display,/function renderStewardNotice\(\).*panel\.classList\.add\("hidden"\)/);
  assert.match(competition,/stewardNotices:event\.stewardNotices\|\|null/);
 });
 

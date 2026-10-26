@@ -111,9 +111,9 @@ test("MRA safety information is scoped to the currently active management signal
  assert.match(html,/id="safety-message-dialog"/);assert.match(html,/maxlength="100"/);assert.match(html,/data-safety-preset/);
  assert.match(control,/safetyManagementFlags=new Set\(\["yellow","grip-deterioration","move-over","red","mechanical-incident","safety-car","return-to-start","infraction-warning","under-review","disqualification"\]\)/);
  assert.match(control,/safetyMessage:clean\?\{text:clean,flag:state\.activeFlag,updatedAt:Date\.now\(\)\}:null/);
- assert.match(display,/state\.safetyMessage\?\.flag===state\.activeFlag/);
- assert.match(display,/panel\.classList\.toggle\("hidden",!message\)/);
- assert.match(display,/\$\("safety-message"\)\.textContent=message/);
+ assert.match(display,/state\?\.safetyMessage\?\.flag===state\.activeFlag/);
+ assert.match(display,/SAFETY INSTRUCTION · \$\{safety\.toUpperCase\(\)\}/);
+ assert.match(display,/function renderSafetyManagement\(\).*panel\.classList\.add\("hidden"\)/);
  assert.match(driverHtml,/id="safety-management"[\s\S]*mra-logo\.png[\s\S]*id="safety-message"/);
 });
 
@@ -123,6 +123,8 @@ test("Driver multifunction areas preserve the primary signal while presenting Gr
  assert.match(display,/GRIP DETERIORATION/);
  assert.match(display,/RAIN \/ WATER • REDUCE SPEED/);
  assert.match(display,/LOOSE DEBRIS • REDUCE SPEED/);
+ assert.match(display,/rawKey==="grip-deterioration"&&mode!=="test-mode"/);
+ assert.match(display,/noticeDetail=\[notice\?\.teamName,notice\?\.reason\]/);
  assert.match(html,/display-top[\s\S]*id="safety-management"[\s\S]*id="steward-notice"/);
 });
 
