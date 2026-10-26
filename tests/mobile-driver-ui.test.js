@@ -85,12 +85,12 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
  });
 }
 
-test("Driver desktop keeps the approved Instrument Stack instead of the retired split layout",async()=>{
+test("Driver desktop keeps the approved revised instrument instead of the retired split layout",async()=>{
  const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:1440,height:900});
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
- const metrics=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#driver-tools").classList.remove("hidden");const panel=document.querySelector(".instrument-panel").getBoundingClientRect(),title=document.querySelector("#label").getBoundingClientRect(),symbol=document.querySelector("#signal-symbol").getBoundingClientRect();return {panel:panel.toJSON(),title:title.toJSON(),symbol:symbol.toJSON(),gauges:document.querySelectorAll(".instrument-mini-gauge").length}});
- assert(metrics.panel.width<=390,"desktop uses the same compact instrument cluster");
- assert.equal(metrics.gauges,4,"approved four-gauge strip is present");
+ const metrics=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#driver-tools").classList.remove("hidden");const panel=document.querySelector(".instrument-panel").getBoundingClientRect(),title=document.querySelector("#label").getBoundingClientRect(),symbol=document.querySelector("#signal-symbol").getBoundingClientRect(),message=document.querySelector(".instrument-gauge-strip").getBoundingClientRect();return {panel:panel.toJSON(),title:title.toJSON(),symbol:symbol.toJSON(),message:message.toJSON()}});
+ assert(metrics.panel.width<=393,"desktop uses the same compact revised instrument");
+ assert(metrics.message.height>=56&&metrics.message.width<=metrics.panel.width,"revised status and Steward message slot is present");
  assert(Math.abs((metrics.title.left+metrics.title.width/2)-(metrics.symbol.left+metrics.symbol.width/2))<2,"signal title and symbol remain in one centered stack");
  await browser.close();
 });
