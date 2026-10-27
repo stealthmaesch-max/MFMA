@@ -11,6 +11,7 @@ export const signals = {
   "under-review":{className:"flag-white flag-under-review",label:"MRA STEWARD",instruction:"STEWARD INVESTIGATING INCIDENT",flash:true,theme:"#ffffff"},
   disqualification:{className:"flag-white flag-disqualification",label:"PENALTY ISSUED",instruction:"DISQUALIFICATION • RETURN TO STARTING ZONE",flash:true,theme:"#ffffff"},
   checkered:{className:"flag-checkered",label:"CHECKERED",instruction:"SESSION COMPLETE",flash:true,theme:"#000000"}
+  ,"qualifying-halfway":{className:"flag-qualifying flag-qualifying-halfway",label:"HALFWAY",instruction:"CROSSED GREEN + CHECKERED",flash:true,theme:"#16261a"}
   ,"return-to-start":{className:"movement-screen movement-return",label:"RETURN TO START",instruction:"EVERYONE RETURN TO THE STARTING ZONE",flash:true,theme:"#111820"}
   ,"proceed-to-start":{className:"movement-screen movement-proceed",label:"PROCEED TO LINE",instruction:"NEXT HIDING TEAM TO THE STARTING LINE",flash:false,theme:"#111820"}
 };

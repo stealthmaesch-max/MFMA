@@ -206,12 +206,9 @@ test("Driver Grip uses a preloaded and user-unlocked iOS media callout",async()=
  assert(fs.statSync("assets/audio/grip-callout.m4a").size>1000,"the bundled callout asset is present");sounds.stopSounds();
 });
 
-test("Sound Lab titles preview the actual production sounds",()=>{
- const html=fs.readFileSync("sound-test.html","utf8");
- for(const [sound,title] of [["green","Green"],["yellow","Yellow"],["grip","Grip Deterioration"],["safetyCar","Safety Car"],["moveOver","Move Over"],["red","Stop"],["mechanical","Mechanical Incident"],["checkered","Checkered"],["white","MRA Steward Investigation"],["penalty","Penalty Issued"]]){
-  assert.match(html,new RegExp(`data-preview-sound="${sound}"[^>]*><span>\\d+</span><strong>${title}</strong>`));
- }
- assert.doesNotMatch(html,/data-preview-sound="pro(?:Attention|Caution|SafetyCar|Critical|MoveOver|Green|Finish|Confirm)"/);
+test("Sound Lab exposes every production sound definition",()=>{
+ const html=fs.readFileSync("sound-test.html","utf8"),script=fs.readFileSync("sound-test.js","utf8");
+ assert.match(html,/id="sound-lab-grid"/);assert.match(script,/Object\.keys\(soundDefinitions\)/);assert.match(script,/soundLabels\[name\]/);assert.match(script,/data-preview-sound=/);
 });
 
 test("Stop and Mechanical Incident use the identical critical alarm",async()=>{

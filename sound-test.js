@@ -1,7 +1,8 @@
-import {enableSounds,getSoundStatus,onSoundStatus,playSound,replayLastSound,stopSounds} from "./sounds.js?v=94";
+import {enableSounds,getSoundStatus,onSoundStatus,playSound,replayLastSound,soundDefinitions,soundLabels,stopSounds} from "./sounds.js?v=95";
 
 const enableButton=document.getElementById("sound-lab-enable");
 const status=document.getElementById("sound-lab-status");
+document.getElementById("sound-lab-grid").innerHTML=Object.keys(soundDefinitions).map((name,index)=>`<button type="button" data-preview-sound="${name}"><span>${String(index+1).padStart(2,"0")}</span><strong>${soundLabels[name]||name.replace(/([A-Z])/g," $1")}</strong><small>${soundDefinitions[name].description||"Production sound"}</small></button>`).join("");
 const previewButtons=[...document.querySelectorAll("[data-preview-sound]")];
 
 function renderAudioState({state,message}){
