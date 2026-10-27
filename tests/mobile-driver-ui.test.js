@@ -341,14 +341,14 @@ test("flag-free movement orders and primary instructions fit iPhone portrait",as
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
  for(const configuration of [{className:"movement-screen movement-return flash",label:"RETURN TO START",instruction:"EVERYONE RETURN TO THE STARTING ZONE"},{className:"movement-screen movement-proceed",label:"PROCEED TO LINE",instruction:"NEXT HIDING TEAM TO THE STARTING LINE"}]){
   const metrics=await page.evaluate(configuration=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#display").className=`display ${configuration.className}`;document.querySelector("#movement-symbol").classList.remove("hidden");document.querySelector("#label").textContent=configuration.label;document.querySelector("#instruction").textContent=configuration.instruction;const symbol=document.querySelector("#movement-symbol").getBoundingClientRect(),instruction=document.querySelector("#instruction").getBoundingClientRect(),tools=document.querySelector("#driver-tools").getBoundingClientRect();return {width:document.documentElement.scrollWidth,symbol:{left:symbol.left,right:symbol.right},instruction:{left:instruction.left,right:instruction.right,height:instruction.height,bottom:instruction.bottom},toolsTop:tools.top,acknowledgement:document.querySelector("#instruction-ack")}},configuration);
-  assert.equal(metrics.width,393);assert.equal(metrics.acknowledgement,null);assert(metrics.symbol.left>=0&&metrics.symbol.right<=393,"movement symbol is contained");assert(metrics.instruction.left>=0&&metrics.instruction.right<=393&&metrics.instruction.height>0,"primary instruction remains visible");assert(metrics.instruction.bottom<metrics.toolsTop,"primary instruction stays above Driver tools");
+  assert.equal(metrics.width,393);assert(metrics.acknowledgement,"GPS-off acknowledgement fallback remains available in the document");assert(metrics.symbol.left>=0&&metrics.symbol.right<=393,"movement symbol is contained");assert(metrics.instruction.left>=0&&metrics.instruction.right<=393&&metrics.instruction.height>0,"primary instruction remains visible");assert(metrics.instruction.bottom<metrics.toolsTop,"primary instruction stays above Driver tools");
  }
  await browser.close();
 });
 
-test("MRA console omits acknowledgement status",async()=>{
+test("MRA console includes compact acknowledgement status",async()=>{
  const browser=await chromium.launch({headless:true}),page=await browser.newPage({viewport:{width:393,height:852}});await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
- assert.equal(await page.locator("#instruction-sync-panel").count(),0);await browser.close();
+ assert.equal(await page.locator("#instruction-sync-panel").count(),1);await browser.close();
 });
 
 test("five-second Steward notices stay glanceable without covering the live signal",async()=>{

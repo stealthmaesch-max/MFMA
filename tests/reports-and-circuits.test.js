@@ -58,13 +58,14 @@ test("hazard receipt calls immediate yellow but leaves requested final flag to R
  assert.match(control,/canApplyFlag=new Set\(\["standby","sprint-live","session-live"\]\)/);
 });
 
-test("Safety Car uses the original persistent high-contrast display with no overtaking",()=>{
+test("legacy Safety Car state stays neutralized and awaits MRA direction",()=>{
  const display=fs.readFileSync("display.js","utf8");
  const branch=display.match(/if\(mode==="safety-car-termination"\)\{([\s\S]*?)\n\}/)?.[1]||"";
  const html=fs.readFileSync("display.html","utf8"),css=fs.readFileSync("styles.css","utf8"),control=fs.readFileSync("control.js","utf8");
  assert.match(branch,/label\.textContent="SAFETY CAR"/);
  assert.match(branch,/NO OVERTAKING/);
- assert.match(branch,/timer\.textContent="ENDED"/);
+ assert.match(branch,/SESSION NEUTRALIZED/);assert.match(branch,/timer\.textContent="PAUSED"/);
+ assert.doesNotMatch(branch,/SESSION TERMINATED/);
  assert.match(css,/\.flag-safety-car[\s\S]*#050505[\s\S]*#ffe919/);
  assert.match(css,/\.flag-safety-car \.safety-car-emblem \{ display: none; \}/);
  assert.doesNotMatch(css,/safetyCarBorderPulse/);
@@ -96,12 +97,13 @@ test("Return and Proceed use neutral movement instructions instead of flag displ
  assert.match(control,/instructionPatch\("proceed-to-start"/);
 });
 
-test("critical instructions have no acknowledgement UI while legacy writes remain constrained",()=>{
+test("critical instructions allow manual acknowledgement only when GPS is off",()=>{
  const display=fs.readFileSync("display.html","utf8"),displayJs=fs.readFileSync("display.js","utf8"),control=fs.readFileSync("control.html","utf8"),controlJs=fs.readFileSync("control.js","utf8"),rules=fs.readFileSync("database.rules.json","utf8");
- assert.doesNotMatch(display,/id="instruction-ack"/);
- assert.doesNotMatch(displayJs,/instructionAcks|Acknowledge • GPS Off|Sending Acknowledgement/);
- assert.doesNotMatch(control,/id="instruction-sync-panel"/);
- assert.doesNotMatch(controlJs,/renderInstructionSync/);
+ assert.match(display,/id="instruction-ack"/);
+ assert.match(displayJs,/manualFallback=gpsWatchId===null/);assert.match(displayJs,/Acknowledge • GPS Off/);assert.match(displayJs,/gpsWatchId!==null/);
+ assert.match(displayJs,/instructionAcks/);assert.match(displayJs,/action\.type==="ack"/);
+ assert.match(control,/id="instruction-sync-panel"/);
+ assert.match(controlJs,/function renderInstructionSync/);
  assert.match(rules,/"instructionAcks"/);
  assert.match(rules,/newData\.child\('instructionId'\)\.val\(\) === root\.child\('mfma'\).*currentInstruction/);
 });

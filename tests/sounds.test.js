@@ -191,7 +191,8 @@ test("Driver reliability cues do not replace primary safety audio",()=>{
  const display=fs.readFileSync("display.js","utf8");
  assert.match(display,/playSupplementalSound\("gpsDegraded"\)/);
  assert.match(display,/playSupplementalSound\("connectionLost"\)/);
- assert.doesNotMatch(display,/instructionAck/);
+ assert.match(display,/playSupplementalSound\("instructionAck"\)/);
+ assert.doesNotMatch(display,/playSound\("instructionAck"\)/);
  assert.match(display,/playSupplementalSound\("stewardNotice"\)/);
  assert.doesNotMatch(display,/playSound\("stewardNotice"\)/);
 });

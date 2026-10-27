@@ -16,7 +16,8 @@ test("White opens a recorded investigation before any penalty decision",()=>{
 test("investigation decisions cover the Sporting Code penalty menu",()=>{
  const html=fs.readFileSync("control.html","utf8"),control=fs.readFileSync("control.js","utf8");
  for(const value of ["warning","time-remedy","restart","no-result","disqualification","event-disqualification","point-adjustment","participation-restriction","removal-event","removal-mfma"])assert.match(html,new RegExp(`value="${value}"`));
- assert.match(control,/function resolvePenaltyForm/);assert.match(control,/applyDisqualificationWin\(current,team,detail\)/);
+ assert.match(control,/function resolvePenaltyForm/);assert.match(control,/new Set\(\["disqualification","event-disqualification"\]\)/);assert.match(control,/if\(dqDecision&&state\.session\)await runTransaction\(stateRef,current=>applyDisqualificationWin\(current,team,detail\)\)/);
+ assert.match(control,/"sprint\/running":Boolean\(review\.wasRunning\)/);assert.match(control,/"sprint\/lastTickAt":review\.wasRunning\?Date\.now\(\):null/);
  assert.match(control,/closed-no-action/);assert.match(control,/event\/activePenalty/);
 });
 

@@ -87,7 +87,7 @@ function render(){
  if(mode==="awaiting-finding-start"){$("fan-session").textContent=`Session ${s.number}`;$("fan-roles").textContent="";return}
  if(mode==="next-session-staging"||mode==="next-session-countdown"){$("fan-phase").textContent=mode==="next-session-countdown"?"START COUNTDOWN":"PROCEED TO STARTING LINE";$("fan-flag").textContent="FOLDED GREEN";return}
  if(mode==="violation-review"){$("fan-phase").textContent="MRA STEWARD — INCIDENT UNDER INVESTIGATION";$("fan-flag").textContent="RETURN TO STARTING ZONE";return}
- if(mode==="safety-car-termination"||mode==="white-termination"){$("fan-phase").textContent=mode==="white-termination"?"DISQUALIFICATION":"SAFETY CAR TERMINATION";$("fan-flag").textContent=mode==="white-termination"?"DISQUALIFIED":"SAFETY CAR";return}
+ if(mode==="safety-car-termination"||mode==="white-termination"){$("fan-phase").textContent=mode==="white-termination"?"DISQUALIFICATION":"SESSION NEUTRALIZED";$("fan-flag").textContent=mode==="white-termination"?"DISQUALIFIED":"SAFETY CAR • AWAIT MRA STEWARD";return}
 
  const scores=event.scores||{};
  const sorted=Object.keys(scores).map(key=>({key,name:names[key]||key.toUpperCase(),score:Number(scores[key]||0)})).sort((a,b)=>b.score-a.score);
