@@ -155,7 +155,7 @@ test("Driver Portal keeps an approved team device and switches registered driver
 test("a stopped session can return to the line and restart through the full light sequence",()=>{
  const html=fs.readFileSync("control.html","utf8"),control=fs.readFileSync("control.js","utf8"),display=fs.readFileSync("display.js","utf8");
  assert.match(html,/id="restart-at-line"[\s\S]*Return to Starting Line/);
- assert.match(control,/state\.activeFlag!=="red"/);
+ assert.match(control,/new Set\(\["red","safety-car","mechanical-incident"\]\)\.has\(state\.activeFlag\)/);
  assert.match(control,/systemState:"next-session-staging"[\s\S]*"session\/restart":true[\s\S]*"session\/countdownEndsAt":null/);
  assert.match(control,/state\?\.systemState!=="next-session-staging"[\s\S]*systemState:"next-session-countdown"/);
  assert.match(display,/restart\?"RESTART":"NEXT HIDING TEAM"/);

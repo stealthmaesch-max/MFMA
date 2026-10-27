@@ -5,12 +5,12 @@ import {evaluateSpeedCompliance} from "../speed-compliance.js";
 
 const fix=(mph,accuracy=6,timestamp=1000)=>({speed:mph/2.236936,accuracy,timestamp});
 
-test("Yellow requires eight mph or less after five seconds and three reliable fixes",()=>{
+test("Yellow requires seven mph or less after five seconds and three reliable fixes",()=>{
  let state=evaluateSpeedCompliance({},"yellow",fix(12,6,1000),1000);
  state=evaluateSpeedCompliance(state,"yellow",fix(11,6,3000),3000);
  state=evaluateSpeedCompliance(state,"yellow",fix(10,6,6100),6100);
- assert.equal(state.status,"candidate");assert.equal(state.candidate.limitMph,8);assert.equal(state.candidate.signal,"yellow");
- assert.equal(evaluateSpeedCompliance(state,"yellow",fix(8,6,6200),6200).status,"compliant");
+ assert.equal(state.status,"candidate");assert.equal(state.candidate.limitMph,7);assert.equal(state.candidate.signal,"yellow");
+ assert.equal(evaluateSpeedCompliance(state,"yellow",fix(7,6,6200),6200).status,"compliant");
 });
 
 test("Red requires a full stop threshold of one mph",()=>{

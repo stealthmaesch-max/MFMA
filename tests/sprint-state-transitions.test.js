@@ -62,7 +62,9 @@ for(const controlId of ["sprint-timer-mode","sprint-start-timer","sprint-pause-t
 
 assert(control.includes('if(flag==="yellow"&&state.systemState==="session-live")'),"normal Yellow behavior remains");
 assert(control.includes('state.session.phase!=="awaiting-finding-start"'),"awaiting-finding-start Green guard remains");
-assert(control.includes('if(flag==="safety-car"&&state.systemState==="session-live")'),"normal Safety Car termination remains");
+assert(control.includes('if(flag==="safety-car"&&state.systemState==="session-live")'),"normal Safety Car behavior remains");
+assert.match(issue,/flag==="safety-car"[\s\S]*"session\/running":false[\s\S]*NO OVERTAKING/,"Safety Car neutralizes the session without declaring termination");
+assert.doesNotMatch(issue,/flag==="safety-car"[\s\S]{0,300}systemState:"safety-car-termination"/);
 assert(control.includes('if(flag==="checkered"&&state.systemState==="session-live")automaticCheckered'),"normal Checkered workflow remains");
 
 console.log("Sprint state-transition assertions passed.");
