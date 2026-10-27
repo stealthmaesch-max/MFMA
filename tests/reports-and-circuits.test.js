@@ -96,14 +96,12 @@ test("Return and Proceed use neutral movement instructions instead of flag displ
  assert.match(control,/instructionPatch\("proceed-to-start"/);
 });
 
-test("critical instructions expose secure Driver acknowledgement and MRA status",()=>{
+test("critical instructions have no acknowledgement UI while legacy writes remain constrained",()=>{
  const display=fs.readFileSync("display.html","utf8"),displayJs=fs.readFileSync("display.js","utf8"),control=fs.readFileSync("control.html","utf8"),controlJs=fs.readFileSync("control.js","utf8"),rules=fs.readFileSync("database.rules.json","utf8");
- assert.match(display,/id="instruction-ack"/);
- assert.match(displayJs,/instructionAcks\/\$\{user\.uid\}/);
- assert.match(displayJs,/manualFallback=gpsWatchId===null/);
- assert.match(displayJs,/!active\|\|!driverProfile\|\|!manualFallback/);
- assert.match(control,/id="instruction-sync-panel"/);
- assert.match(controlJs,/renderInstructionSync/);
+ assert.doesNotMatch(display,/id="instruction-ack"/);
+ assert.doesNotMatch(displayJs,/instructionAcks|Acknowledge • GPS Off|Sending Acknowledgement/);
+ assert.doesNotMatch(control,/id="instruction-sync-panel"/);
+ assert.doesNotMatch(controlJs,/renderInstructionSync/);
  assert.match(rules,/"instructionAcks"/);
  assert.match(rules,/newData\.child\('instructionId'\)\.val\(\) === root\.child\('mfma'\).*currentInstruction/);
 });

@@ -101,7 +101,6 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.equal(sounds.soundDefinitions.connectionLost.description,"urgent lost-link double alarm");
  assert.equal(sounds.soundDefinitions.returnToStart.reminderMs,6500);
  assert.equal(sounds.soundDefinitions.proceedToLine.description,"rising proceed command");
- assert.equal(sounds.soundDefinitions.instructionAck.description,"short instruction confirmation");
  await sounds.enableSounds();
  sounds.playSound("startLights");
  assert.equal(sounds.getActiveSoundState().oscillators,5,"the five red-light pairs each receive one synchronized tone");
@@ -188,11 +187,11 @@ test("Grip speech is retained, resumed, and retried for iOS reliability",()=>{
  assert.match(display,/addEventListener\("pageshow",\(\)=>\{awake\(\);replayPersistentDriverAudio\(\)\}\)/);
 });
 
-test("Driver reliability and acknowledgement cues do not replace primary safety audio",()=>{
+test("Driver reliability cues do not replace primary safety audio",()=>{
  const display=fs.readFileSync("display.js","utf8");
  assert.match(display,/playSupplementalSound\("gpsDegraded"\)/);
  assert.match(display,/playSupplementalSound\("connectionLost"\)/);
- assert.match(display,/playSupplementalSound\("instructionAck"\)/);
+ assert.doesNotMatch(display,/instructionAck/);
  assert.match(display,/playSupplementalSound\("stewardNotice"\)/);
  assert.doesNotMatch(display,/playSound\("stewardNotice"\)/);
 });
