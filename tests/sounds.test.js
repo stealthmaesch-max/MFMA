@@ -49,7 +49,7 @@ test("preview repetitions replace prior playback and clean up completely",async(
  assert.deepEqual(sounds.getActiveSoundState(),{oscillators:6,gains:6,timeouts:0,intervals:1},"Yellow schedules a clean sequence and persistent reminder");
 
  sounds.playSound("red");
- assert.deepEqual(sounds.getActiveSoundState(),{oscillators:10,gains:10,timeouts:0,intervals:1},"Red replaces Yellow with a firm persistent alarm");
+ assert.deepEqual(sounds.getActiveSoundState(),{oscillators:20,gains:20,timeouts:0,intervals:1},"Red replaces Yellow with a firm persistent alarm");
 
  sounds.playSound("safetyCar");
  assert.deepEqual(sounds.getActiveSoundState(),{oscillators:8,gains:8,timeouts:0,intervals:1},"Safety Car replaces Red with a clean persistent command");
@@ -78,22 +78,22 @@ test("urgent definitions expose the required repeat counts",async()=>{
  assert.match(source,/male=.*evan.*daniel.*aaron.*alex.*tom.*guy.*reed.*male/i);
  assert.match(source,/message\.rate=1\.02;message\.pitch=\.93/);
  assert.equal(sounds.soundDefinitions.moveOver.repetitions,3);
- assert.equal(sounds.soundDefinitions.red.repetitions,4);
- assert.equal(sounds.soundDefinitions.mechanical.repetitions,4);
- assert.equal(sounds.soundDefinitions.mechanical.reminderMs,4000);
- assert.equal(sounds.soundDefinitions.safetyCar.repetitions,5);
+ assert.equal(sounds.soundDefinitions.red.repetitions,5);
+ assert.equal(sounds.soundDefinitions.mechanical.repetitions,3);
+ assert.equal(sounds.soundDefinitions.mechanical.reminderMs,4500);
+ assert.equal(sounds.soundDefinitions.safetyCar.repetitions,4);
  assert.equal(sounds.soundDefinitions.yellow.reminderMs,6500);
  assert.equal(sounds.soundDefinitions.moveOver.reminderMs,4500);
  assert.equal(sounds.soundDefinitions.red.reminderMs,4000);
  assert.equal(sounds.soundDefinitions.safetyCar.reminderMs,5000);
  assert.equal(sounds.soundDefinitions.white.reminderMs,7000);
  assert.equal(sounds.soundDefinitions.proAttention.description,"clean electric double-beep");
- assert.equal(sounds.soundDefinitions.proCaution.description,"alternating electric caution alarm");
- assert.equal(sounds.soundDefinitions.proSafetyCar.description,"four-beat electric Safety Car alarm");
- assert.equal(sounds.soundDefinitions.proCritical.description,"rapid electric critical alarm");
- assert.equal(sounds.soundDefinitions.proMoveOver.description,"descending electric passing command");
- assert.equal(sounds.soundDefinitions.proGreen.description,"bright electric release sequence");
- assert.equal(sounds.soundDefinitions.proFinish.description,"decisive electric finish sequence");
+ assert.match(sounds.soundDefinitions.proCaution.description,/classic MFMA caution contour/);
+ assert.match(sounds.soundDefinitions.proSafetyCar.description,/classic high-low Safety Car/);
+ assert.match(sounds.soundDefinitions.proCritical.description,/original low red tones/);
+ assert.match(sounds.soundDefinitions.proMoveOver.description,/classic descending passing command/);
+ assert.match(sounds.soundDefinitions.proGreen.description,/original MFMA rising release contour/);
+ assert.match(sounds.soundDefinitions.proFinish.description,/original four-note finish rise/);
  assert.equal(sounds.soundDefinitions.proConfirm.description,"short electric confirmation");
  assert.equal(sounds.soundDefinitions.returnCourse.description,"three-hit high-pitch boundary alarm");
  assert.equal(sounds.soundDefinitions.penalty.description,"persistent penalty-imposed alarm");
@@ -114,7 +114,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",10],["mechanical-incident",10,"mechanical"],["safety-car",8],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",3]];
+ const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",20],["mechanical-incident",12,"mechanical"],["safety-car",8],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",4]];
  for(const [flag,oscillators,expectedSound] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";
@@ -160,6 +160,7 @@ test("Firebase state transitions resolve to authoritative signals",async()=>{
  assert.equal(transition(null,{systemState:"standby",activeFlag:"clear"}),null,"initial snapshot stays silent");
  assert.equal(transition({systemState:"standby",activeFlag:"clear"},{systemState:"session-live",activeFlag:"green"}),"green");
  assert.equal(transition({systemState:"session-live",activeFlag:"green"},{systemState:"session-live",activeFlag:"yellow"}),"yellow");
+ assert.equal(transition({systemState:"session-live",activeFlag:"yellow"},{systemState:"standby",activeFlag:"clear"}),null,"Clear and Standby do not add an unnecessary sound");
  assert.equal(transition({systemState:"standby"},{systemState:"course-lap",activeFlag:"safety-car"}),"courseLapStart");
  assert.equal(transition({systemState:"next-session-staging",activeFlag:"proceed-to-start"},{systemState:"next-session-countdown",activeFlag:"proceed-to-start"}),"startLights");
  assert.equal(transition({systemState:"standby",activeFlag:"clear"},{systemState:"next-session-countdown",activeFlag:"proceed-to-start"}),"startLights","Session 1 uses the same start-light sound");
@@ -222,10 +223,10 @@ test("Sound Designer saves reusable candidates and portable backups",()=>{
  assert.match(sounds,/export function normalizeDesignedSound/);assert.match(sounds,/export function playDesignedSound/);assert.match(sounds,/export function getProductionSoundCandidate/);
 });
 
-test("Stop and Mechanical Incident use the identical critical alarm",async()=>{
+test("Stop and Mechanical Incident remain persistent but deliberately distinct",async()=>{
  global.localStorage={getItem:()=>null,setItem:()=>{}};global.window={AudioContext:FakeAudioContext};
- const source=fs.readFileSync("sounds.js","utf8"),sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// matching critical signals").toString("base64")}`);
+ const source=fs.readFileSync("sounds.js","utf8"),sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// distinct critical signals").toString("base64")}`);
  await sounds.enableSounds();
  sounds.playSound("red");const red=sounds.getActiveSoundState();sounds.playSound("mechanical");const mechanical=sounds.getActiveSoundState();
- assert.deepEqual(mechanical,red);assert.equal(sounds.soundDefinitions.mechanical.reminderMs,sounds.soundDefinitions.red.reminderMs);sounds.stopSounds();
+ assert.notDeepEqual(mechanical,red);assert.notEqual(sounds.soundDefinitions.mechanical.reminderMs,sounds.soundDefinitions.red.reminderMs);assert.match(sounds.soundDefinitions.mechanical.description,/proceed-to-shop/);sounds.stopSounds();
 });
