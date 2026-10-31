@@ -114,7 +114,7 @@ test("production flag transitions play once and resume an enabled context",async
  const sounds=await import(`data:text/javascript;base64,${Buffer.from(source+"\n// production playback").toString("base64")}`);
  await sounds.enableSounds();
  const base={systemState:"standby",activeFlag:"clear"};
- const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",20],["mechanical-incident",12,"mechanical"],["safety-car",8],["infraction-warning",3,"white"],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",4]];
+ const cases=[["green",3],["yellow",6],["grip-deterioration",3,"grip"],["return-to-start",6,"returnToStart"],["proceed-to-start",3,"proceedToLine"],["move-over",6],["red",20],["mechanical-incident",12,"mechanical"],["safety-car",8],["under-review",3,"white"],["disqualification",6,"penalty"],["checkered",4]];
  for(const [flag,oscillators,expectedSound] of cases){
   const current={systemState:"standby",activeFlag:flag};
   FakeAudioContext.latest.state="suspended";

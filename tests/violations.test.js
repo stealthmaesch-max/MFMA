@@ -28,13 +28,11 @@ test("investigation is available in sessions Sprint and post-session but locks a
  assert.match(html,/data-white-open/);assert.match(html,/id="post-white"[^>]*>Open Investigation/);
 });
 
-test("Infraction Warning is a separate recorded ten-second supplemental signal",()=>{
- const control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8"),display=fs.readFileSync("display.js","utf8");
- assert.match(html,/data-infraction-warning-open/);assert.match(html,/id="infraction-warning-dialog"/);assert.match(html,/Displays White crossed with folded Yellow for ten seconds/);
- assert.match(control,/function issueInfractionWarning/);assert.match(control,/expiresAt:issuedAt\+10000/);assert.match(control,/event\/infractionWarnings/);assert.match(control,/event\/activeWarning/);
- const issue=control.slice(control.indexOf("async function issueInfractionWarning"),control.indexOf("function scheduleInfractionWarningExpiry"));
- assert.doesNotMatch(issue,/activeFlag|session\/running|sprint\/running/,"the warning must not replace or pause the Primary Safety State");
- assert.match(display,/function activeInfractionWarning/);assert.match(display,/INFRACTION WARNING/);assert.match(display,/warning\.teamName/);assert.match(display,/warning\.reason/);
+test("Incident Noted replaces the retired Infraction Warning while White remains investigation-only",()=>{
+ const control=fs.readFileSync("control.js","utf8"),html=fs.readFileSync("control.html","utf8"),display=fs.readFileSync("display.js","utf8"),signals=fs.readFileSync("signals.js","utf8");
+ assert.match(html,/data-steward-notice-open/);assert.match(html,/id="steward-notice-dialog"/);assert.match(control,/function issueStewardNotice/);
+ assert.doesNotMatch(`${html}\n${control}\n${display}\n${signals}`,/Infraction Warning|infraction-warning|activeInfractionWarning|issueInfractionWarning/);
+ assert.match(html,/data-white-open/);assert.match(html,/Display White — Open Investigation/);assert.match(signals,/"under-review":\{className:"flag-white flag-under-review"/);
 });
 
 test("Driver enforcement display distinguishes investigation from a decided disqualification",()=>{
