@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#090b0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>MFMA Sound Lab</title>
-<link rel="stylesheet" href="styles.css?v=146">
+<link rel="stylesheet" href="styles.css?v=147">
 </head>
 <body class="sound-lab-page">
 <main class="sound-lab-shell">
@@ -18,6 +18,11 @@
     <p>Preview every live sound, then build and save new candidates directly on this device. Experiments never replace active competition sounds.</p>
     <button id="sound-lab-enable" class="sound-lab-enable" type="button">Enable Audio</button>
     <p id="sound-lab-status" class="sound-lab-status" role="status">Tap once to unlock sound on this device.</p>
+  </section>
+  <section class="sound-presets" aria-labelledby="sound-presets-title">
+    <div class="saved-sounds-head"><div><p class="eyebrow">Starting Palette</p><h2 id="sound-presets-title">Candidate Presets</h2></div><strong>12</strong></div>
+    <p class="sound-preset-note">Preview a new alarm family, then load it into the controls and reshape it.</p>
+    <div id="sound-preset-list" class="sound-preset-list"></div>
   </section>
   <section class="sound-designer" aria-labelledby="sound-designer-title">
     <div class="sound-designer-head">
@@ -67,6 +72,6 @@
   </details>
   <p class="sound-lab-note">Test at normal device volume first, then over representative engine noise. Operational sounds are connected to their live Driver and MRA states.</p>
 </main>
-<script type="module" src="sound-test.js?v=16"></script>
+<script type="module" src="sound-test.js?v=17"></script>
 </body>
 </html>
