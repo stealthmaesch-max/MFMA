@@ -142,13 +142,7 @@ export function playDesignedSound(input={}){
 
 export function getProductionSoundCandidate(name){
  const definition=soundDefinitions[name];if(!definition)throw new Error("Production sound was not found.");
- capturedDesignerSequence=[];let tones=[];
- try{definition.play();tones=[...capturedDesignerSequence].sort((left,right)=>left.start-right.start)}finally{capturedDesignerSequence=null}
- if(!tones.length)throw new Error("This sound cannot be converted into editable controls.");
- const gaps=tones.slice(1).map((tone,index)=>Math.max(0,tone.start-(tones[index].start+tones[index].duration))),frequencies=tones.map(tone=>tone.frequency),ramps=tones.filter(tone=>tone.endFrequency);
- const average=values=>values.length?values.reduce((total,value)=>total+value,0)/values.length:0;
- let direction="alternate";if(ramps.length===tones.length)direction=ramps.every(tone=>tone.endFrequency>=tone.frequency)?"rise":ramps.every(tone=>tone.endFrequency<=tone.frequency)?"fall":"alternate";else if(new Set(frequencies.map(Math.round)).size===1)direction="steady";
- return {...normalizeDesignedSound({frequency:frequencies[0],endFrequency:ramps[0]?.endFrequency??frequencies[1]??frequencies[0],durationMs:average(tones.map(tone=>tone.duration))*1000,gapMs:average(gaps)*1000,pulses:tones.length,repetitions:1,direction,waveform:tones[0].type,gainPercent:average(tones.map(tone=>tone.gain))/.56*100,cycleGapMs:0,reminderMs:definition.reminderMs||0}),name:`${soundLabels[name]||name} Candidate`,sourceSound:name};
+ return {...captureSoundCandidate(definition,`${soundLabels[name]||name} Candidate`),sourceSound:name};
 }
 
 function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),natural=/\b(enhanced|premium|natural)\b/i,male=/\b(evan|daniel|aaron|alex|tom|guy|reed|male)\b/i;return english.find(voice=>natural.test(voice.name)&&male.test(voice.name))||english.find(voice=>male.test(voice.name))||english.find(voice=>natural.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
@@ -205,6 +199,29 @@ export const soundDefinitions={
  sprintTimerZero:{description:"alternating sprint buzzer",play:()=>repeatPattern([{frequency:330,start:0,duration:.09,type:"square",gain:.15},{frequency:440,start:.12,duration:.09,type:"square",gain:.14}],3,.34)},
  sprintTerminated:{description:"descending end cue",play:()=>schedulePattern([659,440,262].map((frequency,index)=>({frequency,start:index*.15,duration:.23,type:"triangle",gain:.13})))},
 };
+
+export const classicSoundDefinitions={
+ classicGreen:{label:"Classic Green",description:"Original clean rising start cue",play:()=>schedulePattern([{frequency:523,start:0,duration:.16,type:"sine",gain:.14},{frequency:659,start:.13,duration:.18,type:"sine",gain:.15},{frequency:784,start:.27,duration:.24,type:"sine",gain:.16}])},
+ classicYellow:{label:"Classic Yellow",description:"Original clear persistent caution",reminderMs:8000,play:()=>repeatPattern([{frequency:659,start:0,duration:.18,type:"sine",gain:.15,attack:.015,release:.06},{frequency:880,start:.24,duration:.2,type:"sine",gain:.16,attack:.015,release:.07}],3,.82)},
+ classicRed:{label:"Classic Red",description:"Original firm stop command",reminderMs:4000,play:()=>repeatPattern([{frequency:440,start:0,duration:.25,type:"triangle",gain:.18,attack:.01,release:.07},{frequency:330,start:.3,duration:.28,type:"triangle",gain:.18,attack:.01,release:.08}],4,.72)},
+ classicSafetyCar:{label:"Classic Safety Car",description:"Original measured Safety Car command",reminderMs:6000,play:()=>repeatPattern([{frequency:784,start:0,duration:.24,type:"sine",gain:.16,attack:.015,release:.08},{frequency:523,start:.31,duration:.3,type:"sine",gain:.17,attack:.015,release:.09}],5,.82)},
+ classicMoveOver:{label:"Classic Move Over",description:"Original descending passing command",reminderMs:5000,play:()=>repeatPattern([{frequency:988,start:0,duration:.18,type:"sine",gain:.17,endFrequency:880,attack:.012,release:.06},{frequency:659,start:.23,duration:.24,type:"sine",gain:.17,endFrequency:587,attack:.012,release:.08}],3,.62)},
+ classicWhite:{label:"Classic White",description:"Original two-note White command",reminderMs:8000,play:()=>schedulePattern([{frequency:880,start:0,duration:.18,type:"sine",gain:.16},{frequency:659,start:.23,duration:.26,type:"sine",gain:.17}])},
+ classicCheckered:{label:"Classic Checkered",description:"Original four-note finish flourish",play:()=>schedulePattern([523,659,784,1047].map((frequency,index)=>({frequency,start:index*.09,duration:.2,type:"triangle",gain:.13})))},
+ classicClear:{label:"Classic Clear",description:"Original soft reset",play:()=>schedulePattern([{frequency:392,start:0,duration:.12,type:"sine",gain:.09},{frequency:294,start:.11,duration:.23,type:"sine",gain:.08}])}
+};
+
+function captureSoundCandidate(definition,name){
+ capturedDesignerSequence=[];let tones=[];
+ try{definition.play();tones=[...capturedDesignerSequence].sort((left,right)=>left.start-right.start)}finally{capturedDesignerSequence=null}
+ if(!tones.length)throw new Error("This sound cannot be converted into editable controls.");
+ const gaps=tones.slice(1).map((tone,index)=>Math.max(0,tone.start-(tones[index].start+tones[index].duration))),frequencies=tones.map(tone=>tone.frequency),ramps=tones.filter(tone=>tone.endFrequency),average=values=>values.length?values.reduce((total,value)=>total+value,0)/values.length:0;
+ let direction="alternate";if(ramps.length===tones.length)direction=ramps.every(tone=>tone.endFrequency>=tone.frequency)?"rise":ramps.every(tone=>tone.endFrequency<=tone.frequency)?"fall":"alternate";else if(new Set(frequencies.map(Math.round)).size===1)direction="steady";
+ return {...normalizeDesignedSound({frequency:frequencies[0],endFrequency:ramps[0]?.endFrequency??frequencies[1]??frequencies[0],durationMs:average(tones.map(tone=>tone.duration))*1000,gapMs:average(gaps)*1000,pulses:tones.length,repetitions:1,direction,waveform:tones[0].type,gainPercent:average(tones.map(tone=>tone.gain))/.56*100,cycleGapMs:0,reminderMs:definition.reminderMs||0}),name};
+}
+
+export function playClassicSound(name){const definition=classicSoundDefinitions[name];if(!definition)throw new Error("Classic sound was not found.");if(!context||context.state!=="running")throw new Error("Tap Enable Audio first.");stopSounds();definition.play();return name}
+export function getClassicSoundCandidate(name){const definition=classicSoundDefinitions[name];if(!definition)throw new Error("Classic sound was not found.");return captureSoundCandidate(definition,`${definition.label} Candidate`)}
 
 function playTestTone(){stopSounds();schedulePattern([{frequency:660,start:0,duration:.08,gain:.1},{frequency:880,start:.09,duration:.12,gain:.1}])}
 

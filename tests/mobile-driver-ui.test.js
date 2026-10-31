@@ -405,6 +405,7 @@ test("Sound Designer saves candidates locally and stays contained on iPhone and 
  for(const viewport of [{width:393,height:852},{width:1024,height:1366}]){
   const page=await browser.newPage({viewport});await page.goto(`${baseUrl}/sound-test.html`,{waitUntil:"domcontentloaded"});
   assert.equal(await page.locator("#sound-preset-list article").count(),12,"the expanded candidate palette is available");await page.locator('[data-preset-index="5"] [data-preset-action="load"]').click();assert.equal(await page.locator("#designer-name").inputValue(),"Boundary Return","a new preset loads into the editable controls");
+  assert.equal(await page.locator("#classic-sound-list article").count(),8,"the recovered classic MFMA palette is available");await page.locator('[data-classic-sound="classicYellow"] [data-classic-action="load"]').click();assert.match(await page.locator("#designer-name").inputValue(),/Classic Yellow Candidate/,"a classic sound loads as an editable copy");
   await page.locator('[data-edit-sound="yellow"]').click();assert.match(await page.locator("#designer-name").inputValue(),/Yellow Candidate/,"a live sound loads into the candidate controls");
   await page.locator("#designer-name").fill("Yellow iPad Candidate");await page.locator("#designer-save").click();
   assert.equal(await page.locator(".saved-sound").count(),1,"candidate is visible after saving");

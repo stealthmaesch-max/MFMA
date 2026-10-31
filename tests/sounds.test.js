@@ -218,6 +218,7 @@ test("Sound Designer saves reusable candidates and portable backups",()=>{
  assert.match(script,/mfma-sound-designer-v1/);assert.match(script,/localStorage\.setItem\(storageKey/);assert.match(script,/MFMA Sound Lab/);assert.match(script,/audio\/wav/);assert.match(script,/navigator\.share/);
  assert.match(script,/data-edit-sound/);assert.match(script,/getProductionSoundCandidate/);
  assert.match(html,/id="sound-preset-list"/);assert.match(script,/const candidatePresets=\[/);assert.match(script,/Attention Double/);assert.match(script,/Critical Stop/);assert.match(script,/Aviation Chime/);assert.match(script,/data-preset-action/);
+ assert.match(html,/id="classic-sound-list"/);assert.match(sounds,/export const classicSoundDefinitions/);assert.match(sounds,/classicYellow/);assert.match(sounds,/classicSafetyCar/);assert.match(script,/playClassicSound/);assert.match(script,/getClassicSoundCandidate/);
  assert.match(sounds,/export function normalizeDesignedSound/);assert.match(sounds,/export function playDesignedSound/);assert.match(sounds,/export function getProductionSoundCandidate/);
 });
 
