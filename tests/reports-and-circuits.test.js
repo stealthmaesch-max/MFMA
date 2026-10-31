@@ -73,6 +73,20 @@ test("legacy Safety Car state stays neutralized and awaits MRA direction",()=>{
  assert.doesNotMatch(`${html}\n${control}\n${display}`,/authorize-overtake|cancel-overtake|safetyCarOvertake|OVERTAKE SAFETY CAR/i);
 });
 
+test("live Safety Car and stopped signals visibly pause the Driver clock",()=>{
+ const display=fs.readFileSync("display.js","utf8");
+ const live=display.slice(display.indexOf("function showLive"),display.indexOf("function showStandbyFlag"));
+ assert.match(live,/visualFlag==="safety-car"/);assert.match(live,/NEUTRALIZED • AWAIT MRA STEWARD/);assert.match(live,/timer\.textContent=neutralized\|\|paused\?"PAUSED"/);
+});
+
+test("Driver instrument communicates Code speed and post-session movement requirements",()=>{
+ const display=fs.readFileSync("display.js","utf8");
+ assert.match(display,/green:\["↑","RACING ACTIVE","15 MPH MAX • FOLLOW SESSION DIRECTION"\]/);
+ assert.match(display,/yellow:\["!","7 MPH MAX","SLOW UNTIL COMPLIANT"\]/);
+ assert.match(display,/checkered:\["✓","SESSION COMPLETE","AWAIT MOVEMENT ORDER"\]/);
+ assert.match(display,/LOCAL CAUTION/);assert.match(display,/zone\.dataset\.contextDetail=action\[2\]/);assert.match(display,/context\|\|`\$\{audio\} • \$\{gps\}`/);
+});
+
 test("operational signals flash while Green and infractions remain steady",async()=>{
  const {signals}=await importModule("signals.js");
  for(const name of ["yellow","grip-deterioration","move-over","safety-car","red","mechanical-incident","under-review","disqualification","checkered","return-to-start"])assert.equal(signals[name].flash,true,`${name} flashes`);
@@ -121,7 +135,8 @@ test("MRA safety information is scoped to the currently active management signal
 
 test("Driver multifunction areas preserve the primary signal while presenting Grip and Steward information",()=>{
  const display=fs.readFileSync("display.js","utf8"),html=fs.readFileSync("display.html","utf8");
- assert.match(display,/gripAllowed=grip&&!new Set/);
+ assert.match(display,/gripAllowed=grip&&supplementAllowed/);
+ assert.match(display,/localCaution=track\.some\(signal=>signal\.type==="yellow"\)/);
  assert.match(display,/GRIP DETERIORATION/);
  assert.match(display,/RAIN \/ WATER • REDUCE SPEED/);
  assert.match(display,/LOOSE DEBRIS • REDUCE SPEED/);
