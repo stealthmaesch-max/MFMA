@@ -38,6 +38,16 @@ test("Driver Instrument Stack initializes without runtime render errors",async()
  await browser.close();
 });
 
+test("live Driver instrument keeps its MRA and timer header inside the visual viewport",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852}]){
+  const page=await signedDriverPage(browser,viewport);await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+  const result=await page.evaluate(()=>{document.body.style.minHeight="1600px";window.scrollTo(0,240);document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const live=document.querySelector("#live-view").getBoundingClientRect(),header=document.querySelector(".instrument-topbar").getBoundingClientRect(),brand=document.querySelector(".instrument-brand").getBoundingClientRect(),timer=document.querySelector("#display-timer").getBoundingClientRect();return {live:live.toJSON(),header:header.toJSON(),brand:brand.toJSON(),timer:timer.toJSON(),position:getComputedStyle(document.querySelector("#live-view")).position}});
+  assert.equal(result.position,"fixed");assert(result.live.top>=0&&result.live.bottom<=viewport.height,"live surface is constrained to the visual viewport");assert(result.header.top>=0&&result.header.bottom<=viewport.height,"instrument header remains visible");assert(result.brand.top>=result.header.top&&result.brand.bottom<=result.header.bottom,"MRA brand remains inside the header");assert(result.timer.top>=result.header.top&&result.timer.bottom<=result.header.bottom,"timer remains inside the header");await page.close();
+ }
+ await browser.close();
+});
+
 test("revised status bar enables sound and preserves long priority messages",async()=>{
  const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
