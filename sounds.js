@@ -111,6 +111,33 @@ export function repeatPattern(pattern,repetitions,cycleDuration,offset=0){
  return end;
 }
 
+export function normalizeDesignedSound(input={}){
+ const number=(value,fallback,min,max)=>Math.min(max,Math.max(min,Number.isFinite(Number(value))?Number(value):fallback));
+ const direction=["alternate","rise","fall","steady"].includes(input.direction)?input.direction:"alternate";
+ const waveform=["triangle","square","sine","sawtooth"].includes(input.waveform)?input.waveform:"triangle";
+ return {
+  frequency:number(input.frequency,980,220,1800),endFrequency:number(input.endFrequency,1260,220,1800),durationMs:number(input.durationMs,200,50,900),gapMs:number(input.gapMs,250,0,1000),pulses:Math.round(number(input.pulses,2,1,10)),repetitions:Math.round(number(input.repetitions,3,1,8)),direction,waveform,gainPercent:number(input.gainPercent,90,20,100),cycleGapMs:number(input.cycleGapMs,180,0,2000),reminderMs:number(input.reminderMs,0,0,8000)
+ };
+}
+
+export function getDesignedSoundSequence(input={}){
+ const design=normalizeDesignedSound(input),toneSeconds=design.durationMs/1000,gapSeconds=design.gapMs/1000,cycleSeconds=design.pulses*(toneSeconds+gapSeconds)+design.cycleGapMs/1000,tones=[];
+ for(let repetition=0;repetition<design.repetitions;repetition++)for(let pulse=0;pulse<design.pulses;pulse++){
+  const index=repetition*design.pulses+pulse,start=repetition*cycleSeconds+pulse*(toneSeconds+gapSeconds);
+  let frequency=design.frequency,endFrequency=null;
+  if(design.direction==="alternate")frequency=pulse%2?design.endFrequency:design.frequency;
+  if(design.direction==="rise"){frequency=design.frequency;endFrequency=design.endFrequency}
+  if(design.direction==="fall"){frequency=design.endFrequency;endFrequency=design.frequency}
+  tones.push({frequency,start,duration:toneSeconds,type:design.waveform,gain:.56*(design.gainPercent/100),maxGain:.58,endFrequency,attack:.002,release:Math.min(.06,toneSeconds/3),index});
+ }
+ return {design,tones,durationSeconds:tones.reduce((end,tone)=>Math.max(end,tone.start+tone.duration),0)+.08};
+}
+
+export function playDesignedSound(input={}){
+ if(!context||context.state!=="running")throw new Error("Tap Enable Audio first.");
+ stopSounds();const sequence=getDesignedSoundSequence(input);schedulePattern(sequence.tones);return sequence.durationSeconds;
+}
+
 function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),natural=/\b(enhanced|premium|natural)\b/i,male=/\b(evan|daniel|aaron|alex|tom|guy|reed|male)\b/i;return english.find(voice=>natural.test(voice.name)&&male.test(voice.name))||english.find(voice=>male.test(voice.name))||english.find(voice=>natural.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
 function speakGripFallback(){try{const speech=window.speechSynthesis;if(!speech||typeof SpeechSynthesisUtterance==="undefined")return;speech.resume?.();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");gripUtterance=message;message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=1.02;message.pitch=.93;message.volume=Math.max(.88,volume);message.onend=message.onerror=()=>{if(gripUtterance===message)gripUtterance=null};speech.speak(message);const retry=setTimeout(()=>{activeTimeouts.delete(retry);if(gripUtterance===message&&!speech.speaking&&!speech.pending){try{speech.speak(message)}catch{}}},250);activeTimeouts.add(retry)}catch{gripUtterance=null}}
 function speakGrip(){const media=ensureGripMedia();if(!media||!gripMediaUnlocked){speakGripFallback();return}try{media.pause();media.currentTime=0;media.volume=Math.max(.9,volume);const playback=media.play();if(playback?.catch)playback.catch(speakGripFallback)}catch{speakGripFallback()}}

@@ -399,3 +399,17 @@ test("all Driver and team visual assets load and scale without distortion",async
  assert(rendered.box.width>0&&rendered.box.right<=393,"approved MRA instrument brand is visible and contained");assert.equal(rendered.text,"MRA");assert.match(rendered.background,/mra-logo\.png/,"instrument header renders the actual MRA branding asset instead of its draft mark");
  await browser.close();
 });
+
+test("Sound Designer saves candidates locally and stays contained on iPhone and iPad",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:393,height:852},{width:1024,height:1366}]){
+  const page=await browser.newPage({viewport});await page.goto(`${baseUrl}/sound-test.html`,{waitUntil:"domcontentloaded"});
+  await page.locator("#designer-name").fill("Yellow iPad Candidate");await page.locator("#designer-save").click();
+  assert.equal(await page.locator(".saved-sound").count(),1,"candidate is visible after saving");
+  assert.match(await page.locator(".saved-sound strong").textContent(),/Yellow iPad Candidate/);
+  const metrics=await page.evaluate(()=>({pageWidth:document.documentElement.scrollWidth,viewportWidth:innerWidth,designer:document.querySelector(".sound-designer").getBoundingClientRect().toJSON(),minimumControl:Math.min(...[...document.querySelectorAll(".sound-designer button,.sound-designer select")].map(element=>element.getBoundingClientRect().height))}));
+  assert.equal(metrics.pageWidth,metrics.viewportWidth,"Sound Designer has no horizontal overflow");assert(metrics.designer.left>=0&&metrics.designer.right<=metrics.viewportWidth,"designer is contained");assert(metrics.minimumControl>=44,"touch controls remain at least 44px tall");
+  await page.reload({waitUntil:"domcontentloaded"});assert.equal(await page.locator(".saved-sound").count(),1,"candidate persists after reload");await page.close();
+ }
+ await browser.close();
+});

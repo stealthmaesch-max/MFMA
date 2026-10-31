@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#090b0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <title>MFMA Sound Lab</title>
-<link rel="stylesheet" href="styles.css?v=144">
+<link rel="stylesheet" href="styles.css?v=145">
 </head>
 <body class="sound-lab-page">
 <main class="sound-lab-shell">
@@ -15,17 +15,58 @@
     <div><p class="eyebrow">MRA Development Tool</p><h1>Sound Lab</h1></div>
   </header>
   <section class="sound-lab-intro">
-    <p>Clean, high-output electronic alarms with signal-specific pitch and cadence. No drums, struck tones, or percussive cab-chime effects.</p>
+    <p>Preview every live sound, then build and save new candidates directly on this device. Experiments never replace active competition sounds.</p>
     <button id="sound-lab-enable" class="sound-lab-enable" type="button">Enable Audio</button>
     <p id="sound-lab-status" class="sound-lab-status" role="status">Tap once to unlock sound on this device.</p>
   </section>
+  <section class="sound-designer" aria-labelledby="sound-designer-title">
+    <div class="sound-designer-head">
+      <div><p class="eyebrow">Touch Sound Designer</p><h2 id="sound-designer-title">Build a Candidate</h2></div>
+      <span>LOCAL • SAFE</span>
+    </div>
+    <div class="sound-designer-form">
+      <label class="sound-field-wide">Candidate name<input id="designer-name" maxlength="60" placeholder="Example: Yellow v2"></label>
+      <label>Start pitch <output id="designer-frequency-value">980 Hz</output><input id="designer-frequency" type="range" min="220" max="1800" step="10" value="980"></label>
+      <label>End pitch <output id="designer-end-frequency-value">1260 Hz</output><input id="designer-end-frequency" type="range" min="220" max="1800" step="10" value="1260"></label>
+      <label>Tone length <output id="designer-duration-value">200 ms</output><input id="designer-duration" type="range" min="50" max="900" step="10" value="200"></label>
+      <label>Gap <output id="designer-gap-value">250 ms</output><input id="designer-gap" type="range" min="0" max="1000" step="10" value="250"></label>
+      <label>Pulse count <output id="designer-pulses-value">2</output><input id="designer-pulses" type="range" min="1" max="10" step="1" value="2"></label>
+      <label>Pattern repeats <output id="designer-repetitions-value">3</output><input id="designer-repetitions" type="range" min="1" max="8" step="1" value="3"></label>
+      <label>Pitch movement<select id="designer-direction"><option value="alternate">Alternate</option><option value="rise">Rise</option><option value="fall">Fall</option><option value="steady">Steady</option></select></label>
+      <label>Tone character<select id="designer-waveform"><option value="triangle">Clean electric</option><option value="square">Sharp electric</option><option value="sine">Smooth</option><option value="sawtooth">Aggressive</option></select></label>
+      <label>Intensity <output id="designer-gain-value">90%</output><input id="designer-gain" type="range" min="20" max="100" step="5" value="90"></label>
+      <label>Repeat pause <output id="designer-cycle-gap-value">180 ms</output><input id="designer-cycle-gap" type="range" min="0" max="2000" step="20" value="180"></label>
+      <label class="sound-field-wide">Persistent reminder<select id="designer-reminder"><option value="0">Off • one time</option><option value="3000">Every 3 seconds</option><option value="4000">Every 4 seconds</option><option value="5000">Every 5 seconds</option><option value="6500">Every 6.5 seconds</option><option value="8000">Every 8 seconds</option></select></label>
+    </div>
+    <div class="designer-actions primary">
+      <button id="designer-preview" class="designer-primary" type="button">▶ Preview Design</button>
+      <button id="designer-stop" type="button">Stop</button>
+    </div>
+    <div class="designer-actions">
+      <button id="designer-save" type="button">Save Candidate</button>
+      <button id="designer-new" type="button">New Candidate</button>
+      <button id="designer-wav" type="button">Save WAV to Files</button>
+    </div>
+    <p id="designer-status" class="sound-lab-status" role="status">Saved candidates stay on this iPad unless you export a backup.</p>
+  </section>
+  <section class="saved-sounds" aria-labelledby="saved-sounds-title">
+    <div class="saved-sounds-head"><div><p class="eyebrow">This Device</p><h2 id="saved-sounds-title">Saved Candidates</h2></div><strong id="saved-count">0</strong></div>
+    <div id="saved-sounds-list" class="saved-sounds-list"></div>
+    <div class="designer-actions">
+      <button id="designer-export" type="button">Export Backup</button>
+      <label class="designer-import">Import Backup<input id="designer-import" type="file" accept="application/json,.json"></label>
+    </div>
+  </section>
+  <details class="production-sounds" open>
+    <summary>Live Production Sounds</summary>
   <section id="sound-lab-grid" class="sound-lab-grid" aria-label="Every production sound"></section>
   <section class="sound-lab-controls">
     <button id="sound-lab-replay" type="button">Replay Last</button>
     <button id="sound-lab-stop" type="button">Stop</button>
   </section>
+  </details>
   <p class="sound-lab-note">Test at normal device volume first, then over representative engine noise. Operational sounds are connected to their live Driver and MRA states.</p>
 </main>
-<script type="module" src="sound-test.js?v=14"></script>
+<script type="module" src="sound-test.js?v=15"></script>
 </body>
 </html>
