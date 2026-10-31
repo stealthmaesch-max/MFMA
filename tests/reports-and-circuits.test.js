@@ -87,6 +87,15 @@ test("Driver instrument communicates Code speed and post-session movement requir
  assert.match(display,/LOCAL CAUTION/);assert.match(display,/zone\.dataset\.contextDetail=action\[2\]/);assert.match(display,/context\|\|`\$\{audio\} • \$\{gps\}`/);
 });
 
+test("Driver instrument keeps the approved hierarchy visible without duplicate signal instructions",()=>{
+ const css=fs.readFileSync("styles.css","utf8"),html=fs.readFileSync("display.html","utf8");
+ assert.match(css,/\.display-body:has\(\.live-view:not\(\.hidden\)\)[^}]*overflow:hidden!important/);
+ assert.match(css,/\.live-view:not\(\.hidden\) \.instrument-panel\{height:calc\(100dvh - 10px\)!important;min-height:0!important\}/);
+ assert.match(css,/\.instrument-panel \.signal-instruction\{display:none!important\}/);
+ assert.match(css,/signal-symbol\[data-signal="return-to-start"\][^}]+signal-instruction[^}]+display:block!important/);
+ assert.match(html,/styles\.css\?v=148/);
+});
+
 test("operational signals flash while Green and infractions remain steady",async()=>{
  const {signals}=await importModule("signals.js");
  for(const name of ["yellow","grip-deterioration","move-over","safety-car","red","mechanical-incident","under-review","disqualification","checkered","return-to-start"])assert.equal(signals[name].flash,true,`${name} flashes`);
