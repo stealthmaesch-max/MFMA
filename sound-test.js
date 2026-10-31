@@ -1,9 +1,10 @@
-import {enableSounds,getDesignedSoundSequence,getSoundStatus,normalizeDesignedSound,onSoundStatus,playDesignedSound,playSound,replayLastSound,soundDefinitions,soundLabels,stopSounds} from "./sounds.js?v=96";
+import {enableSounds,getDesignedSoundSequence,getProductionSoundCandidate,getSoundStatus,normalizeDesignedSound,onSoundStatus,playDesignedSound,playSound,replayLastSound,soundDefinitions,soundLabels,stopSounds} from "./sounds.js?v=97";
 
 const enableButton=document.getElementById("sound-lab-enable");
 const status=document.getElementById("sound-lab-status");
-document.getElementById("sound-lab-grid").innerHTML=Object.keys(soundDefinitions).map((name,index)=>`<button type="button" data-preview-sound="${name}"><span>${String(index+1).padStart(2,"0")}</span><strong>${soundLabels[name]||name.replace(/([A-Z])/g," $1")}</strong><small>${soundDefinitions[name].description||"Production sound"}</small></button>`).join("");
+document.getElementById("sound-lab-grid").innerHTML=Object.keys(soundDefinitions).map((name,index)=>`<article><button type="button" class="production-preview" data-preview-sound="${name}"><span>${String(index+1).padStart(2,"0")}</span><strong>${soundLabels[name]||name.replace(/([A-Z])/g," $1")}</strong><small>${soundDefinitions[name].description||"Production sound"}</small></button><button type="button" class="production-edit" data-edit-sound="${name}">Edit as Candidate</button></article>`).join("");
 const previewButtons=[...document.querySelectorAll("[data-preview-sound]")];
+const editSoundButtons=[...document.querySelectorAll("[data-edit-sound]")];
 const storageKey="mfma-sound-designer-v1";
 const fields={name:"designer-name",frequency:"designer-frequency",endFrequency:"designer-end-frequency",durationMs:"designer-duration",gapMs:"designer-gap",pulses:"designer-pulses",repetitions:"designer-repetitions",direction:"designer-direction",waveform:"designer-waveform",gainPercent:"designer-gain",cycleGapMs:"designer-cycle-gap",reminderMs:"designer-reminder"};
 const outputFields={frequency:["designer-frequency-value"," Hz"],endFrequency:["designer-end-frequency-value"," Hz"],durationMs:["designer-duration-value"," ms"],gapMs:["designer-gap-value"," ms"],pulses:["designer-pulses-value",""],repetitions:["designer-repetitions-value",""],gainPercent:["designer-gain-value","%"],cycleGapMs:["designer-cycle-gap-value"," ms"]};
@@ -70,6 +71,7 @@ previewButtons.forEach(button=>button.addEventListener("click",()=>{
   status.textContent=`Playing ${button.querySelector("strong").textContent}.`;
  }catch(error){status.textContent=error?.message||"Tap Enable Audio first."}
 }));
+editSoundButtons.forEach(button=>button.addEventListener("click",()=>{try{editingId=null;const design=getProductionSoundCandidate(button.dataset.editSound);setForm(design);designerStatus.textContent=`Loaded ${soundLabels[button.dataset.editSound]||button.dataset.editSound} as a new editable candidate. The live sound is unchanged.`;scrollTo({top:document.querySelector(".sound-designer").offsetTop-12,behavior:"smooth"})}catch(error){designerStatus.textContent=error?.message||"This production sound could not be loaded."}}));
 document.getElementById("sound-lab-replay").addEventListener("click",()=>{try{replayLastSound();status.textContent="Replaying the last candidate."}catch(error){status.textContent=error.message}});
 document.getElementById("sound-lab-stop").addEventListener("click",()=>{stopDesignerPreview();previewButtons.forEach(button=>button.classList.remove("is-playing"));status.textContent="Sound stopped."});
 

@@ -12,6 +12,7 @@ let volume=readNumber(VOLUME_KEY,1);
 let lastSound=null;
 let gripUtterance=null;
 let stewardUtterance=null;
+let capturedDesignerSequence=null;
 let gripMedia=null;
 let gripMediaUnlocked=false;
 const activeOscillators=new Set();
@@ -77,6 +78,7 @@ export async function enableSounds(){
 }
 
 export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endFrequency=null,attack=.012,release=.045,maxGain=.32}={}){
+ if(capturedDesignerSequence){capturedDesignerSequence.push({frequency,start,duration,type,gain,endFrequency,attack,release,maxGain});return start+duration}
  const oscillator=context.createOscillator();
  const gainNode=context.createGain();
  const begins=context.currentTime+start;
@@ -138,9 +140,20 @@ export function playDesignedSound(input={}){
  stopSounds();const sequence=getDesignedSoundSequence(input);schedulePattern(sequence.tones);return sequence.durationSeconds;
 }
 
+export function getProductionSoundCandidate(name){
+ const definition=soundDefinitions[name];if(!definition)throw new Error("Production sound was not found.");
+ capturedDesignerSequence=[];let tones=[];
+ try{definition.play();tones=[...capturedDesignerSequence].sort((left,right)=>left.start-right.start)}finally{capturedDesignerSequence=null}
+ if(!tones.length)throw new Error("This sound cannot be converted into editable controls.");
+ const gaps=tones.slice(1).map((tone,index)=>Math.max(0,tone.start-(tones[index].start+tones[index].duration))),frequencies=tones.map(tone=>tone.frequency),ramps=tones.filter(tone=>tone.endFrequency);
+ const average=values=>values.length?values.reduce((total,value)=>total+value,0)/values.length:0;
+ let direction="alternate";if(ramps.length===tones.length)direction=ramps.every(tone=>tone.endFrequency>=tone.frequency)?"rise":ramps.every(tone=>tone.endFrequency<=tone.frequency)?"fall":"alternate";else if(new Set(frequencies.map(Math.round)).size===1)direction="steady";
+ return {...normalizeDesignedSound({frequency:frequencies[0],endFrequency:ramps[0]?.endFrequency??frequencies[1]??frequencies[0],durationMs:average(tones.map(tone=>tone.duration))*1000,gapMs:average(gaps)*1000,pulses:tones.length,repetitions:1,direction,waveform:tones[0].type,gainPercent:average(tones.map(tone=>tone.gain))/.56*100,cycleGapMs:0,reminderMs:definition.reminderMs||0}),name:`${soundLabels[name]||name} Candidate`,sourceSound:name};
+}
+
 function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),natural=/\b(enhanced|premium|natural)\b/i,male=/\b(evan|daniel|aaron|alex|tom|guy|reed|male)\b/i;return english.find(voice=>natural.test(voice.name)&&male.test(voice.name))||english.find(voice=>male.test(voice.name))||english.find(voice=>natural.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
 function speakGripFallback(){try{const speech=window.speechSynthesis;if(!speech||typeof SpeechSynthesisUtterance==="undefined")return;speech.resume?.();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");gripUtterance=message;message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=1.02;message.pitch=.93;message.volume=Math.max(.88,volume);message.onend=message.onerror=()=>{if(gripUtterance===message)gripUtterance=null};speech.speak(message);const retry=setTimeout(()=>{activeTimeouts.delete(retry);if(gripUtterance===message&&!speech.speaking&&!speech.pending){try{speech.speak(message)}catch{}}},250);activeTimeouts.add(retry)}catch{gripUtterance=null}}
-function speakGrip(){const media=ensureGripMedia();if(!media||!gripMediaUnlocked){speakGripFallback();return}try{media.pause();media.currentTime=0;media.volume=Math.max(.9,volume);const playback=media.play();if(playback?.catch)playback.catch(speakGripFallback)}catch{speakGripFallback()}}
+function speakGrip(){if(capturedDesignerSequence)return;const media=ensureGripMedia();if(!media||!gripMediaUnlocked){speakGripFallback();return}try{media.pause();media.currentTime=0;media.volume=Math.max(.9,volume);const playback=media.play();if(playback?.catch)playback.catch(speakGripFallback)}catch{speakGripFallback()}}
 
 export function speakStewardNotice(notice={}){
  if(!context||context.state!=="running")return false;

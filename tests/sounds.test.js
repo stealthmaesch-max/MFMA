@@ -216,7 +216,8 @@ test("Sound Designer saves reusable candidates and portable backups",()=>{
  const html=fs.readFileSync("sound-test.html","utf8"),script=fs.readFileSync("sound-test.js","utf8"),sounds=fs.readFileSync("sounds.js","utf8");
  for(const id of ["designer-preview","designer-save","designer-wav","designer-export","designer-import","saved-sounds-list"])assert.match(html,new RegExp(`id="${id}"`));
  assert.match(script,/mfma-sound-designer-v1/);assert.match(script,/localStorage\.setItem\(storageKey/);assert.match(script,/MFMA Sound Lab/);assert.match(script,/audio\/wav/);assert.match(script,/navigator\.share/);
- assert.match(sounds,/export function normalizeDesignedSound/);assert.match(sounds,/export function playDesignedSound/);
+ assert.match(script,/data-edit-sound/);assert.match(script,/getProductionSoundCandidate/);
+ assert.match(sounds,/export function normalizeDesignedSound/);assert.match(sounds,/export function playDesignedSound/);assert.match(sounds,/export function getProductionSoundCandidate/);
 });
 
 test("Stop and Mechanical Incident use the identical critical alarm",async()=>{

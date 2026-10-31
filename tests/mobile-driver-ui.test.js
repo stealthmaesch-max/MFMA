@@ -404,6 +404,7 @@ test("Sound Designer saves candidates locally and stays contained on iPhone and 
  const browser=await chromium.launch({headless:true});
  for(const viewport of [{width:393,height:852},{width:1024,height:1366}]){
   const page=await browser.newPage({viewport});await page.goto(`${baseUrl}/sound-test.html`,{waitUntil:"domcontentloaded"});
+  await page.locator('[data-edit-sound="yellow"]').click();assert.match(await page.locator("#designer-name").inputValue(),/Yellow Candidate/,"a live sound loads into the candidate controls");
   await page.locator("#designer-name").fill("Yellow iPad Candidate");await page.locator("#designer-save").click();
   assert.equal(await page.locator(".saved-sound").count(),1,"candidate is visible after saving");
   assert.match(await page.locator(".saved-sound strong").textContent(),/Yellow iPad Candidate/);

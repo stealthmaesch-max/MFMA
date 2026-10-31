@@ -23,7 +23,7 @@ test("wake lock is reacquired after Safari resumes and retried on interaction",(
 
 test("deployed Driver shell versions the wake-lock implementation",()=>{
  assert.match(html,/display\.js\?v=152/);
- assert.match(serviceWorker,/mfma-driver-shell-v49/);
- assert.match(serviceWorker,/styles\.css\?v=145/);
+ assert.match(serviceWorker,/mfma-driver-shell-v50/);
+ assert.match(serviceWorker,/styles\.css\?v=146/);
  assert.match(serviceWorker,/display\.js\?v=152/);
 });
