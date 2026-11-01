@@ -63,6 +63,10 @@ test("compact Driver context wraps and live landscape controls remain visible",a
   assert(result.sessionFits,"the complete session context is readable");assert.match(result.gps,/GPS OFF|OFFLINE/,"GPS is not falsely shown as connected");
   for(const key of ["header","symbol","zone","dock"]){const box=result[key];assert(box.top>=0&&box.bottom<=viewport.height&&box.left>=0&&box.right<=viewport.width,`${key} stays visible at ${viewport.width}x${viewport.height}`)}
   assert(result.symbol.bottom<=result.zone.top,"primary signal stays above the instruction band");assert(result.zone.bottom<=result.dock.top,"instructions stay clear of the touch controls");
+  if(viewport.width>viewport.height){
+   const movement=await page.evaluate(()=>{document.querySelector("#signal-symbol").dataset.signal="return-to-start";document.querySelector("#label").textContent="RETURN TO START";document.querySelector("#instruction").textContent="RETURN TO THE STARTING ZONE";return ["#display-session","#label","#signal-symbol","#instruction",".instrument-context"].map(s=>document.querySelector(s).getBoundingClientRect().toJSON())});
+   for(let i=1;i<movement.length;i++)assert(movement[i-1].bottom<=movement[i].top+1,"movement context, title, symbol, instruction, and speed stay separated");
+  }
   await page.close();
  }
  await browser.close();

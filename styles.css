@@ -1990,6 +1990,8 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
  .instrument-panel .signal-symbol{width:68px!important;height:68px!important;border-width:6px!important;margin:0!important}
  .instrument-panel .signal-symbol span{font-size:32px!important}
  .instrument-panel .signal-symbol[data-signal="mechanical-incident"]{width:85px!important;height:54px!important}
+ .instrument-panel .signal-symbol:is([data-signal="return-to-start"],[data-signal="proceed-to-start"]){width:44px!important;height:44px!important}
+ .instrument-panel .signal-symbol:is([data-signal="return-to-start"],[data-signal="proceed-to-start"]) span{font-size:24px!important}
  .instrument-context{height:28px!important}.instrument-context .instrument-speed strong{font-size:25px!important}
  .instrument-panel .multi-function-zone{height:auto!important;min-height:48px!important;padding:4px 10px!important}
  .instrument-panel .multi-function-zone>b:first-child{width:30px!important;height:30px!important;flex-basis:30px!important}
