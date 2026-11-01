@@ -209,6 +209,33 @@ test("boundary assist opt-in and diagnostics stay compact in the iPhone Driver P
  await browser.close();
 });
 
+test("real Driver rendering preserves the dock through tests and renders five paired start lights",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852},{width:844,height:390}]){
+  const page=await signedDriverPage(browser,viewport);
+  await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=()=>({}),onValue=()=>()=>{},get=async()=>({exists:()=>false,val:()=>null}),update=async()=>{throw Error('No writes allowed in render test')},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'render-test'}});`}));
+  await page.route(/\/display\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("display.js","utf8")+"\nwindow.renderDriverTest=(next)=>{state=next;render();tick()};"}));
+  await page.goto(`${baseUrl}/display.html`,{waitUntil:"load"});await page.waitForFunction(()=>typeof window.renderDriverTest==="function");
+  for(const flag of ["green","start-lights","red","start-lights","green"]){
+   await page.evaluate(flag=>window.renderDriverTest({systemState:"test-mode",activeFlag:flag==="start-lights"?"proceed-to-start":flag,event:{testMode:true,testDisplay:flag},session:{countdownEndsAt:Date.now()+8000}}),flag);
+   const result=await page.evaluate(()=>{const timer=document.querySelector("#display-timer"),dock=document.querySelector(".driver-dock"),lamps=[...timer.querySelectorAll("i")],rect=e=>e.getBoundingClientRect().toJSON();return {dockVisible:!document.querySelector("#driver-tools").classList.contains("hidden"),dock:rect(dock),board:rect(timer),lamps:lamps.map(rect),groups:[...timer.children].map(rect),dot:timer.classList.contains("dot-timer"),lit:timer.querySelectorAll(".lit i").length}});
+   assert(result.dockVisible,`${flag}: Driver/Report dock stays available`);assert(result.dock.height>=44);
+   assert(await page.locator("#driver-hazard-open").isDisabled(),"display tests cannot submit real hazard requests");
+   if(flag==="start-lights"){
+    assert(result.dot);assert.equal(result.lamps.length,10);assert(result.lit>0);
+    assert(Math.max(...result.groups.map(r=>r.top))-Math.min(...result.groups.map(r=>r.top))<1,"five paired groups share one row");
+    assert(result.lamps.every(r=>r.width>=28&&r.height>=28&&r.left>=result.board.left&&r.right<=result.board.right&&r.top>=result.board.top&&r.bottom<=result.board.bottom),`all ten lamps are visible inside the board: ${JSON.stringify(result)}`);
+    assert(result.board.top>=0&&result.board.bottom<result.dock.top,"start lights stay above the dock");
+   }else{assert.equal(result.dot,false);assert.equal(result.lamps.length,0,"normal timer replaces start lamps");}
+  }
+  await page.evaluate(()=>window.renderDriverTest({systemState:"sprint-live",activeFlag:"green",event:{},sprint:{timerMode:"none"}}));
+  assert(await page.locator("#driver-tools").isVisible(),"leaving Test Mode restores live Driver controls");
+  assert(await page.locator("#driver-hazard-open").isEnabled(),"reporting is available again in live mode");
+  await page.close();
+ }
+ await browser.close();
+});
+
 test("start lights are the sole central focus on iPhone portrait",async()=>{
  const browser=await chromium.launch({headless:true});
  const page=await signedDriverPage(browser,{width:390,height:844});

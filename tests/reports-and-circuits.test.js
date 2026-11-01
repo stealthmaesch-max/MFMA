@@ -93,7 +93,7 @@ test("Driver instrument keeps the approved hierarchy visible without duplicate s
  assert.match(css,/\.live-view:not\(\.hidden\) \.instrument-panel\{height:calc\(100dvh - 10px\)!important;min-height:0!important\}/);
  assert.match(css,/\.instrument-panel \.signal-instruction\{display:none!important\}/);
  assert.match(css,/signal-symbol\[data-signal="return-to-start"\][^}]+signal-instruction[^}]+display:block!important/);
- assert.match(html,/styles\.css\?v=150/);
+ assert.match(html,/styles\.css\?v=151/);
 });
 
 test("live Driver rendering clears retained Safari scroll offsets",()=>{
