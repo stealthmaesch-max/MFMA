@@ -1613,7 +1613,19 @@ dialog form{max-height:inherit;overflow:auto;overscroll-behavior:contain}
   .driver-manager-dialog .form-grid,.driver-manager-dialog .button-row{grid-template-columns:1fr}
   .driver-manager-dialog .form-grid label:last-child{grid-column:1}
 }
-@media(orientation:landscape) and (max-height:520px){.quick-flag-bar{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:699px),(orientation:landscape) and (max-height:520px){
+ .quick-flag-bar{grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+ .quick-flag-bar>.flag{min-height:48px;padding:6px 3px}
+ .quick-flag-bar>.flag>b{display:none}
+ .quick-flag-bar>.flag>strong{font-size:11px;line-height:1.15;white-space:normal}
+ .secondary-signals:not(.hidden){grid-column:1/-1;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height:40dvh;overflow-y:auto}
+ .race-control-page.flag-controls-active{padding-bottom:calc(110px + env(safe-area-inset-bottom))}
+}
+
+@media(max-width:420px){
+ .control-toolbar .brand-row>div{display:none}
+ .control-toolbar .toolbar-logo{width:76px;flex-basis:76px}
+}
 
 /* v4.8 auditable championship scoring */
 .standing-name>span{min-width:0}.provisional-tag{display:block;margin-top:2px;color:#f8b84e;font-size:9px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}.points-breakdown{color:#a9b4c1;font-size:11px;line-height:1.25}.event-close-controls{display:grid;justify-items:end;gap:8px}.official-outcomes{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:7px}.official-outcomes label{display:grid;gap:3px;color:#aab5c2;font-size:9px;font-weight:900;letter-spacing:.07em;text-transform:uppercase}.official-outcomes select{min-width:150px;min-height:40px}.replacement-review{border-color:#d6a331!important;background:rgba(214,163,49,.08)!important}
@@ -1952,8 +1964,39 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
 @media(max-width:420px){.live-view:not(.hidden) .instrument-panel{grid-template-rows:52px minmax(56px,auto) minmax(0,1fr) minmax(72px,auto)!important}.instrument-signal-core{grid-template-rows:auto minmax(0,1fr)!important}.instrument-panel .signal-symbol{margin-block:8px!important}}
 @media(max-height:760px){.live-view:not(.hidden) .instrument-panel{min-height:0!important}.instrument-signal-core{grid-template-rows:auto minmax(0,1fr)!important;row-gap:22px!important}.instrument-panel .signal-symbol{margin-block:4px!important}}
 
+/* Compact context stays readable rather than clipping the beginning of a session. */
+.instrument-panel .display-session{white-space:normal!important;overflow-wrap:anywhere;letter-spacing:.04em!important;line-height:1.25!important;padding:4px 6px!important;box-sizing:border-box}
+.instrument-system-icons{white-space:nowrap;font-size:9px;gap:6px}
+.instrument-system-icons::after{content:"GPS OFF";color:#9ba7ad}
+.instrument-system-icons>span{display:none}
+.display.sound-armed .instrument-system-icons::before{content:"SND ON";color:#7fe5a2}
+.display:not(.sound-armed) .instrument-system-icons::before{content:"SND OFF";color:#ffcf70}
+.display:has(.gps-good) .instrument-system-icons::after{content:"GPS OK";color:#7fe5a2}
+.display:has(.gps-fair) .instrument-system-icons::after{content:"GPS FAIR";color:#ffcf70}
+.display:has(.gps-poor) .instrument-system-icons::after{content:"GPS LOW";color:#ffcf70}
+.display.limited-connection .instrument-system-icons::after{content:"OFFLINE";color:#ffcf70}
+
 /* Safari may restore page scroll after render; anchor the live instrument to the visual viewport. */
 .live-view:not(.hidden){position:fixed!important;z-index:40!important;inset:0!important;width:100vw!important;height:100dvh!important;margin:0!important;padding:max(5px,env(safe-area-inset-top)) 0 max(5px,env(safe-area-inset-bottom))!important;box-sizing:border-box!important}
 .live-view:not(.hidden) .instrument-panel{width:min(393px,calc(100vw - 24px))!important;height:100%!important;margin:0 auto!important}
+@media(orientation:landscape) and (max-height:500px){
+ .live-view:not(.hidden) .instrument-panel{width:min(640px,calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 24px))!important;grid-template-rows:36px minmax(44px,auto) minmax(0,1fr) minmax(48px,auto)!important;gap:4px!important;padding:5px 12px 60px!important;border-radius:24px!important}
+ .instrument-topbar{height:36px!important}.instrument-brand{height:26px!important;width:80px!important}
+ .instrument-gauge-strip{min-height:44px!important;padding:5px 10px!important}.instrument-gauge-strip::after{font-size:11px!important;letter-spacing:.025em!important}
+ .instrument-signal-well{grid-template-rows:28px minmax(0,1fr) 28px!important;padding:0 8px 4px!important;border-radius:16px!important}
+ .instrument-panel .display-session{height:28px!important;font-size:10px!important}
+ .instrument-signal-core{padding:3px 6px!important;row-gap:4px!important}
+ .instrument-panel .signal-label{font-size:24px!important;line-height:1!important}
+ .instrument-panel .signal-symbol{width:68px!important;height:68px!important;border-width:6px!important;margin:0!important}
+ .instrument-panel .signal-symbol span{font-size:32px!important}
+ .instrument-panel .signal-symbol[data-signal="mechanical-incident"]{width:85px!important;height:54px!important}
+ .instrument-context{height:28px!important}.instrument-context .instrument-speed strong{font-size:25px!important}
+ .instrument-panel .multi-function-zone{height:auto!important;min-height:48px!important;padding:4px 10px!important}
+ .instrument-panel .multi-function-zone>b:first-child{width:30px!important;height:30px!important;flex-basis:30px!important}
+ .instrument-panel .multi-function-zone small{margin-top:2px!important}
+ .instrument-panel .signal-instruction{font-size:12px!important;padding:2px 5px!important}
+ .driver-tools{width:min(612px,calc(100vw - env(safe-area-inset-left) - env(safe-area-inset-right) - 48px))!important;bottom:max(6px,env(safe-area-inset-bottom))!important}
+ .driver-tools .driver-dock>button{min-height:44px!important}.driver-tools .dock-driver>img{width:30px!important;height:30px!important}
+}
 .display>.instruction-ack{position:fixed;z-index:77;left:50%;bottom:max(96px,calc(env(safe-area-inset-bottom) + 88px));width:min(356px,calc(100vw - 56px));min-height:52px;margin:0;padding:10px 16px;transform:translateX(-50%);border:2px solid #fff;border-radius:15px;background:#080c12ed;color:#fff;font:900 14px/1.1 system-ui,sans-serif;letter-spacing:.04em;text-transform:uppercase;box-shadow:0 12px 30px #0009}.display>.instruction-ack.acknowledged{border-color:#55df8c;background:#145d35ed;color:#d9ffe7}
 .instruction-sync{display:flex;align-items:center;justify-content:space-between;gap:14px;border-color:rgba(69,157,255,.4);background:linear-gradient(110deg,rgba(26,61,102,.32),#111720)}.instruction-sync h2{margin:3px 0}.instruction-sync p{margin:0;color:#b7c1ce}.instruction-sync-list{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:6px}.instruction-sync-list span{padding:7px 9px;border:1px solid rgba(255,255,255,.13);border-radius:999px;background:#252e3a;color:#d2d9e2;font-size:11px;font-weight:850}.instruction-sync-list span.acknowledged{border-color:rgba(64,210,133,.45);background:rgba(34,125,74,.25);color:#9af0ba}@media(max-width:699px){.instruction-sync{display:grid;gap:9px}.instruction-sync-list{justify-content:flex-start}}

@@ -48,6 +48,26 @@ test("live Driver instrument keeps its MRA and timer header inside the visual vi
  await browser.close();
 });
 
+test("compact Driver context wraps and live landscape controls remain visible",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:844,height:390},{width:667,height:375}]){
+  const page=await signedDriverPage(browser,viewport);await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
+  const result=await page.evaluate(()=>{
+   for(const id of ["driver-signin","status-view"])document.getElementById(id).classList.add("hidden");
+   for(const id of ["live-view","driver-tools"])document.getElementById(id).classList.remove("hidden");
+   const session=document.querySelector("#display-session");session.textContent="SESSION 2 • FINDING • PURSUIT: RANGER • EVADING: SHELLY";
+   document.querySelector("#label").textContent="GREEN";document.querySelector("#signal-symbol").dataset.signal="green";
+   const rect=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
+   return {sessionFits:session.scrollWidth<=session.clientWidth&&session.scrollHeight<=session.clientHeight,header:rect(".instrument-topbar"),symbol:rect("#signal-symbol"),zone:rect("#multi-function-zone"),dock:rect(".driver-dock"),gps:getComputedStyle(document.querySelector(".instrument-system-icons"),"::after").content};
+  });
+  assert(result.sessionFits,"the complete session context is readable");assert.match(result.gps,/GPS OFF|OFFLINE/,"GPS is not falsely shown as connected");
+  for(const key of ["header","symbol","zone","dock"]){const box=result[key];assert(box.top>=0&&box.bottom<=viewport.height&&box.left>=0&&box.right<=viewport.width,`${key} stays visible at ${viewport.width}x${viewport.height}`)}
+  assert(result.symbol.bottom<=result.zone.top,"primary signal stays above the instruction band");assert(result.zone.bottom<=result.dock.top,"instructions stay clear of the touch controls");
+  await page.close();
+ }
+ await browser.close();
+});
+
 test("revised status bar enables sound and preserves long priority messages",async()=>{
  const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
@@ -75,6 +95,16 @@ test("primary Driver copy, symbol, and action band never overlap",async()=>{
    assert.equal(result.labelSymbol,false,`${signal} label and symbol overlap at ${viewport.width}x${viewport.height}: ${JSON.stringify(result.boxes)}`);assert.equal(result.symbolInstruction,false,`${signal} symbol and instruction overlap at ${viewport.width}x${viewport.height}`);assert.equal(result.instructionZone,false,`${signal} instruction and action band overlap at ${viewport.width}x${viewport.height}`);
   }
   await page.close();
+ }
+ await browser.close();
+});
+
+test("Steward primary signals share one row on compact and landscape screens",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:844,height:390}]){
+  const page=await browser.newPage({viewport});await page.goto(`${baseUrl}/control.html`,{waitUntil:"domcontentloaded"});
+  const boxes=await page.evaluate(()=>{document.querySelector("#auth-panel").classList.add("hidden");document.querySelector("#no-event").classList.add("hidden");document.querySelector("#secured-control").classList.remove("hidden");document.querySelector("#event-area").classList.remove("hidden");document.querySelector("#quick-flag-panel").classList.remove("hidden");document.body.classList.add("flag-controls-active");return [...document.querySelectorAll(".quick-flag-bar>.flag")].map(e=>e.getBoundingClientRect().toJSON())});
+  assert.equal(boxes.length,5);assert(Math.max(...boxes.map(b=>b.top))-Math.min(...boxes.map(b=>b.top))<2,"all primary signals fit on one row");assert(boxes.every(b=>b.height>=44&&b.left>=0&&b.right<=viewport.width&&b.bottom<=viewport.height),"signal controls remain touch sized and on screen");await page.close();
  }
  await browser.close();
 });
