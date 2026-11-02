@@ -8,10 +8,52 @@ const path=require("node:path");
 let server,baseUrl;
 async function stewardHarness(browser,viewport){
  const page=await browser.newPage({viewport});
- await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,callback)=>{if(ref.path==='.info/connected')window.testConnection=callback;return ()=>{}},serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},setPersistence=async()=>{},browserLocalPersistence={},GithubAuthProvider=class{},GoogleAuthProvider=class{},signInWithPopup=async()=>{},signOut=async()=>{},set=async(ref,patch)=>{(window.testWrites??=[]).push(patch);if(window.rejectWrite)throw Error('Rejected test command');if(window.holdWrite)await new Promise(resolve=>window.finishWrite=resolve)},update=set,runTransaction=set;`}));
- await page.route(/\/control\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("control.js","utf8")+`\nwindow.stewardTest={render(next){currentUser=null;state=next;document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');render()},flag(flag){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return issueFlag(flag)},resume(kind){currentUser={uid:"2DCyQB0Js1UpWGI0LkEQtnOhGPl1",isAnonymous:false};return kind==="finding"?startFinding():startSprintTimer()},spot(id){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return confirmSpot(id)}};window.testConnection({val:()=>true});`}));
+ await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,callback)=>{if(ref.path==='.info/connected')window.testConnection=callback;return ()=>{}},serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},setPersistence=async()=>{},browserLocalPersistence={},GithubAuthProvider=class{},GoogleAuthProvider=class{},signInWithPopup=async()=>{},signOut=async()=>{},set=async(ref,patch)=>{(window.testWrites??=[]).push(patch);if(window.rejectWrite)throw Error('Rejected test command');if(window.holdWrite)await new Promise(resolve=>window.finishWrite=resolve)},update=set,runTransaction=async(ref,updater)=>{const next=updater(window.testRoot);if(!next)return {committed:false};window.testRoot=next;window.stewardTest.render(next);return {committed:true,snapshot:{val:()=>next}}};`}));
+ await page.route(/\/control\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("control.js","utf8")+`\nwindow.stewardTest={render(next){window.testRoot=next;currentUser={uid:\"2DCyQB0Js1UpWGI0LkEQtnOhGPl1\",isAnonymous:false};state=next;document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');render()},flag(flag){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return issueFlag(flag)},resume(kind){currentUser={uid:"2DCyQB0Js1UpWGI0LkEQtnOhGPl1",isAnonymous:false};return kind==="finding"?startFinding():startSprintTimer()},spot(id){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return confirmSpot(id)}};window.testConnection({val:()=>true});`}));
  await page.goto(`${baseUrl}/control.html`,{waitUntil:"load"});await page.waitForFunction(()=>window.stewardTest);return page;
 }
+
+test("investigation and decision dialogs require distinct allegations and rationale at compact sizes",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
+  const page=await stewardHarness(browser,viewport),state=stewardState();
+  await page.evaluate(s=>window.stewardTest.render(s),state);
+  await page.locator('[data-white-open]').dispatchEvent('click');
+  assert(await page.locator('#white-review-overlay').isVisible());
+  assert.equal(await page.locator('#investigation-detail').inputValue(),"");
+  await page.locator('#close-white').click();
+  state.systemState="violation-review";state.activeFlag="under-review";state.session.running=false;
+  state.event.activeInvestigation={violationId:"case-1",caseId:"MRA-1",team:"a",teamName:"Monarch",reason:"Overtaking allegation",previousState:"session-live",previousFlag:"green",status:"open"};
+  await page.evaluate(s=>window.stewardTest.render(s),state);
+  assert.match(await page.locator('#enforcement-case-summary').innerText(),/NO PENALTY|No penalty/i);
+  await page.locator('#review-disqualify').click();
+  assert(await page.locator('#penalty-dialog').isVisible());
+  assert.equal(await page.locator('#penalty-decision').inputValue(),"");
+  assert.equal(await page.locator('#penalty-rationale').inputValue(),"");
+  assert.match(await page.locator('#penalty-case-summary').innerText(),/Allegation/);
+  await page.locator('#penalty-decision').selectOption('no-action');
+  assert(await page.locator('#additional-remedy-field').isHidden());
+  assert(await page.locator('#penalty-rationale').getAttribute('required')!==null);
+  const width=await page.evaluate(()=>document.documentElement.scrollWidth);assert.equal(width,viewport.width);
+  await page.screenshot({path:`/tmp/mfma-case-decision-${viewport.width}.png`});await page.close();
+ }
+ await browser.close();
+});
+
+test("Steward saves a case and independent decision atomically without forcing Green",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await stewardHarness(browser,{width:393,height:852});
+ const state=stewardState('session-live','yellow');await page.evaluate(s=>window.stewardTest.render(s),state);
+ await page.locator('[data-white-open]').dispatchEvent('click');
+ await page.locator('#issue-violation-submit').click();
+ await page.waitForFunction(()=>window.testRoot.systemState==='violation-review');
+ assert.equal(await page.evaluate(()=>window.testRoot.session.running),false);
+ await page.locator('#review-disqualify').click();await page.locator('#penalty-decision').selectOption('warning');
+ await page.locator('#penalty-rationale').fill('Reviewed radio evidence; warning is proportionate.');await page.locator('#record-penalty-decision').click();
+ await page.waitForFunction(()=>window.testRoot.systemState==='session-live');
+ assert.equal(await page.evaluate(()=>window.testRoot.activeFlag),'yellow');
+ assert.equal(await page.evaluate(()=>window.testRoot.event.lastEnforcementDecision.rationale),'Reviewed radio evidence; warning is proportionate.');
+ assert.equal(await page.evaluate(()=>window.testRoot.event.scores.a),0);await browser.close();
+});
 function stewardState(mode="session-live",flag="green",running=true){return {systemState:mode,activeFlag:flag,event:{name:"MFMA Event",eventFormat:mode==="qualifying-live"?"qualifying":"regular",pointsEvent:false,scores:{a:0,b:0},teamNames:{a:"Monarch",b:"Parakeet"},qualifying:{warmupCompleted:true,running,elapsedMs:5000,lastTickAt:Date.now(),trackLength:"short",lapLimit:5},courseLap:{status:"active"}},session:{number:1,phase:"finding",running,remainingMs:60000,lastTickAt:Date.now(),flag,teamNames:{a:"Monarch",b:"Parakeet"},pursuitTeam:"a",evadingTeam:"b",pursuitVehicleIds:["ranger","shelly"],spotStatus:{}},sprint:{active:true,timerMode:"count-down",running,remainingMs:60000,lastTickAt:Date.now()}}}
 
 test("Steward Red is available across operational modes and freezes each active clock",async()=>{
@@ -294,7 +336,13 @@ test("real Driver rendering preserves the dock through tests and renders five pa
   await page.evaluate(()=>window.renderDriverTest({systemState:"sprint-live",activeFlag:"green",event:{},sprint:{timerMode:"none"}}));
   assert(await page.locator("#driver-tools").isVisible(),"leaving Test Mode restores live Driver controls");
   assert(await page.locator("#driver-hazard-open").isEnabled(),"reporting is available again in live mode");
-  for(const mode of ["qualifying-live","course-lap","next-session-staging"]){
+  const review=stewardState("violation-review","under-review",false);review.event.activeInvestigation={caseId:"MRA-1",teamName:"Monarch",reason:"Overtaking allegation",status:"open"};
+  await page.evaluate(s=>window.renderDriverTest(s),review);
+  assert.equal(await page.locator('#label').textContent(),'UNDER REVIEW');
+  assert.match(await page.locator('.instrument-gauge-strip').getAttribute('data-message'),/NO PENALTY DECIDED/);
+  assert.match(await page.locator('#driver-case-record').textContent(),/Allegation/);
+  assert.equal(await page.locator('#signal-symbol').getAttribute('data-signal'),'under-review');
+  for(const mode of ["qualifying-live","course-lap","next-session-staging","violation-review","white-termination"]){
    const stopped=stewardState(mode,"red",false);stopped.event.qualifying.elapsedMs=12345;
    await page.evaluate(s=>window.renderDriverTest(s),stopped);
    assert.equal(await page.locator("#label").textContent(),"STOP",`${mode}: Red takes priority over the format screen`);
