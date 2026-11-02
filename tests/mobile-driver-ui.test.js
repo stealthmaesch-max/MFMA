@@ -9,7 +9,7 @@ let server,baseUrl;
 async function stewardHarness(browser,viewport){
  const page=await browser.newPage({viewport});
  await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,callback)=>{if(ref.path==='.info/connected')window.testConnection=callback;return ()=>{}},serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},setPersistence=async()=>{},browserLocalPersistence={},GithubAuthProvider=class{},GoogleAuthProvider=class{},signInWithPopup=async()=>{},signOut=async()=>{},set=async(ref,patch)=>{(window.testWrites??=[]).push(patch);if(window.rejectWrite)throw Error('Rejected test command');if(window.holdWrite)await new Promise(resolve=>window.finishWrite=resolve)},update=set,runTransaction=set;`}));
- await page.route(/\/control\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("control.js","utf8")+`\nwindow.stewardTest={render(next){currentUser=null;state=next;document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');render()},flag(flag){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return issueFlag(flag)},spot(id){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return confirmSpot(id)}};window.testConnection({val:()=>true});`}));
+ await page.route(/\/control\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("control.js","utf8")+`\nwindow.stewardTest={render(next){currentUser=null;state=next;document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');render()},flag(flag){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return issueFlag(flag)},resume(kind){currentUser={uid:"2DCyQB0Js1UpWGI0LkEQtnOhGPl1",isAnonymous:false};return kind==="finding"?startFinding():startSprintTimer()},spot(id){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return confirmSpot(id)}};window.testConnection({val:()=>true});`}));
  await page.goto(`${baseUrl}/control.html`,{waitUntil:"load"});await page.waitForFunction(()=>window.stewardTest);return page;
 }
 function stewardState(mode="session-live",flag="green",running=true){return {systemState:mode,activeFlag:flag,event:{name:"MFMA Event",eventFormat:mode==="qualifying-live"?"qualifying":"regular",pointsEvent:false,scores:{a:0,b:0},teamNames:{a:"Monarch",b:"Parakeet"},qualifying:{warmupCompleted:true,running,elapsedMs:5000,lastTickAt:Date.now(),trackLength:"short",lapLimit:5},courseLap:{status:"active"}},session:{number:1,phase:"finding",running,remainingMs:60000,lastTickAt:Date.now(),flag,teamNames:{a:"Monarch",b:"Parakeet"},pursuitTeam:"a",evadingTeam:"b",pursuitVehicleIds:["ranger","shelly"],spotStatus:{}},sprint:{active:true,timerMode:"count-down",running,remainingMs:60000,lastTickAt:Date.now()}}}
@@ -26,6 +26,16 @@ test("Steward Red is available across operational modes and freezes each active 
   if(mode==="next-session-countdown"){assert.equal(patch.systemState,"next-session-staging");assert.equal(patch["session/countdownEndsAt"],null)}
   assert(!Object.keys(patch).some(key=>/scores|result|penalty/.test(key)),"Red does not decide a competition result");
  }
+ await browser.close();
+});
+
+test("stopped Finding and Sprint clocks require a movement signal before resuming",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await stewardHarness(browser,{width:375,height:667});
+ const waiting=stewardState("session-live","red",false);waiting.session.phase="awaiting-finding-start";waiting.session.findDurationMs=120000;
+ await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},waiting);assert(await page.locator("#start-finding").isDisabled());await page.evaluate(()=>window.stewardTest.resume("finding"));assert.equal(await page.evaluate(()=>window.testWrites.length),0);
+ assert(await page.locator('[data-quick-flag="green"]').isVisible());await page.evaluate(()=>window.stewardTest.flag("green"));assert.equal(await page.evaluate(()=>window.testWrites.at(-1).activeFlag),"green");assert.equal(await page.evaluate(()=>window.testWrites.at(-1)["session/running"]),undefined,"clearing Red alone does not start Finding");
+ waiting.activeFlag="green";await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},waiting);assert(await page.locator("#start-finding").isEnabled());await page.evaluate(()=>window.stewardTest.resume("finding"));assert.equal(await page.evaluate(()=>window.testWrites.at(-1)["session/running"]),true);
+ for(const flag of ["red","safety-car","mechanical-incident"]){await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},stewardState("sprint-live",flag,false));assert(await page.locator("#sprint-start-timer").isDisabled());await page.evaluate(()=>window.stewardTest.resume("sprint"));assert.equal(await page.evaluate(()=>window.testWrites.length),0)}
  await browser.close();
 });
 

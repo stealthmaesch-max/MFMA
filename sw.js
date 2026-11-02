@@ -1,4 +1,4 @@
-const CACHE="mfma-driver-shell-v61";
+const CACHE="mfma-driver-shell-v62";
 const SHELL=["./display.html","./styles.css?v=152","./display.js?v=158","./gps-assist.js?v=6","./gps-calibration.js?v=1","./gps-diagnostics.js?v=1","./speed-compliance.js?v=2","./track-limits.js?v=2","./track-signals.js?v=9","./signals.js?v=100","./sounds.js?v=99","./display-state.js?v=87","./report-model.js?v=52","./competition-model.js?v=92","./qualifying-model.js?v=85","./firebase-config.js?v=40","./assets/audio/grip-callout.m4a?v=1","./assets/branding/mfma-logo.png","./assets/branding/mra-logo.png","./assets/branding/mfma-driver-portal-logo.png","./assets/branding/monarch-mfma-team-logo-dignified.png","./assets/branding/monarch-team-emblem.png","./assets/branding/parakeet-mfma-team-logo-v2.png","./assets/branding/parakeet-team-emblem-v2.png"];
 self.addEventListener("install",event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(SHELL)).then(()=>self.skipWaiting())));
 self.addEventListener("activate",event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key!==CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
