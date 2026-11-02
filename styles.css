@@ -1964,6 +1964,54 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
 @media(max-width:420px){.live-view:not(.hidden) .instrument-panel{grid-template-rows:52px minmax(56px,auto) minmax(0,1fr) minmax(72px,auto)!important}.instrument-signal-core{grid-template-rows:auto minmax(0,1fr)!important}.instrument-panel .signal-symbol{margin-block:8px!important}}
 @media(max-height:760px){.live-view:not(.hidden) .instrument-panel{min-height:0!important}.instrument-signal-core{grid-template-rows:auto minmax(0,1fr)!important;row-gap:22px!important}.instrument-panel .signal-symbol{margin-block:4px!important}}
 
+/* Steward operations: persistent signals, compact telemetry, and the active task first. */
+.race-control-page .control-toolbar{grid-template-columns:minmax(0,1fr) minmax(270px,1fr) auto!important;gap:8px;overflow:visible}
+.control-toolbar .brand-row{overflow:hidden}.control-toolbar .brand-row>div{min-width:0}
+.control-toolbar .toolbar-logo{width:90px!important;flex-basis:90px!important}
+.control-toolbar h1{max-width:100%!important;font-size:16px}
+.control-toolbar .toolbar-telemetry{grid-column:2!important;grid-row:1!important;grid-template-columns:repeat(3,minmax(0,1fr))!important}
+.control-toolbar .toolbar-telemetry>div:last-child{display:block!important}
+.control-toolbar .header-account{grid-column:3;grid-row:1;min-width:0}
+.control-workspace-nav{position:static;order:0;margin:6px auto;width:min(100%,600px);box-sizing:border-box;grid-template-columns:repeat(3,minmax(0,1fr))}
+.race-control-page #event-area{display:flex;flex-direction:column;gap:8px}
+.race-control-page #event-area.hidden{display:none}
+#event-area>.dashboard-main,#event-area>#standby-panel{order:0}
+#event-area>#hazard-panel,#event-area>#track-limit-panel,#event-area>#speed-compliance-panel{order:-2}
+#event-area>#instruction-sync-panel{order:1}
+#event-area>#steward-notice-panel{order:2}
+#event-area>#event-score-panel{order:3}
+#event-area>#event-head-panel{order:4}
+.race-control-page #quick-flag-panel{position:fixed!important;z-index:90;inset:auto 12px max(8px,env(safe-area-inset-bottom))!important;width:auto!important;max-width:1180px;margin:0 auto!important;box-sizing:border-box;max-height:45dvh;overflow:auto}
+.race-control-page.flag-controls-active{padding-bottom:calc(180px + env(safe-area-inset-bottom))!important}
+#control-command-status{display:block;font-size:12px;line-height:1.3;padding:5px 6px;color:#ffdc8a;overflow-wrap:anywhere}
+#control-command-status:empty{display:none}
+.secondary-signals:not(.hidden){display:grid!important;grid-column:1/-1;grid-template-columns:repeat(3,minmax(0,1fr));gap:5px;max-height:min(25dvh,calc(45dvh - 112px));overflow:auto}
+.steward-notice-panel>.status-note{display:none}
+.race-control-page #live-timer-panel{min-height:0;padding:14px}
+.race-control-page #live-spots-panel{margin-top:8px}
+.race-control-page #event-area>.dashboard-main{width:100%;max-width:960px;align-self:center}
+.race-control-page #live-panel:not(.hidden){display:flex;flex-direction:column}
+.race-control-page .timer{font-size:clamp(44px,8vw,72px)}
+.race-control-page :where(section,details){scroll-margin-top:150px}
+@media(max-width:1100px){
+ .race-control-page .control-toolbar{grid-template-columns:76px minmax(0,1fr)!important;gap:5px}
+ .control-toolbar .brand-row{grid-column:1;grid-row:1}.control-toolbar .brand-row>div{display:none!important}
+ .control-toolbar .toolbar-logo{width:70px!important;flex-basis:70px!important}
+ .control-toolbar .header-account{grid-column:1/-1;grid-row:2;justify-content:flex-end;flex-wrap:wrap}
+ .control-toolbar .account-pill{display:none}
+ .control-toolbar .toolbar-telemetry strong{font-size:11px}
+ .control-toolbar .pill{width:auto;min-width:44px}
+ .control-toolbar .pill span:last-child{display:inline!important}
+ .control-toolbar .sound-toggle{max-width:90px;font-size:10px}
+ .control-toolbar .safety-message-trigger{max-width:75px;font-size:10px}
+}
+@media(max-width:480px){.control-toolbar .pill span:last-child{display:none!important}.control-toolbar .pill{width:44px!important;min-width:44px!important}}
+@media(orientation:landscape) and (max-height:520px){
+ .race-control-page .control-toolbar{position:static}
+ .race-control-page #quick-flag-panel{inset:auto max(12px,env(safe-area-inset-right)) max(5px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))!important}
+ .race-control-page #live-timer-panel{grid-template-columns:1fr auto 1fr;gap:8px}
+}
+
 .flag-start-lights .instrument-panel>header.instrument-topbar{display:grid!important}
 .flag-start-lights .display-timer.dot-timer{grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:10px!important;box-sizing:border-box;width:min(320px,calc(100vw - 64px))!important;height:min(210px,calc(100dvh - 140px))!important;min-height:0!important;padding:16px!important;border-width:6px!important}
 .flag-start-lights .dot-timer>span{justify-items:center}

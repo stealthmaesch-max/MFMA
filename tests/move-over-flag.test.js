@@ -18,5 +18,5 @@ test("Move Over uses the shared signal model and blue-yellow visual treatment",a
 
 test("Live Move Over changes only the displayed signal and clears obsolete acknowledgements",()=>{
  const control=fs.readFileSync("control.js","utf8");
- assert.match(control,/if\(flag==="move-over"&&state\.systemState==="session-live"\)\{await update\(stateRef,\{activeFlag:"move-over",\.\.\.clearInstructionPatch\(\),updatedAt:serverTimestamp\(\)\}\);return\}/);
+ assert.match(control,/if\(flag==="move-over"&&state\.systemState==="session-live"\)\{await sendFlagUpdate\(\{activeFlag:"move-over",\.\.\.clearInstructionPatch\(\),updatedAt:serverTimestamp\(\)\}\);return\}/);
 });

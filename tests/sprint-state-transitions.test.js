@@ -21,7 +21,7 @@ const sprintBranch=issue.match(/if\(state\?\.systemState==="sprint-live"\)\{([\s
 assert(sprintBranch,"Sprint flag branch exists");
 for(const flag of ["green","yellow","red","safety-car","checkered","clear"])assert(sprintBranch.includes(`"${flag}"`),`${flag} is allowed in Sprint`);
 assert(!sprintBranch.includes('"white"'),"legacy White Flag is removed from Sprint");
-assert.match(sprintBranch,/update\(stateRef,\{activeFlag:flag,\.\.\.clearInstructionPatch\(\),updatedAt:serverTimestamp\(\)\}\)/);
+assert.match(sprintBranch,/sendFlagUpdate\(\{activeFlag:flag,\.\.\.clearInstructionPatch\(\),updatedAt:serverTimestamp\(\)\}\)/);
 for(const forbidden of ["automaticCheckered","openWhiteDialog","safety-car-termination","session/","event/"])assert(!sprintBranch.includes(forbidden),`Sprint flags exclude ${forbidden}`);
 
 const sprintFunctions=["startSprint","terminateSprint","setSprintTimerMode","configureSprintDuration","startSprintTimer","pauseSprintTimer","resetSprintTimer","adjustSprintTimer","setSprintTimer","sprintTick"].map(functionSource).join("\n");
@@ -55,7 +55,7 @@ assert.match(functionSource("startCourseLap"),/systemState!=="standby"\|\|state\
 const sprintPanel=html.match(/<section id="sprint-panel"[\s\S]*?<section class="panel sprint-terminate">/)?.[0]||"";
 for(const flag of ["green","yellow","move-over","red","mechanical-incident","safety-car","checkered","clear"])assert(sprintPanel.includes(`data-sprint-flag="${flag}"`),`${flag} control is present`);
 assert.match(control,/function installGripControls\(\)/);assert.match(control,/\["rain","Rain \/ Water"\]/);assert.match(control,/\["debris","Loose Debris"\]/);assert.match(control,/trackSignals\/\$\{sector\}/);assert.match(control,/Keeps the primary flag active/);assert.match(functionSource("issueGrip"),/gripCondition:active\?null/);assert.doesNotMatch(functionSource("issueGrip"),/trackSignals|activeFlag:"grip-deterioration"/);
-assert.match(functionSource("trackSignalAllowed"),/"test-mode"/);assert.match(control,/flagsAllowed=testMode\|\|standby/);assert.match(control,/trackOnly=testMode\|\|safetyTerm/);
+assert.match(functionSource("trackSignalAllowed"),/"test-mode"/);assert.match(control,/flagsAllowed=!testMode/);assert.match(control,/trackOnly=testMode/);
 assert.match(functionSource("renderTrackControl"),/button\.classList\.remove\(\.\.\.signalClasses\)/);assert.match(functionSource("renderTrackControl"),/button\.classList\.add\(signal\.className\)/);assert.match(functionSource("installGripControls"),/path\.onclick=\(\)=>toggleTrackSector/);assert.doesNotMatch(control,/Double Yellow/);
 assert(!sprintPanel.includes('data-sprint-flag="white"'),"legacy White Flag control is removed");
 for(const controlId of ["sprint-timer-mode","sprint-start-timer","sprint-pause-timer","sprint-reset-timer","sprint-add-time","sprint-subtract-time","sprint-set-time","terminate-sprint"])assert(html.includes(`id="${controlId}"`),`${controlId} is present`);

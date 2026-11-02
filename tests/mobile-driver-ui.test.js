@@ -6,6 +6,59 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
+async function stewardHarness(browser,viewport){
+ const page=await browser.newPage({viewport});
+ await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,callback)=>{if(ref.path==='.info/connected')window.testConnection=callback;return ()=>{}},serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},setPersistence=async()=>{},browserLocalPersistence={},GithubAuthProvider=class{},GoogleAuthProvider=class{},signInWithPopup=async()=>{},signOut=async()=>{},set=async(ref,patch)=>{(window.testWrites??=[]).push(patch);if(window.rejectWrite)throw Error('Rejected test command');if(window.holdWrite)await new Promise(resolve=>window.finishWrite=resolve)},update=set,runTransaction=set;`}));
+ await page.route(/\/control\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("control.js","utf8")+`\nwindow.stewardTest={render(next){currentUser=null;state=next;document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');render()},flag(flag){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return issueFlag(flag)},spot(id){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return confirmSpot(id)}};window.testConnection({val:()=>true});`}));
+ await page.goto(`${baseUrl}/control.html`,{waitUntil:"load"});await page.waitForFunction(()=>window.stewardTest);return page;
+}
+function stewardState(mode="session-live",flag="green",running=true){return {systemState:mode,activeFlag:flag,event:{name:"MFMA Event",eventFormat:mode==="qualifying-live"?"qualifying":"regular",pointsEvent:false,scores:{a:0,b:0},teamNames:{a:"Monarch",b:"Parakeet"},qualifying:{warmupCompleted:true,running,elapsedMs:5000,lastTickAt:Date.now(),trackLength:"short",lapLimit:5},courseLap:{status:"active"}},session:{number:1,phase:"finding",running,remainingMs:60000,lastTickAt:Date.now(),flag,teamNames:{a:"Monarch",b:"Parakeet"},pursuitTeam:"a",evadingTeam:"b",pursuitVehicleIds:["ranger","shelly"],spotStatus:{}},sprint:{active:true,timerMode:"count-down",running,remainingMs:60000,lastTickAt:Date.now()}}}
+
+test("Steward Red is available across operational modes and freezes each active clock",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await stewardHarness(browser,{width:375,height:667});
+ for(const mode of ["session-live","sprint-live","qualifying-live","course-lap","next-session-staging","next-session-countdown","violation-review","provisional"]){
+  await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},stewardState(mode));
+  assert(await page.locator('[data-quick-flag="red"]').isVisible(),`${mode}: Red is visible`);
+  await page.evaluate(()=>window.stewardTest.flag("red"));const patch=await page.evaluate(()=>window.testWrites.at(-1));assert.equal(patch.activeFlag,"red");
+  if(mode==="session-live"){assert.equal(patch["session/running"],false);assert(patch["session/remainingMs"]<=60000)}
+  if(mode==="sprint-live")assert.equal(patch["sprint/running"],false);
+  if(mode==="qualifying-live"){assert.equal(patch["event/qualifying/running"],false);assert(patch["event/qualifying/elapsedMs"]>=5000)}
+  if(mode==="next-session-countdown"){assert.equal(patch.systemState,"next-session-staging");assert.equal(patch["session/countdownEndsAt"],null)}
+  assert(!Object.keys(patch).some(key=>/scores|result|penalty/.test(key)),"Red does not decide a competition result");
+ }
+ await browser.close();
+});
+
+test("Steward blocks spots under stop, neutralization, pause, and expired time",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await stewardHarness(browser,{width:393,height:852});
+ for(const [flag,running]of [["red",true],["safety-car",true],["mechanical-incident",true],["green",false],["yellow",false]]){
+  await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},stewardState("session-live",flag,running));assert(await page.locator('[data-spot="ranger"]').isDisabled());await page.evaluate(()=>window.stewardTest.spot("ranger"));assert.equal(await page.evaluate(()=>window.testWrites.length),0);
+ }
+ for(const flag of ["green","yellow","move-over"]){await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},stewardState("session-live",flag));assert(await page.locator('[data-spot="ranger"]').isEnabled());await page.evaluate(()=>window.stewardTest.spot("ranger"));assert.equal(await page.evaluate(()=>window.testWrites[0]["session/spotStatus"].ranger),true)}
+ const expired=stewardState();expired.session.remainingMs=0;await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},expired);await page.evaluate(()=>window.stewardTest.spot("ranger"));assert.equal(await page.evaluate(()=>window.testWrites.length),0);await browser.close();
+});
+
+test("Steward compact workspace keeps live actions ahead of history and Red available after scrolling",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
+  const page=await stewardHarness(browser,viewport),state=stewardState();state.session.running=false;state.session.pursuitVehicleIds=["ranger"];await page.evaluate(s=>window.stewardTest.render(s),state);
+  let metrics=await page.evaluate(()=>{const rect=s=>document.querySelector(s).getBoundingClientRect().toJSON();return {spot:rect('[data-spot="ranger"]'),dock:rect('#quick-flag-panel'),timer:rect('#live-timer-panel'),notices:getComputedStyle(document.querySelector('#steward-notice-panel')).display,width:document.documentElement.scrollWidth}});
+  assert.equal(metrics.width,viewport.width);assert.equal(metrics.notices,"none");if(viewport.height>600)assert(metrics.spot.bottom<=metrics.dock.top,"radio spot fits above the dock on portrait/tablet/desktop");
+  await page.evaluate(()=>scrollTo(0,document.body.scrollHeight));assert(await page.locator('[data-quick-flag="red"]').isVisible());metrics=await page.locator('[data-quick-flag="red"]').boundingBox();assert(metrics.y>=0&&metrics.y+metrics.height<=viewport.height,"Red remains within the viewport after scrolling");
+  await page.evaluate(s=>{scrollTo(0,0);window.stewardTest.render(s)},stewardState("violation-review","under-review",false));
+  metrics=await page.evaluate(()=>{const rect=s=>document.querySelector(s).getBoundingClientRect().toJSON();return {decision:rect('#review-disqualify'),admin:rect('#event-head-panel'),dock:rect('#quick-flag-panel'),account:rect('.header-account'),brand:rect('.control-toolbar .brand-row'),telemetry:rect('.toolbar-telemetry')}});
+  assert(metrics.decision.top<metrics.admin.top,"investigation decisions precede archive controls");if(viewport.height>600)assert(metrics.decision.bottom<=metrics.dock.top,"investigation decision is visible without scrolling");
+  const overlap=(a,b)=>a.right>b.left&&a.left<b.right&&a.bottom>b.top&&a.top<b.bottom;assert(!overlap(metrics.brand,metrics.account)&&!overlap(metrics.brand,metrics.telemetry)&&!overlap(metrics.account,metrics.telemetry),"header groups do not collide when Safety Info is present");await page.close();
+ }
+ await browser.close();
+});
+
+test("Steward signal feedback distinguishes offline, sending, confirmed, and failed",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await stewardHarness(browser,{width:375,height:667});await page.evaluate(s=>window.stewardTest.render(s),stewardState());
+ await page.evaluate(async()=>{window.testWrites=[];window.testConnection({val:()=>false});await window.stewardTest.flag("red")});assert.equal(await page.evaluate(()=>window.testWrites.length),0);assert.match(await page.locator("#control-command-status").textContent(),/NOT SENT/);
+ await page.evaluate(()=>{window.testConnection({val:()=>true});window.holdWrite=true;window.stewardTest.flag("red")});await page.waitForFunction(()=>window.finishWrite);assert.match(await page.locator("#control-command-status").textContent(),/SENDING/);await page.evaluate(()=>{window.holdWrite=false;window.finishWrite()});await page.waitForFunction(()=>document.querySelector("#control-command-status").textContent.includes("CONFIRMED"));
+ await page.evaluate(async()=>{window.rejectWrite=true;await window.stewardTest.flag("red")});assert.match(await page.locator("#control-command-status").textContent(),/FAILED/);await browser.close();
+});
 async function signedDriverPage(browser,viewport){const page=await browser.newPage({viewport});await page.addInitScript(()=>localStorage.setItem("mfma-driver-profile",JSON.stringify({driverId:"test-driver",mraNumber:"MRA100",teamId:"test-team",teamName:"Test Team",vehicleId:"ranger",driverName:"Test Driver",passengerName:""})));return page}
 before(async()=>{
  server=http.createServer((request,response)=>{
@@ -231,6 +284,13 @@ test("real Driver rendering preserves the dock through tests and renders five pa
   await page.evaluate(()=>window.renderDriverTest({systemState:"sprint-live",activeFlag:"green",event:{},sprint:{timerMode:"none"}}));
   assert(await page.locator("#driver-tools").isVisible(),"leaving Test Mode restores live Driver controls");
   assert(await page.locator("#driver-hazard-open").isEnabled(),"reporting is available again in live mode");
+  for(const mode of ["qualifying-live","course-lap","next-session-staging"]){
+   const stopped=stewardState(mode,"red",false);stopped.event.qualifying.elapsedMs=12345;
+   await page.evaluate(s=>window.renderDriverTest(s),stopped);
+   assert.equal(await page.locator("#label").textContent(),"STOP",`${mode}: Red takes priority over the format screen`);
+   assert.match(await page.locator("#display").getAttribute("class"),/flag-red/);
+   if(mode==="qualifying-live")assert.equal(await page.locator("#display-timer").textContent(),"00:12.345");
+  }
   await page.close();
  }
  await browser.close();
