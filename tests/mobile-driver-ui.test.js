@@ -342,6 +342,7 @@ test("real Driver rendering preserves the dock through tests and renders five pa
   assert.match(await page.locator('.instrument-gauge-strip').getAttribute('data-message'),/NO PENALTY DECIDED/);
   assert.match(await page.locator('#driver-case-record').textContent(),/Allegation/);
   assert.equal(await page.locator('#signal-symbol').getAttribute('data-signal'),'under-review');
+  assert.equal(await page.locator('#signal-symbol span').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length}),1,'MRA remains on one line inside the investigation symbol');
   for(const mode of ["qualifying-live","course-lap","next-session-staging","violation-review","white-termination"]){
    const stopped=stewardState(mode,"red",false);stopped.event.qualifying.elapsedMs=12345;
    await page.evaluate(s=>window.renderDriverTest(s),stopped);

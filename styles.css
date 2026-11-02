@@ -1974,6 +1974,7 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
 .instrument-gauge-strip[data-message-type="decision"]{border-color:#4486a7!important;background:#10212a!important;--message-accent:#62c5ff}
 .investigation-dialog{width:min(460px,calc(100vw - 24px));box-sizing:border-box}.investigation-dialog textarea{width:100%;box-sizing:border-box}
 .penalty-dialog .dialog-mra-logo{width:120px;max-height:42px;object-fit:contain;margin:0 0 8px}.penalty-dialog .dialog-head{margin-bottom:12px}.penalty-dialog .status-note{padding:10px;margin:8px 0}.penalty-dialog form{gap:12px}.penalty-dialog textarea{min-height:70px}
+.instrument-panel .signal-symbol[data-signal="under-review"] span{font-size:28px!important;white-space:nowrap;overflow-wrap:normal}
 #penalty-form-status:empty,#investigation-form-status:empty{display:none}
 
 /* Steward operations: persistent signals, compact telemetry, and the active task first. */
