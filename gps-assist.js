@@ -1,5 +1,5 @@
 import {COURSE_BOUNDARY_ID} from "./track-signals.js";
-import {RECORDED_BOUNDARY_COORDINATES} from "./course-boundary.js?v=1";
+import {RECORDED_BOUNDARY_COORDINATES} from "./course-boundary.js?v=2";
 
 const anchors={
  start:{lat:41.298980556,lon:-93.275166667,x:64,y:244},

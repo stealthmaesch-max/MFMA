@@ -1,9 +1,19 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
-import {evaluateSpeedCompliance} from "../speed-compliance.js";
+import {evaluateSpeedCompliance,reliableSpeedMph} from "../speed-compliance.js";
 
 const fix=(mph,accuracy=6,timestamp=1000)=>({speed:mph/2.236936,accuracy,timestamp});
+
+test("speed display and compliance share reliable data and ten second expiry",()=>{
+ assert(Math.abs(reliableSpeedMph(fix(12),11000)-12)<1e-10);
+ for(const sample of [fix(12,6,1000),fix(12,20,11001),fix(12,6,12000),{speed:5,accuracy:5}]){
+  assert.equal(reliableSpeedMph(sample,11001),null);
+  assert.equal(evaluateSpeedCompliance({},'yellow',sample,11001).status,'unavailable');
+ }
+ assert.equal(evaluateSpeedCompliance({},'yellow',fix(7),1000).status,'compliant');
+ assert.equal(evaluateSpeedCompliance({},'yellow',fix(7.1),1000).status,'grace');
+});
 
 test("Yellow requires seven mph or less after five seconds and three reliable fixes",()=>{
  let state=evaluateSpeedCompliance({},"yellow",fix(12,6,1000),1000);

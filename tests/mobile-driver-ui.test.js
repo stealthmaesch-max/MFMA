@@ -6,6 +6,26 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
+test("Yellow overspeed is distinct, restores Grip, and expires without a new GPS fix",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852},{width:430,height:932},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
+  const page=await signedDriverPage(browser,viewport);
+  await page.addInitScript(()=>{window.speedNow=1770000000000;Date.now=()=>window.speedNow});
+  await page.route('https://www.gstatic.com/firebasejs/**',r=>r.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=()=>({}),onValue=()=>()=>{},get=async()=>({exists:()=>false}),update=async()=>{throw Error('Unexpected write')},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'test'}});`}));
+  await page.route(/\/display\.js\?/,r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync('display.js','utf8')+`\nwindow.speedPreview=(mph,flag='yellow',grip=false)=>{state={systemState:'session-live',activeFlag:flag,gripCondition:grip?{type:'rain'}:null,event:{name:'Speed check'},session:{number:1,phase:'finding',running:false,remainingMs:60000,flag,teamNames:{a:'Monarch',b:'Parakeet'},pursuitTeam:'a',evadingTeam:'b'}};trackLimitsEnabled=true;gpsWatchId=1;gpsFix={latitude:41.29936,longitude:-93.2744,accuracy:5,timestamp:Date.now(),speed:mph/2.236936};render();};`}));
+  await page.goto(`${baseUrl}/display.html`);await page.waitForFunction(()=>window.speedPreview);
+  await page.evaluate(()=>window.speedPreview(12));const zone=page.locator('#multi-function-zone');assert.match(await zone.locator('span strong').textContent(),/SLOW DOWN/);assert.match(await zone.getAttribute('class'),/overspeed/);assert.equal(await page.locator('#signal-symbol').getAttribute('data-signal'),'yellow');assert.equal(await page.locator('#instrument-speed strong').textContent(),'12');
+  const box=await zone.boundingBox(),dock=await page.locator('#driver-tools').boundingBox();assert(box.y+box.height<=dock.y+1);assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),viewport.width);
+  await page.screenshot({path:`/tmp/mfma-yellow-fixed-${viewport.width}.png`});
+  await page.evaluate(()=>window.speedPreview(7));assert(!/overspeed/.test(await zone.getAttribute('class')));assert.equal(await zone.locator('span strong').textContent(),'7 MPH MAX');
+  await page.evaluate(()=>window.speedPreview(7.1));assert.equal(await page.locator('#instrument-speed strong').textContent(),'7.1');
+  await page.evaluate(()=>window.speedPreview(12,'yellow',true));assert.match(await zone.locator('span strong').textContent(),/SLOW DOWN/);assert.match(await page.locator('#multi-status').textContent(),/LOW GRIP/);
+  await page.evaluate(()=>window.speedPreview(5,'yellow',true));assert.equal(await zone.locator('span strong').textContent(),'GRIP DETERIORATION');
+  await page.evaluate(()=>window.speedPreview(12));await page.evaluate(()=>window.speedNow+=10001);await page.waitForFunction(()=>document.querySelector('#instrument-speed strong').textContent==='—');assert(!/overspeed/.test(await zone.getAttribute('class')));
+  await page.evaluate(()=>window.speedPreview(12,'green'));assert(!/overspeed/.test(await zone.getAttribute('class')));await page.close();
+ }
+ await browser.close();
+});
 test("Driver Firebase flag withdrawals cancel real audio playback immediately",async()=>{
  const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
  await page.route('https://www.gstatic.com/firebasejs/**',r=>r.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,cb)=>{if(ref.path==='mfma/state')window.receiveAudioState=cb;if(ref.path==='.info/connected')cb({val:()=>true});return ()=>{}},get=async()=>({exists:()=>false,val:()=>null}),update=async()=>{},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'audio-test'}});`}));

@@ -4,10 +4,23 @@ import {readFileSync} from "node:fs";
 import vm from "node:vm";
 import {TRACK_ZONE_POLYGONS,distanceToZone,distanceToRecordedBoundary,geographicToTrackPoint,gpsConfidence,gpsWarningRadius,locateTrackPosition,smoothGpsFix} from "../gps-assist.js";
 import {RECORDED_BOUNDARY_COORDINATES,RECORDED_BOUNDARY_INFO} from "../course-boundary.js";
+import {reviewBoundaryDraft} from "../boundary-recording.js";
+import {distanceMetres} from "../gps-calibration.js";
 
-test("active perimeter preserves all coordinates from the approved uploaded GeoJSON",()=>{
- const source=JSON.parse(readFileSync(new URL('../assets/course-boundary/recorded-2026-11-07.geojson',import.meta.url),'utf8'));
- assert.deepEqual(RECORDED_BOUNDARY_COORDINATES,source.geometry.coordinates[0]);assert.equal(RECORDED_BOUNDARY_INFO.pointCount,105);assert.equal(RECORDED_BOUNDARY_COORDINATES.length,106);assert.deepEqual(RECORDED_BOUNDARY_COORDINATES[0],RECORDED_BOUNDARY_COORDINATES.at(-1));
+test("reconciled perimeter has no crossing and short measured joins across the repaired edge",()=>{
+ const points=RECORDED_BOUNDARY_COORDINATES.slice(0,-1).map(([longitude,latitude],i)=>({longitude,latitude,timestamp:i+1,breakBefore:false}));
+ assert.equal(reviewBoundaryDraft({points}).ready,true);
+ for(let i=81;i<=89;i++)assert(distanceMetres(points[i-1],points[i])<13);
+});
+
+test("active perimeter preserves the second recording with measured first-perimeter gap repair",()=>{
+ const source=JSON.parse(readFileSync(new URL('../assets/course-boundary/recorded-2026-11-07-reconciled.geojson',import.meta.url),'utf8'));
+ const original=JSON.parse(readFileSync(new URL('../assets/course-boundary/recorded-2026-11-07.geojson',import.meta.url),'utf8'));
+ const draft=JSON.parse(readFileSync(new URL('../assets/course-boundary/recorded-2026-11-07-second-draft.json',import.meta.url),'utf8'));
+ const inherited=original.geometry.coordinates[0].slice(73,81);
+ assert.deepEqual(RECORDED_BOUNDARY_COORDINATES,source.geometry.coordinates[0]);assert.equal(RECORDED_BOUNDARY_INFO.pointCount,94);assert.equal(RECORDED_BOUNDARY_COORDINATES.length,95);assert.deepEqual(RECORDED_BOUNDARY_COORDINATES[0],RECORDED_BOUNDARY_COORDINATES.at(-1));
+ assert.deepEqual(RECORDED_BOUNDARY_COORDINATES.slice(81,89),inherited);
+ assert.deepEqual([...RECORDED_BOUNDARY_COORDINATES.slice(0,81),...RECORDED_BOUNDARY_COORDINATES.slice(89,-1)],draft.points.map(p=>[p.longitude,p.latitude]));
  for(const [lon,lat]of RECORDED_BOUNDARY_COORDINATES)assert.equal(distanceToRecordedBoundary(lat,lon),0);
 });
 test("recorded north and east edges replace the smaller old calibration boundary",()=>{
@@ -102,7 +115,7 @@ test("Driver Portal exposes limited-connection safety fallbacks",()=>{
  assert.match(source,/Waiting for connection • not yet received by MRA/);
  assert.match(source,/retryPendingActions/);
  assert.match(source,/serviceWorker\.register/);
- assert.match(source,/gpsFix\.speed\*2\.236936/);
+ assert.match(source,/reliableSpeedMph\(gpsFix\)/);
  assert.match(readFileSync(new URL("../display.html",import.meta.url),"utf8"),/id="driver-speed"/);
  assert.match(worker,/event\.request\.mode==="navigate"/);
  assert.match(worker,/url\.origin!==self\.location\.origin&&!sdk/);

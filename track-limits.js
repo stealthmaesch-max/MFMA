@@ -1,4 +1,4 @@
-import {distanceToZone} from "./gps-assist.js?v=7";
+import {distanceToZone} from "./gps-assist.js?v=8";
 
 export const TRACK_LIMITS_MAX_ACCURACY=15;
 export const TRACK_LIMITS_MIN_SAMPLES=3;
