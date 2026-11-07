@@ -1,7 +1,7 @@
 import {RECORDED_BOUNDARY_INFO} from "./course-boundary.js?v=1";
 import {distanceToRecordedBoundary} from "./gps-assist.js?v=7";
 import {evaluateTrackLimitFix,shouldWarnTrackLimit} from "./track-limits.js?v=3";
-import {enableSounds,onSoundStatus,playSupplementalSound,stopSounds} from "./sounds.js?v=99";
+import {enableSounds,onSoundStatus,playSupplementalSound,stopSupplementalSound,stopSounds} from "./sounds.js?v=100";
 const _=id=>document.getElementById(id);let fix=null,detector={},watch=null,generation=0,previewUntil=0,wasWarning=false,lastAlarmAt=0,wake=null,starting=false;
 _("boundary-test-version").textContent=`Active perimeter: ${RECORDED_BOUNDARY_INFO.recordedOn} • ${RECORDED_BOUNDARY_INFO.pointCount} recorded points`;
 onSoundStatus(sound=>_("boundary-test-sound").textContent=sound.state==='enabled'?'Sound on':'Sound off • tap Preview warning to enable');
@@ -10,7 +10,7 @@ function render(){
  _("boundary-test-start").disabled=watch!==null||starting;_("boundary-test-stop").disabled=watch===null&&!preview&&!starting;_("boundary-test-warning").classList.toggle('hidden',!warning);_("boundary-test-warning-label").textContent=preview?'ALARM PREVIEW':'LOCAL GPS TEST';
  _("boundary-test-distance").textContent=Number.isFinite(distance)?`Outside distance ${Math.round(distance)} m`:'Boundary distance —';_("boundary-test-accuracy").textContent=fix?`GPS ±${Math.round(fix.accuracy)} m`:'Accuracy —';_("boundary-test-samples").textContent=`${detector.outsideCount||0} outside fixes`;
  if(watch!==null)_("boundary-test-position").textContent=!fresh?'Waiting for fresh GPS':detector.status==='unavailable'?'GPS accuracy too low':detector.status==='inside'?(distance===0?'Inside recorded boundary':'Near edge • within GPS tolerance'):'Outside recorded boundary';
- if(warning&&(!wasWarning||now-lastAlarmAt>=3000)){lastAlarmAt=now;try{playSupplementalSound('returnCourse')}catch{}}if(!warning)lastAlarmAt=0;wasWarning=warning;
+ if(warning&&(!wasWarning||now-lastAlarmAt>=3000)){lastAlarmAt=now;try{playSupplementalSound('returnCourse')}catch{}}if(!warning){if(wasWarning)stopSupplementalSound("returnCourse");lastAlarmAt=0}wasWarning=warning;
 }
 async function soundOn(){try{await enableSounds()}catch{_("boundary-test-sound").textContent='Sound unavailable • check browser audio permissions'}}
 function stop(message='Test stopped. No reports were sent.'){

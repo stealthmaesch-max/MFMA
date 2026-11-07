@@ -15,6 +15,9 @@ let stewardUtterance=null;
 let capturedDesignerSequence=null;
 let gripMedia=null;
 let gripMediaUnlocked=false;
+let playbackGeneration=0;
+let supplementalScope=null;
+const supplementalVoices=new Map();
 const activeOscillators=new Set();
 const activeGains=new Set();
 const activeTimeouts=new Set();
@@ -93,8 +96,11 @@ export function scheduleTone(frequency,start,duration,{type="sine",gain=.14,endF
  gainNode.gain.exponentialRampToValueAtTime(MIN_GAIN,ends);
  oscillator.connect(gainNode).connect(context.destination);
  activeOscillators.add(oscillator);activeGains.add(gainNode);
+ const scope=supplementalScope,voice={oscillator,gainNode};
+ if(scope){if(!supplementalVoices.has(scope))supplementalVoices.set(scope,new Set());supplementalVoices.get(scope).add(voice)}
  oscillator.onended=()=>{
   activeOscillators.delete(oscillator);activeGains.delete(gainNode);
+  if(scope){const voices=supplementalVoices.get(scope);voices?.delete(voice);if(voices?.size===0)supplementalVoices.delete(scope)}
   try{oscillator.disconnect();gainNode.disconnect()}catch{}
  };
  oscillator.start(begins);oscillator.stop(ends+.01);
@@ -147,7 +153,7 @@ export function getProductionSoundCandidate(name){
 
 function preferredGripVoice(){const voices=window.speechSynthesis?.getVoices?.()||[],english=voices.filter(voice=>/^en([_-]|$)/i.test(voice.lang||"")),natural=/\b(enhanced|premium|natural)\b/i,male=/\b(evan|daniel|aaron|alex|tom|guy|reed|male)\b/i;return english.find(voice=>natural.test(voice.name)&&male.test(voice.name))||english.find(voice=>male.test(voice.name))||english.find(voice=>natural.test(voice.name))||english.find(voice=>voice.localService)||english[0]||null}
 function speakGripFallback(){try{const speech=window.speechSynthesis;if(!speech||typeof SpeechSynthesisUtterance==="undefined")return;speech.resume?.();const message=new SpeechSynthesisUtterance("Grip. Grip. Grip.");gripUtterance=message;message.voice=preferredGripVoice();message.lang=message.voice?.lang||"en-US";message.rate=1.02;message.pitch=.93;message.volume=Math.max(.88,volume);message.onend=message.onerror=()=>{if(gripUtterance===message)gripUtterance=null};speech.speak(message);const retry=setTimeout(()=>{activeTimeouts.delete(retry);if(gripUtterance===message&&!speech.speaking&&!speech.pending){try{speech.speak(message)}catch{}}},250);activeTimeouts.add(retry)}catch{gripUtterance=null}}
-function speakGrip(){if(capturedDesignerSequence)return;const media=ensureGripMedia();if(!media||!gripMediaUnlocked){speakGripFallback();return}try{media.pause();media.currentTime=0;media.volume=Math.max(.9,volume);const playback=media.play();if(playback?.catch)playback.catch(speakGripFallback)}catch{speakGripFallback()}}
+function speakGrip(){if(capturedDesignerSequence)return;const generation=playbackGeneration,fallback=()=>{if(generation===playbackGeneration)speakGripFallback()},media=ensureGripMedia();if(!media||!gripMediaUnlocked){fallback();return}try{media.pause();media.currentTime=0;media.volume=Math.max(.9,volume);const playback=media.play();if(playback?.catch)playback.catch(fallback)}catch{fallback()}}
 
 export function speakStewardNotice(notice={}){
  if(!context||context.state!=="running")return false;
@@ -226,6 +232,7 @@ export function getClassicSoundCandidate(name){const definition=classicSoundDefi
 function playTestTone(){stopSounds();schedulePattern([{frequency:660,start:0,duration:.08,gain:.1},{frequency:880,start:.09,duration:.12,gain:.1}])}
 
 export function stopSounds(){
+ playbackGeneration++;
  try{window.speechSynthesis?.cancel()}catch{}
  if(gripMedia){try{gripMedia.pause();gripMedia.currentTime=0}catch{}}
  gripUtterance=null;stewardUtterance=null;
@@ -235,6 +242,13 @@ export function stopSounds(){
  for(const oscillator of activeOscillators){try{oscillator.onended=null;oscillator.stop();oscillator.disconnect()}catch{}}
  for(const gainNode of activeGains){try{gainNode.gain.cancelScheduledValues(context?.currentTime||0);gainNode.disconnect()}catch{}}
  activeOscillators.clear();activeGains.clear();
+ supplementalVoices.clear();
+}
+
+export function stopSupplementalSound(name){
+ const voices=supplementalVoices.get(name);if(!voices)return false;
+ for(const {oscillator,gainNode}of voices){oscillator.onended=null;try{oscillator.stop();oscillator.disconnect()}catch{}try{gainNode.gain.cancelScheduledValues(context?.currentTime||0);gainNode.disconnect()}catch{}activeOscillators.delete(oscillator);activeGains.delete(gainNode)}
+ supplementalVoices.delete(name);return true;
 }
 
 export function silencePersistentSound(name){
@@ -250,8 +264,12 @@ export function soundForStateTransition(previous,current){
  if(!previous||!current)return null;
  const previousMode=previous.systemState;
  const currentMode=current.systemState;
+ if(currentMode==="no-event")return null;
  if(previousMode==="sprint-live"&&currentMode!=="sprint-live")return "sprintTerminated";
  if(previousMode!=="sprint-live"&&currentMode==="sprint-live")return "sprintStart";
+ if(previous.activeFlag!==current.activeFlag&&(!current.activeFlag||current.activeFlag==='clear')){
+  const grip=new Set(['rain','debris']).has(current.gripCondition?.type)||Object.values(current.trackSignals||{}).some(signal=>new Set(['rain','debris']).has(signal?.type));return grip?'grip':null;
+ }
  if(currentMode==="sprint-live"&&previous.sprint?.timerMode==="count-down"&&(previous.sprint?.remainingMs||0)>0&&(current.sprint?.remainingMs||0)<=0)return "sprintTimerZero";
  if(previousMode!=="course-lap"&&currentMode==="course-lap")return "courseLapStart";
  if(previousMode!=="next-session-countdown"&&currentMode==="next-session-countdown")return "startLights";
@@ -265,17 +283,26 @@ export function soundForStateTransition(previous,current){
   return layeredGripSound||flagSounds[current.activeFlag]||null;
  }
  const signature=value=>Object.entries(value||{}).filter(([,signal])=>signal?.type).map(([sector,signal])=>`${sector}:${signal.type}`).sort().join("|"),previousTrack=`${previous.gripCondition?.type||""}|${signature(previous.trackSignals)}`,currentTrack=`${current.gripCondition?.type||""}|${signature(current.trackSignals)}`;
- if(previousTrack!==currentTrack){if(layeredGripSound)return layeredGripSound;if(hasGrip)return current.activeFlag==="red"?"red":"grip";const hasLocalYellow=Object.values(current.trackSignals||{}).some(signal=>signal?.type==="yellow");if(hasLocalYellow)return current.activeFlag==="safety-car"?"safetyCar":"yellow";return flagSounds[current.activeFlag]||null}
+ if(previousTrack!==currentTrack){if(layeredGripSound)return layeredGripSound;if(hasGrip)return flagSounds[current.activeFlag]||"grip";const hasLocalYellow=Object.values(current.trackSignals||{}).some(signal=>signal?.type==="yellow");if(hasLocalYellow)return current.activeFlag==="safety-car"?"safetyCar":"yellow";return flagSounds[current.activeFlag]||null}
  return null;
 }
 
+function audioCommandKey(state){
+ const track=Object.entries(state?.trackSignals||{}).filter(([,signal])=>signal?.type).map(([id,signal])=>`${id}:${signal.type}`).sort().join('|');
+ return JSON.stringify([state?.systemState||'no-event',state?.activeFlag||'clear',state?.session?.phase||'',state?.gripCondition?.type||'',track,state?.event?.testDisplay||'',state?.systemState==='sprint-live'&&state.sprint?.timerMode==='count-down'&&Number(state.sprint.remainingMs)<=0,state?.systemState==='provisional'&&state.session?.provisionalReason==='Finding period expired']);
+}
 export async function playStateTransition(previous,current){
- const sound=soundForStateTransition(previous,current);
+ const withdrewTestSound=previous?.systemState==='test-mode'&&previous.event?.testSound?.id&&!current?.event?.testSound;
+ if(!withdrewTestSound&&audioCommandKey(previous)===audioCommandKey(current))return null;
+ let sound=soundForStateTransition(previous,current);
+ if(!sound&&previous&&current)sound=soundForStateTransition({...current,activeFlag:'__none__',gripCondition:null,trackSignals:{}},current);
+ stopSounds();lastSound=null;const generation=playbackGeneration;
  if(!sound||!context)return null;
  if(context.state!=="running"){
   try{await context.resume()}catch{return null}
   if(context.state!=="running")return null;
  }
+ if(generation!==playbackGeneration)return null;
  playSound(sound);return sound;
 }
 
@@ -290,7 +317,8 @@ export function playSound(name){
  if(!definition)throw new Error(`Unknown sound: ${name}`);
  if(!context||context.state!=="running"){notify();throw new Error("Tap to Enable Sounds");}
  stopSounds();lastSound=name;definition.play();
- if(definition.reminderMs){const interval=setInterval(()=>{if(lastSound===name&&context?.state==="running")definition.play()},definition.reminderMs);activeIntervals.add(interval)}
+ const generation=playbackGeneration;
+ if(definition.reminderMs){const interval=setInterval(()=>{if(generation===playbackGeneration&&lastSound===name&&context?.state==="running")definition.play()},definition.reminderMs);activeIntervals.add(interval)}
  return name;
 }
 
@@ -298,7 +326,7 @@ export function playSupplementalSound(name){
  const definition=soundDefinitions[name];
  if(!definition)throw new Error(`Unknown sound: ${name}`);
  if(!context||context.state!=="running"){notify();throw new Error("Tap to Enable Sounds")}
- definition.play();return name;
+ const previousScope=supplementalScope;supplementalScope=name;try{definition.play()}finally{supplementalScope=previousScope}return name;
 }
 
 export function replayLastSound(){

@@ -6,12 +6,21 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
+test("Driver Firebase flag withdrawals cancel real audio playback immediately",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
+ await page.route('https://www.gstatic.com/firebasejs/**',r=>r.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,cb)=>{if(ref.path==='mfma/state')window.receiveAudioState=cb;if(ref.path==='.info/connected')cb({val:()=>true});return ()=>{}},get=async()=>({exists:()=>false,val:()=>null}),update=async()=>{},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'audio-test'}});`}));
+ await page.goto(`${baseUrl}/display.html`);await page.waitForFunction(()=>window.receiveAudioState);const clear=stewardState('session-live','clear',false);clear.event.vehicleReports={ranger:{driverName:'Test Driver',passengerName:''}};await page.evaluate(s=>window.receiveAudioState({val:()=>s}),clear);
+ await page.evaluate(async()=>{window.audioChecks=await import('./sounds.js?v=100');const button=document.querySelector('#display-sound'),enable=button.onclick;button.onclick=async event=>{await enable(event);window.audioEnableComplete=true}});await page.locator('#display-sound').click();await page.waitForFunction(()=>window.audioEnableComplete);
+ for(const flag of ['yellow','red','safety-car','move-over']){const active={...clear,activeFlag:flag,session:{...clear.session,flag}};await page.evaluate(s=>window.receiveAudioState({val:()=>s}),active);assert((await page.evaluate(()=>window.audioChecks.getActiveSoundState())).intervals>0);await page.evaluate(s=>window.receiveAudioState({val:()=>s}),{...active,updatedAt:123});assert((await page.evaluate(()=>window.audioChecks.getActiveSoundState())).intervals>0);await page.evaluate(s=>window.receiveAudioState({val:()=>s}),clear);assert.deepEqual(await page.evaluate(()=>window.audioChecks.getActiveSoundState()),{oscillators:0,gains:0,timeouts:0,intervals:0},`${flag} clears on the actual Firebase listener`)}
+ const grip={...clear,gripCondition:{type:'rain'}};await page.evaluate(s=>window.receiveAudioState({val:()=>s}),grip);assert((await page.evaluate(()=>window.audioChecks.getActiveSoundState())).intervals>0);await page.evaluate(s=>window.receiveAudioState({val:()=>s}),clear);assert.deepEqual(await page.evaluate(()=>window.audioChecks.getActiveSoundState()),{oscillators:0,gains:0,timeouts:0,intervals:0});await browser.close();
+});
+
 test("active boundary walk test triggers and clears the Driver alarm without network writes",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const viewport of [{width:375,height:667},{width:393,height:852},{width:430,height:932},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
   const page=await browser.newPage({viewport}),errors=[],writes=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET')writes.push(r.url())});
   await page.addInitScript(()=>{window.testNow=1770000000000;Date.now=()=>window.testNow;window.testAlarms=[];Object.defineProperty(navigator,'geolocation',{value:{watchPosition(cb){window.testFix=cb;return 1},clearWatch(){window.testCleared=true}}})});
-  await page.route(/\/sounds\.js\?/,r=>r.fulfill({contentType:'text/javascript',body:`export const enableSounds=async()=>window.soundChange?.({state:'enabled'}),onSoundStatus=callback=>{window.soundChange=callback;callback({state:'disabled'})},playSupplementalSound=name=>window.testAlarms.push(name),stopSounds=()=>{};`}));
+  await page.route(/\/sounds\.js\?/,r=>r.fulfill({contentType:'text/javascript',body:`export const enableSounds=async()=>window.soundChange?.({state:'enabled'}),onSoundStatus=callback=>{window.soundChange=callback;callback({state:'disabled'})},playSupplementalSound=name=>window.testAlarms.push(name),stopSupplementalSound=()=>{},stopSounds=()=>{};`}));
   await page.goto(`${baseUrl}/boundary-test.html`);await page.locator('#boundary-test-start').click();await page.waitForFunction(()=>window.testFix);
   await page.evaluate(()=>{window.testNow+=2000;window.testFix({coords:{latitude:41.299363889,longitude:-93.274405556,accuracy:5},timestamp:window.testNow})});assert.match(await page.locator('#boundary-test-position').textContent(),/Inside recorded boundary/);
   for(let i=0;i<3;i++)await page.evaluate(()=>{window.testNow+=2000;window.testFix({coords:{latitude:41.2995,longitude:-93.2756,accuracy:5},timestamp:window.testNow})});
@@ -51,6 +60,10 @@ async function stewardHarness(browser,viewport){
  await page.route(/\/control\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("control.js","utf8")+`\nwindow.stewardTest={render(next){window.testRoot=next;currentUser={uid:\"2DCyQB0Js1UpWGI0LkEQtnOhGPl1\",isAnonymous:false};state=next;document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');render()},flag(flag){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return issueFlag(flag)},resume(kind){currentUser={uid:"2DCyQB0Js1UpWGI0LkEQtnOhGPl1",isAnonymous:false};return kind==="finding"?startFinding():startSprintTimer()},spot(id){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return confirmSpot(id)}};window.testConnection({val:()=>true});`}));
  await page.goto(`${baseUrl}/control.html`,{waitUntil:"load"});await page.waitForFunction(()=>window.stewardTest);return page;
 }
+
+test("Steward Test Mode Clear explicitly withdraws a running manual sound preview",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await stewardHarness(browser,{width:393,height:852}),state=stewardState('test-mode','clear',false);state.event.testMode=true;state.event.testDisplay='clear';state.event.testSound={id:1,name:'yellow'};await page.evaluate(s=>{window.testWrites=[];window.stewardTest.render(s)},state);await page.locator('[data-test-flag="clear"]').click();const write=await page.evaluate(()=>window.testWrites.at(-1));assert.equal(write.activeFlag,'clear');assert.equal(write['event/testSound'],null);await browser.close();
+});
 
 test("investigation and decision dialogs require distinct allegations and rationale at compact sizes",async()=>{
  const browser=await chromium.launch({headless:true});

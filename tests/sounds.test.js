@@ -37,6 +37,46 @@ class FakeMediaAudio{
  pause(){this.paused=true}
 }
 
+async function isolatedSounds(tag,extraWindow={}){
+ const storage=new Map();global.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};global.window={AudioContext:FakeAudioContext,...extraWindow};const source=fs.readFileSync('sounds.js','utf8');return import(`data:text/javascript;base64,${Buffer.from(source+'\n// '+tag).toString('base64')}`);
+}
+
+test("withdrawing any active flag to Clear cancels its notes and reminder immediately",async()=>{
+ const sounds=await isolatedSounds('withdraw all flags');await sounds.enableSounds();
+ try{for(const flag of ['yellow','red','safety-car','mechanical-incident','move-over','under-review','disqualification']){const active={systemState:'session-live',activeFlag:flag,session:{phase:'finding'}};await sounds.playCurrentState(active);assert(sounds.getActiveSoundState().oscillators>0);await sounds.playStateTransition(active,{...active,activeFlag:'clear'});assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0},`${flag} withdrawal must cancel all playback`)}}finally{sounds.stopSounds()}
+});
+
+test("unrelated snapshots preserve a current warning while withdrawing Grip stops its callout",async()=>{
+ let cancelled=0;global.SpeechSynthesisUtterance=class{};const speech={cancel:()=>cancelled++,resume(){},getVoices:()=>[],speak(){},speaking:true};const sounds=await isolatedSounds('grip withdrawal',{speechSynthesis:speech});await sounds.enableSounds();
+ try{const active={systemState:'session-live',activeFlag:'clear',gripCondition:{type:'rain'},session:{phase:'finding'}};await sounds.playCurrentState(active);const before=sounds.getActiveSoundState();await sounds.playStateTransition(active,{...active,updatedAt:200,event:{hazards:{test:{status:'open'}}}});assert.deepEqual(sounds.getActiveSoundState(),before);const cancelBefore=cancelled;await sounds.playStateTransition(active,{...active,gripCondition:null});assert(cancelled>cancelBefore);assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0})}finally{sounds.stopSounds()}
+});
+
+test("a delayed AudioContext resume cannot revive a withdrawn flag",async()=>{
+ const sounds=await isolatedSounds('withdraw during resume');await sounds.enableSounds();sounds.stopSounds();const context=FakeAudioContext.latest;context.state='suspended';let finishResume;context.resume=()=>new Promise(resolve=>finishResume=()=>{context.state='running';resolve()});
+ try{const clear={systemState:'session-live',activeFlag:'clear'},yellow={...clear,activeFlag:'yellow'},pending=sounds.playStateTransition(clear,yellow);await sounds.playStateTransition(yellow,clear);finishResume();assert.equal(await pending,null);assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0})}finally{sounds.stopSounds()}
+});
+
+test("removing Grip restores Yellow without keeping the Grip voice",async()=>{
+ const sounds=await isolatedSounds('yellow grip withdrawal');await sounds.enableSounds();try{const active={systemState:'session-live',activeFlag:'yellow',gripCondition:{type:'rain'}};assert.equal(await sounds.playCurrentState(active),'yellowGrip');assert.equal(await sounds.playStateTransition(active,{...active,gripCondition:null}),'yellow');assert.equal(sounds.getActiveSoundState().intervals,1)}finally{sounds.stopSounds()}
+});
+
+test("late media failure cannot speak Grip after its withdrawal",async()=>{
+ let rejectMedia,speaks=0;class DeferredMedia extends FakeMediaAudio{async play(){this.paused=false;this.playCount++;if(this.playCount===1)return;return new Promise((resolve,reject)=>rejectMedia=reject)}}global.SpeechSynthesisUtterance=class{};
+ const sounds=await isolatedSounds('late grip fallback',{Audio:DeferredMedia,speechSynthesis:{getVoices:()=>[],resume(){},speak(){speaks++},cancel(){}}});await sounds.enableSounds();try{const active={systemState:'session-live',activeFlag:'clear',gripCondition:{type:'rain'}};await sounds.playCurrentState(active);await sounds.playStateTransition(active,{...active,gripCondition:null});rejectMedia(Error('Playback canceled'));await new Promise(resolve=>setImmediate(resolve));assert.equal(speaks,0);assert.equal(FakeMediaAudio.latest.paused,true);assert.equal(sounds.getActiveSoundState().intervals,0)}finally{sounds.stopSounds()}
+});
+
+test("clearing Return to Course cancels its queued hits without stopping the primary flag",async()=>{
+ const sounds=await isolatedSounds('scoped supplemental stop');await sounds.enableSounds();try{sounds.playSound('yellow');const primary=sounds.getActiveSoundState();sounds.playSupplementalSound('returnCourse');assert.equal(sounds.getActiveSoundState().oscillators,primary.oscillators+3);assert.equal(sounds.stopSupplementalSound('returnCourse'),true);assert.deepEqual(sounds.getActiveSoundState(),primary);assert.equal(sounds.stopSupplementalSound('returnCourse'),false)}finally{sounds.stopSounds()}
+});
+
+test("Test Mode Clear stops an explicit sound preview even when the displayed flag was already Clear",async()=>{
+ const sounds=await isolatedSounds('test preview withdrawal');await sounds.enableSounds();try{const previous={systemState:'test-mode',activeFlag:'clear',event:{testDisplay:'clear',testSound:{id:1,name:'yellow'}}};sounds.playSound('yellow');await sounds.playStateTransition(previous,{...previous,event:{testDisplay:'clear',testSound:null}});assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0})}finally{sounds.stopSounds()}
+});
+
+test("withdrawing Checkered to Clear does not restart a completed-session cue",async()=>{
+ const sounds=await isolatedSounds('clear completed signal');await sounds.enableSounds();try{const previous={systemState:'provisional',activeFlag:'checkered',session:{provisionalReason:'Finding period expired'}};sounds.playSound('checkered');assert.equal(await sounds.playStateTransition(previous,{...previous,activeFlag:'clear'}),null);assert.deepEqual(sounds.getActiveSoundState(),{oscillators:0,gains:0,timeouts:0,intervals:0})}finally{sounds.stopSounds()}
+});
+
 test("Return to Course supplemental alarm schedules three audible hits and stops cleanly",async()=>{
  const storage=new Map();global.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};global.window={AudioContext:FakeAudioContext};
  const source=fs.readFileSync('sounds.js','utf8'),sounds=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}#return-course`);await sounds.enableSounds();sounds.stopSounds();assert.equal(sounds.playSupplementalSound('returnCourse'),'returnCourse');assert.equal(sounds.getActiveSoundState().oscillators,3);sounds.stopSounds();assert.equal(sounds.getActiveSoundState().oscillators,0);

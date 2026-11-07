@@ -14,7 +14,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
 import { signals } from "./signals.js?v=100";
 import { getRenderMode, showOnly } from "./display-state.js?v=87";
-import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound, soundDefinitions, soundLabels } from "./sounds.js?v=99";
+import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound, soundDefinitions, soundLabels } from "./sounds.js?v=100";
 import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=9";
@@ -259,7 +259,7 @@ async function startTestMode(){
  if(!requireAuthenticatedWrite()||state?.systemState!=="no-event")return;
  await set(stateRef,{systemState:"test-mode",activeFlag:"clear",event:{name:"MRA SYSTEM TEST",testMode:true},session:null,sprint:null,updatedAt:serverTimestamp()});
 }
-async function issueTestSignal(flag){if(!requireAuthenticatedWrite()||state?.systemState!=="test-mode"||!state.event?.testMode)return;const activeFlag=flag==="start-lights"?"proceed-to-start":flag;await update(stateRef,{activeFlag,"event/testDisplay":flag,"session/countdownEndsAt":flag==="start-lights"?Date.now()+10000:null,updatedAt:serverTimestamp()})}
+async function issueTestSignal(flag){if(!requireAuthenticatedWrite()||state?.systemState!=="test-mode"||!state.event?.testMode)return;const activeFlag=flag==="start-lights"?"proceed-to-start":flag;await update(stateRef,{activeFlag,"event/testDisplay":flag,"event/testSound":null,"session/countdownEndsAt":flag==="start-lights"?Date.now()+10000:null,updatedAt:serverTimestamp()})}
 async function issueTestSound(name){if(!requireAuthenticatedWrite()||state?.systemState!=="test-mode"||!state.event?.testMode||!soundDefinitions[name])return;try{if(getSoundStatus().state!=="enabled")await enableSounds();playSound(name)}catch{}await update(stateRef,{"event/testSound":{name,id:Date.now()},updatedAt:serverTimestamp()})}
 function installTestControls(){const displayGrid=$("test-display-grid"),soundGrid=$("test-sound-grid");if(!displayGrid||!soundGrid)return;const displays=[...Object.keys(signals),"start-lights"];displayGrid.innerHTML=displays.map(name=>`<button class="flag" type="button" data-test-flag="${escapeHtml(name)}"><b>${escapeHtml(name.replaceAll("-"," ").toUpperCase())}</b><strong>${escapeHtml(signals[name]?.label||"Starting Lights")}</strong></button>`).join("");soundGrid.innerHTML=Object.keys(soundDefinitions).map(name=>`<button type="button" data-test-sound="${escapeHtml(name)}"><strong>${escapeHtml(soundLabels[name]||name.replace(/([A-Z])/g," $1"))}</strong><small>${escapeHtml(soundDefinitions[name].description||"Operational sound")}</small></button>`).join("");displayGrid.querySelectorAll("[data-test-flag]").forEach(button=>button.onclick=()=>issueTestSignal(button.dataset.testFlag));soundGrid.querySelectorAll("[data-test-sound]").forEach(button=>button.onclick=()=>issueTestSound(button.dataset.testSound))}
 async function endTestMode(){if(!requireAuthenticatedWrite()||state?.systemState!=="test-mode"||!state.event?.testMode)return;await set(stateRef,{systemState:"no-event",activeFlag:"clear",event:null,session:null,sprint:null,updatedAt:serverTimestamp()})}
