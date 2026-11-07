@@ -37,6 +37,11 @@ class FakeMediaAudio{
  pause(){this.paused=true}
 }
 
+test("Return to Course supplemental alarm schedules three audible hits and stops cleanly",async()=>{
+ const storage=new Map();global.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};global.window={AudioContext:FakeAudioContext};
+ const source=fs.readFileSync('sounds.js','utf8'),sounds=await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}#return-course`);await sounds.enableSounds();sounds.stopSounds();assert.equal(sounds.playSupplementalSound('returnCourse'),'returnCourse');assert.equal(sounds.getActiveSoundState().oscillators,3);sounds.stopSounds();assert.equal(sounds.getActiveSoundState().oscillators,0);
+});
+
 test("preview repetitions replace prior playback and clean up completely",async()=>{
  const storage=new Map();
  global.localStorage={getItem:key=>storage.get(key)||null,setItem:(key,value)=>storage.set(key,value)};

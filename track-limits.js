@@ -1,4 +1,4 @@
-import {distanceToZone} from "./gps-assist.js";
+import {distanceToZone} from "./gps-assist.js?v=7";
 
 export const TRACK_LIMITS_MAX_ACCURACY=15;
 export const TRACK_LIMITS_MIN_SAMPLES=3;
@@ -15,11 +15,16 @@ export function nearestOpenZone(fix,openZoneIds=[]){
 export function evaluateTrackLimitFix(previous,fix,openZoneIds,now=Date.now()){
  const state={outsideCount:0,outsideSince:null,insideCount:0,lastReportedAt:0,...previous};
  const accuracy=Number(fix?.accuracy),age=now-Number(fix?.timestamp||now),nearest=nearestOpenZone(fix,openZoneIds);
- if(!fix||!openZoneIds?.length||!Number.isFinite(accuracy)||accuracy<=0||accuracy>TRACK_LIMITS_MAX_ACCURACY||age>10000||!nearest)return {...state,status:"unavailable",candidate:null};
+ if(!fix||!openZoneIds?.length||!Number.isFinite(accuracy)||accuracy<=0||accuracy>TRACK_LIMITS_MAX_ACCURACY||age>10000||age< -1000||!nearest)return {...state,status:"unavailable",outsideCount:0,outsideSince:null,lastFixAt:null,candidate:null};
  const margin=Math.max(10,accuracy*1.25),clearlyOutside=nearest.distance>margin;
  if(!clearlyOutside)return {...state,status:"inside",outsideCount:0,outsideSince:null,insideCount:state.insideCount+1,lastFixAt:now,candidate:null};
  const continuous=!state.lastFixAt||now-state.lastFixAt<=TRACK_LIMITS_MAX_FIX_GAP_MS;
  const outsideCount=continuous?state.outsideCount+1:1,outsideSince=continuous&&state.outsideSince?state.outsideSince:now,durationMs=now-outsideSince,cooldownReady=!state.lastReportedAt||now-state.lastReportedAt>=TRACK_LIMITS_COOLDOWN_MS;
  const confirmed=outsideCount>=TRACK_LIMITS_MIN_SAMPLES&&durationMs>=TRACK_LIMITS_MIN_DURATION_MS&&cooldownReady;
  return {...state,status:confirmed?"candidate":"checking",outsideCount,outsideSince,insideCount:0,lastFixAt:now,lastReportedAt:confirmed?now:state.lastReportedAt,candidate:confirmed?{nearestZoneId:nearest.zoneId,distance:Number(nearest.distance.toFixed(1)),accuracy:Number(accuracy.toFixed(1)),sampleCount:outsideCount,durationMs}:null};
+}
+
+export function shouldWarnTrackLimit(state,fix,now=Date.now(),signal="green"){
+ const age=now-Number(fix?.timestamp||0);
+ return Boolean(fix&&Number.isFinite(fix.accuracy)&&fix.accuracy>0&&fix.accuracy<=TRACK_LIMITS_MAX_ACCURACY&&age>=-1000&&age<=10000&&state?.outsideCount>=2&&new Set(["checking","candidate"]).has(state.status)&&!new Set(["red","mechanical-incident","under-review","disqualification","checkered","return-to-start","proceed-to-start"]).has(signal));
 }

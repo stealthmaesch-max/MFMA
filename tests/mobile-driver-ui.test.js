@@ -6,6 +6,24 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
+test("active boundary walk test triggers and clears the Driver alarm without network writes",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852},{width:430,height:932},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
+  const page=await browser.newPage({viewport}),errors=[],writes=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET')writes.push(r.url())});
+  await page.addInitScript(()=>{window.testNow=1770000000000;Date.now=()=>window.testNow;window.testAlarms=[];Object.defineProperty(navigator,'geolocation',{value:{watchPosition(cb){window.testFix=cb;return 1},clearWatch(){window.testCleared=true}}})});
+  await page.route(/\/sounds\.js\?/,r=>r.fulfill({contentType:'text/javascript',body:`export const enableSounds=async()=>window.soundChange?.({state:'enabled'}),onSoundStatus=callback=>{window.soundChange=callback;callback({state:'disabled'})},playSupplementalSound=name=>window.testAlarms.push(name),stopSounds=()=>{};`}));
+  await page.goto(`${baseUrl}/boundary-test.html`);await page.locator('#boundary-test-start').click();await page.waitForFunction(()=>window.testFix);
+  await page.evaluate(()=>{window.testNow+=2000;window.testFix({coords:{latitude:41.299363889,longitude:-93.274405556,accuracy:5},timestamp:window.testNow})});assert.match(await page.locator('#boundary-test-position').textContent(),/Inside recorded boundary/);
+  for(let i=0;i<3;i++)await page.evaluate(()=>{window.testNow+=2000;window.testFix({coords:{latitude:41.2995,longitude:-93.2756,accuracy:5},timestamp:window.testNow})});
+  assert(await page.locator('#boundary-test-warning').isVisible());assert.match(await page.locator('#boundary-test-warning').textContent(),/RETURN TO COURSE/);assert((await page.evaluate(()=>window.testAlarms)).includes('returnCourse'));assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),viewport.width);
+  const bounds=await page.locator('#boundary-test-warning strong').boundingBox();assert(bounds.x>=0&&bounds.x+bounds.width<=viewport.width);assert(bounds.y>=0&&bounds.y+bounds.height<=viewport.height);await page.screenshot({path:`/tmp/mfma-return-course-${viewport.width}.png`});
+  await page.evaluate(()=>{window.testNow+=2000;window.testFix({coords:{latitude:41.299363889,longitude:-93.274405556,accuracy:5},timestamp:window.testNow})});assert(await page.locator('#boundary-test-warning').isHidden());
+  for(let i=0;i<2;i++)await page.evaluate(()=>{window.testNow+=2000;window.testFix({coords:{latitude:41.2995,longitude:-93.2756,accuracy:5},timestamp:window.testNow})});assert(await page.locator('#boundary-test-warning').isVisible());await page.evaluate(()=>window.testNow+=11000);await page.waitForFunction(()=>document.querySelector('#boundary-test-warning').classList.contains('hidden'));
+  await page.locator('#boundary-test-preview').click();assert(await page.locator('#boundary-test-warning').isVisible());assert.match(await page.locator('#boundary-test-warning-label').textContent(),/PREVIEW/);await page.locator('#boundary-test-stop').click();assert(await page.locator('#boundary-test-warning').isHidden());assert(await page.evaluate(()=>window.testCleared));assert.deepEqual(errors,[]);assert.deepEqual(writes,[]);await page.close();
+ }
+ await browser.close();
+});
+
 test("perimeter recorder saves a walked outline, exports a draft and restores paused on all device sizes",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const viewport of [{width:375,height:667},{width:393,height:852},{width:430,height:932},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
@@ -340,7 +358,7 @@ test("real Driver rendering preserves the dock through tests and renders five pa
  for(const viewport of [{width:375,height:667},{width:393,height:852},{width:844,height:390}]){
   const page=await signedDriverPage(browser,viewport);
   await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=()=>({}),onValue=()=>()=>{},get=async()=>({exists:()=>false,val:()=>null}),update=async()=>{throw Error('No writes allowed in render test')},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'render-test'}});`}));
-  await page.route(/\/display\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("display.js","utf8")+"\nwindow.renderDriverTest=(next)=>{state=next;render();tick()};"}));
+  await page.route(/\/display\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("display.js","utf8")+"\nwindow.renderDriverTest=(next)=>{state=next;render();tick()};window.setDriverBoundaryTest=()=>{trackLimitsEnabled=true;gpsFix={latitude:41.2995,longitude:-93.2756,accuracy:5,timestamp:Date.now()};trackLimitState={outsideCount:2,status:'checking'};renderTrackLimitWarning()};"}));
   await page.goto(`${baseUrl}/display.html`,{waitUntil:"load"});await page.waitForFunction(()=>typeof window.renderDriverTest==="function");
   for(const flag of ["green","start-lights","red","start-lights","green"]){
    await page.evaluate(flag=>window.renderDriverTest({systemState:"test-mode",activeFlag:flag==="start-lights"?"proceed-to-start":flag,event:{testMode:true,testDisplay:flag},session:{countdownEndsAt:Date.now()+8000}}),flag);
@@ -371,6 +389,9 @@ test("real Driver rendering preserves the dock through tests and renders five pa
    assert.match(await page.locator("#display").getAttribute("class"),/flag-red/);
    if(mode==="qualifying-live")assert.equal(await page.locator("#display-timer").textContent(),"00:12.345");
   }
+  await page.evaluate(s=>{window.renderDriverTest(s);window.setDriverBoundaryTest()},stewardState('session-live','green',false));assert(await page.locator('#track-limit-warning').isVisible());assert.equal(await page.locator('#signal-symbol').getAttribute('data-signal'),'green');
+  assert(await page.evaluate(()=>{const panel=document.querySelector('#track-limit-warning'),text=panel.querySelector('strong'),r=text.getBoundingClientRect(),before=panel.style.pointerEvents;panel.style.pointerEvents='auto';const visible=panel.contains(document.elementFromPoint(r.x+r.width/2,r.y+r.height/2));panel.style.pointerEvents=before;return visible}),'Return to Course text must paint above the fixed live instrument');
+  await page.evaluate(s=>window.renderDriverTest(s),stewardState('session-live','red',false));assert(await page.locator('#track-limit-warning').isHidden());assert.equal(await page.locator('#signal-symbol').getAttribute('data-signal'),'red');
   await page.close();
  }
  await browser.close();

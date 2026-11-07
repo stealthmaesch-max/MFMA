@@ -1,4 +1,5 @@
 import {COURSE_BOUNDARY_ID} from "./track-signals.js";
+import {RECORDED_BOUNDARY_COORDINATES} from "./course-boundary.js?v=1";
 
 const anchors={
  start:{lat:41.298980556,lon:-93.275166667,x:64,y:244},
@@ -10,32 +11,24 @@ const anchors={
  north:{lat:41.299791667,lon:-93.274333333,x:230,y:80}
 };
 
-export const TRACK_ZONE_POLYGONS=Object.freeze({
- [COURSE_BOUNDARY_ID]:[[5,8],[430,8],[462,21],[485,48],[495,72],[495,352],[430,352],[388,347],[342,337],[123,337],[65,344],[5,337]]
-});
-
 function barycentric(lat,lon){const a=anchors.start,b=anchors.northwest,c=anchors.northeast,px=lon-a.lon,py=lat-a.lat,bx=b.lon-a.lon,by=b.lat-a.lat,cx=c.lon-a.lon,cy=c.lat-a.lat,det=bx*cy-by*cx;if(!det)return null;return {u:(px*cy-py*cx)/det,v:(bx*py-by*px)/det}}
 function baseTrackPoint(lat,lon){const weights=barycentric(lat,lon);if(!weights)return null;const a=anchors.start,b=anchors.northwest,c=anchors.northeast;return {x:a.x+weights.u*(b.x-a.x)+weights.v*(c.x-a.x),y:a.y+weights.u*(b.y-a.y)+weights.v*(c.y-a.y)}}
 const corrections=Object.values(anchors).map(anchor=>{const base=baseTrackPoint(anchor.lat,anchor.lon);return {...anchor,dx:anchor.x-base.x,dy:anchor.y-base.y}});
 export function geographicToTrackPoint(lat,lon){lat=Number(lat);lon=Number(lon);if(!Number.isFinite(lat)||!Number.isFinite(lon)||Math.abs(lat)>90||Math.abs(lon)>180)return null;const base=baseTrackPoint(lat,lon);if(!base)return null;let weightSum=0,dx=0,dy=0;for(const anchor of corrections){const east=(lon-anchor.lon)*Math.cos(lat*Math.PI/180),north=lat-anchor.lat,distanceSquared=east*east+north*north;if(distanceSquared<1e-14)return {x:anchor.x,y:anchor.y};const weight=1/distanceSquared;weightSum+=weight;dx+=anchor.dx*weight;dy+=anchor.dy*weight}return {x:base.x+dx/weightSum,y:base.y+dy/weightSum}}
+export const TRACK_ZONE_POLYGONS=Object.freeze({[COURSE_BOUNDARY_ID]:RECORDED_BOUNDARY_COORDINATES.map(([lon,lat])=>{const p=geographicToTrackPoint(lat,lon);return [p.x,p.y]})});
 function pointInPolygon(point,polygon){let inside=false;for(let i=0,j=polygon.length-1;i<polygon.length;j=i++){const [xi,yi]=polygon[i],[xj,yj]=polygon[j],cross=yi>point.y!==yj>point.y&&point.x<(xj-xi)*(point.y-yi)/(yj-yi)+xi;if(cross)inside=!inside}return inside}
 function segmentDistance(point,a,b){const dx=b[0]-a[0],dy=b[1]-a[1],length=dx*dx+dy*dy,t=length?Math.max(0,Math.min(1,((point.x-a[0])*dx+(point.y-a[1])*dy)/length)):0;return Math.hypot(point.x-(a[0]+t*dx),point.y-(a[1]+t*dy))}
 export function drawingDistanceToZone(point,id){const polygon=TRACK_ZONE_POLYGONS[id];if(!point||!polygon)return Infinity;if(pointInPolygon(point,polygon))return 0;return Math.min(...polygon.map((vertex,index)=>segmentDistance(point,vertex,polygon[(index+1)%polygon.length])))}
-export function locateTrackPosition(lat,lon,accuracy=Infinity){const point=geographicToTrackPoint(lat,lon);if(!point)return null;const inside=pointInPolygon(point,TRACK_ZONE_POLYGONS[COURSE_BOUNDARY_ID]);return {...point,latitude:Number(lat),longitude:Number(lon),zoneId:inside?COURSE_BOUNDARY_ID:null,zoneLabel:inside?"IN BOUNDS":"OFF MAP",zoneName:inside?"MFMA Grounds":"Outside mapped grounds",accuracy:Number(accuracy)||Infinity}}
+export function locateTrackPosition(lat,lon,accuracy=Infinity){const point=geographicToTrackPoint(lat,lon);if(!point)return null;const inside=distanceToRecordedBoundary(Number(lat),Number(lon))===0;return {...point,latitude:Number(lat),longitude:Number(lon),zoneId:inside?COURSE_BOUNDARY_ID:null,zoneLabel:inside?"IN BOUNDS":"OFF MAP",zoneName:inside?"MFMA Grounds":"Outside mapped grounds",accuracy:Number(accuracy)||Infinity}}
 export function gpsConfidence(accuracy,ageMs=0){accuracy=Number(accuracy);if(!Number.isFinite(accuracy)||accuracy<=0)return "unavailable";if(ageMs>15000)return "stale";if(accuracy<=15)return "precise";if(accuracy<=35)return "approximate";if(accuracy<=75)return "poor";return "unavailable"}
 export function gpsWarningRadius(accuracy,ageMs=0){const confidence=gpsConfidence(accuracy,ageMs);if(confidence==="precise")return 15;if(confidence==="approximate")return Math.min(50,Math.max(25,Number(accuracy)+10));return Infinity}
 export function smoothGpsFix(previous,next){if(!previous||!next||Date.now()-(previous.timestamp||0)>8000)return next;const weight=Math.max(.25,Math.min(.8,(previous.accuracy||20)/((previous.accuracy||20)+(next.accuracy||20))));return {...next,x:previous.x*(1-weight)+next.x*weight,y:previous.y*(1-weight)+next.y*weight,latitude:previous.latitude*(1-weight)+next.latitude*weight,longitude:previous.longitude*(1-weight)+next.longitude*weight}}
 
- // Convert drawing offsets through the local calibration derivative to metres.
- export function distanceToZone(point,id){
-  if(!point||!Number.isFinite(point.latitude))return drawingDistanceToZone(point,id);
-  const polygon=TRACK_ZONE_POLYGONS[id];if(!polygon)return Infinity;
-  const origin=geographicToTrackPoint(point.latitude,point.longitude);
-  const north=geographicToTrackPoint(point.latitude+1/111320,point.longitude);
-  const east=geographicToTrackPoint(point.latitude,point.longitude+1/(111320*Math.cos(point.latitude*Math.PI/180)));
-  const ex=east.x-origin.x,ey=east.y-origin.y,nx=north.x-origin.x,ny=north.y-origin.y,det=ex*ny-ey*nx;
-  if(!Number.isFinite(det)||Math.abs(det)<1e-6)return Infinity;
-  const metric=polygon.map(([x,y])=>{x-=origin.x;y-=origin.y;return [(x*ny-y*nx)/det,(ex*y-ey*x)/det]});
-  const zero={x:0,y:0};if(pointInPolygon(zero,metric))return 0;
-  return Math.min(...metric.map((a,i)=>segmentDistance(zero,a,metric[(i+1)%metric.length])));
- }
+// Classify GPS in metres against the recorded WGS84 ring, independently of display calibration.
+export function distanceToRecordedBoundary(latitude,longitude){
+ if(!Number.isFinite(latitude)||Math.abs(latitude)>90||!Number.isFinite(longitude)||Math.abs(longitude)>180)return Infinity;
+ const scaleX=111320*Math.cos(latitude*Math.PI/180),metric=RECORDED_BOUNDARY_COORDINATES.map(([lon,lat])=>[(lon-longitude)*scaleX,(lat-latitude)*111320]),zero={x:0,y:0};
+ if(pointInPolygon(zero,metric))return 0;
+ const distance=Math.min(...metric.map((a,i)=>segmentDistance(zero,a,metric[(i+1)%metric.length])));return distance<.000001?0:distance;
+}
+export function distanceToZone(point,id){if(id!==COURSE_BOUNDARY_ID||!point)return Infinity;if('latitude' in point||'longitude' in point)return distanceToRecordedBoundary(point.latitude,point.longitude);return drawingDistanceToZone(point,id)}

@@ -2,7 +2,23 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
-import {TRACK_ZONE_POLYGONS,distanceToZone,geographicToTrackPoint,gpsConfidence,gpsWarningRadius,locateTrackPosition,smoothGpsFix} from "../gps-assist.js";
+import {TRACK_ZONE_POLYGONS,distanceToZone,distanceToRecordedBoundary,geographicToTrackPoint,gpsConfidence,gpsWarningRadius,locateTrackPosition,smoothGpsFix} from "../gps-assist.js";
+import {RECORDED_BOUNDARY_COORDINATES,RECORDED_BOUNDARY_INFO} from "../course-boundary.js";
+
+test("active perimeter preserves all coordinates from the approved uploaded GeoJSON",()=>{
+ const source=JSON.parse(readFileSync(new URL('../assets/course-boundary/recorded-2026-11-07.geojson',import.meta.url),'utf8'));
+ assert.deepEqual(RECORDED_BOUNDARY_COORDINATES,source.geometry.coordinates[0]);assert.equal(RECORDED_BOUNDARY_INFO.pointCount,105);assert.equal(RECORDED_BOUNDARY_COORDINATES.length,106);assert.deepEqual(RECORDED_BOUNDARY_COORDINATES[0],RECORDED_BOUNDARY_COORDINATES.at(-1));
+ for(const [lon,lat]of RECORDED_BOUNDARY_COORDINATES)assert.equal(distanceToRecordedBoundary(lat,lon),0);
+});
+test("recorded north and east edges replace the smaller old calibration boundary",()=>{
+ for(const [lat,lon]of [[41.30005,-93.2739],[41.2995,-93.2733]])assert.equal(locateTrackPosition(lat,lon,5).zoneId,'course-boundary');
+ assert.equal(locateTrackPosition(41.2995,-93.2756,5).zoneId,null);assert(distanceToRecordedBoundary(41.2995,-93.2756)>20);assert(distanceToRecordedBoundary(41.2995,-93.2756)<25);
+});
+test("GPS distance uses the measured coordinates independently of drawing positions",()=>{
+ assert.equal(distanceToZone({latitude:41.299363889,longitude:-93.274405556,x:1e9,y:1e9},'course-boundary'),0);
+ assert(distanceToZone({latitude:41.2995,longitude:-93.2756,x:239,y:187},'course-boundary')>20);
+ assert.equal(distanceToZone({latitude:NaN,longitude:-93.274,x:239,y:187},'course-boundary'),Infinity);
+});
 
 test("GPS calibration maps the three supplied site anchors",()=>{
  const start=geographicToTrackPoint(41.298980556,-93.275166667),nw=geographicToTrackPoint(41.299719444,-93.275155556),ne=geographicToTrackPoint(41.299966667,-93.273577778);
@@ -25,7 +41,8 @@ test("additional venue landmarks locally correct the GPS map",()=>{
 
 test("the GPS model has one continuous outer boundary and rejects invalid fixes",()=>{
  assert.deepEqual(Object.keys(TRACK_ZONE_POLYGONS),["course-boundary"]);
- for(const point of [{x:300,y:130},{x:80,y:290}])assert.equal(distanceToZone(point,"course-boundary"),0);
+ for(const point of [{x:300,y:130},{x:239,y:187}])assert.equal(distanceToZone(point,"course-boundary"),0);
+ assert(distanceToZone({x:80,y:290},"course-boundary")>0,"the old drawing does not expand the recorded perimeter");
  assert.equal(geographicToTrackPoint(NaN,0),null);
  assert.equal(geographicToTrackPoint(91,0),null);
  const fix=locateTrackPosition(41.298980556,-93.275166667,5);
@@ -101,7 +118,7 @@ test("public sectors stay hidden while the review-only boundary detector remains
  assert.match(source,/evaluateTrackLimitFix/);
  assert.match(html,/id="track-limit-warning"/);
  assert.match(source,/playSupplementalSound\("returnCourse"\)/);
- assert.match(source,/outsideCount>=2/);
+ assert.match(source,/shouldWarnTrackLimit\(trackLimitState,gpsFix,now,state\?\.activeFlag\)/);
  assert.match(source,/now-lastBoundarySoundAt>=3000/);
  assert.match(html,/GPS OBSERVATION • MRA REVIEW REQUIRED/);
  assert.match(control,/NO AUTOMATIC PENALTIES/);
