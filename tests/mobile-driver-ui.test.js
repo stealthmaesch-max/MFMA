@@ -6,6 +6,27 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
+test("perimeter recorder saves a walked outline, exports a draft and restores paused on all device sizes",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852},{width:430,height:932},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
+  const page=await browser.newPage({viewport}),errors=[],writes=[];page.on('pageerror',e=>errors.push(e.message));page.on('request',r=>{if(r.method()!=='GET')writes.push(r.url())});
+  await page.addInitScript(()=>{window.testNow=1770000000000;Date.now=()=>window.testNow;window.watchCalls=0;Object.defineProperty(navigator,'geolocation',{value:{watchPosition(callback,error){window.watchCalls++;window.recordFix=callback;window.recordError=error;return 7},clearWatch(){window.watchCleared=true}}})});
+  await page.goto(`${baseUrl}/boundary-recorder.html`);await page.locator('#boundary-start').click();
+  for(const [x,y]of [[0,0],[20,0],[20,20],[0,20],[0,5]])await page.evaluate(({x,y})=>{window.testNow+=10000;window.recordFix({coords:{latitude:41+y/111320,longitude:-93+x/(111320*Math.cos(41*Math.PI/180)),accuracy:5,speed:1},timestamp:window.testNow})},{x,y});
+  assert.equal(await page.locator('#boundary-count').textContent(),'5 points');await page.locator('#boundary-finish').click();assert.match(await page.locator('#boundary-review-status').textContent(),/Closed draft/);assert(await page.locator('#boundary-geojson').isEnabled());
+  const downloadEvent=page.waitForEvent('download');await page.locator('#boundary-export').click();const download=await downloadEvent,payload=JSON.parse(fs.readFileSync(await download.path(),'utf8'));assert.equal(payload.appliedToCompetition,false);assert.equal(payload.points.length,5);assert.equal(payload.geojson.geometry.type,'Polygon');
+  await page.reload();assert.equal(await page.locator('#boundary-count').textContent(),'5 points');assert.equal(await page.evaluate(()=>window.watchCalls),0,'restoring a draft never silently restarts GPS');assert(await page.locator('#boundary-pause').isDisabled());assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),viewport.width);assert.deepEqual(errors,[]);assert.deepEqual(writes,[],'recording has no network write authority');
+  await page.locator('summary').click();await page.locator('#boundary-new').click();await page.keyboard.press('Escape');assert.equal(await page.locator('#boundary-count').textContent(),'5 points','cancel preserves the draft');
+  await page.locator('#boundary-start').click();await page.evaluate(()=>{Object.defineProperty(document,'hidden',{configurable:true,value:true});document.dispatchEvent(new Event('visibilitychange'))});assert(await page.locator('#boundary-pause').isDisabled());assert.equal(await page.locator('#boundary-count').textContent(),'5 points');
+  await page.screenshot({path:`/tmp/mfma-boundary-recorder-${viewport.width}.png`,fullPage:true});await page.close();
+ }
+ await browser.close();
+});
+
+test("perimeter recorder pauses on location failure and retains the draft",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await browser.newPage();await page.addInitScript(()=>Object.defineProperty(navigator,'geolocation',{value:{watchPosition(callback,error){window.gpsFailure=error;return 1},clearWatch(){}}}));await page.goto(`${baseUrl}/boundary-recorder.html`);await page.locator('#boundary-start').click();await page.evaluate(()=>window.gpsFailure({code:1}));assert.match(await page.locator('#boundary-status').textContent(),/permission denied/);assert(await page.locator('#boundary-start').isEnabled());await browser.close();
+});
+
 async function stewardHarness(browser,viewport){
  const page=await browser.newPage({viewport});
  await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,callback)=>{if(ref.path==='.info/connected')window.testConnection=callback;return ()=>{}},serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},setPersistence=async()=>{},browserLocalPersistence={},GithubAuthProvider=class{},GoogleAuthProvider=class{},signInWithPopup=async()=>{},signOut=async()=>{},set=async(ref,patch)=>{(window.testWrites??=[]).push(patch);if(window.rejectWrite)throw Error('Rejected test command');if(window.holdWrite)await new Promise(resolve=>window.finishWrite=resolve)},update=set,runTransaction=async(ref,updater)=>{const next=updater(window.testRoot);if(!next)return {committed:false};window.testRoot=next;window.stewardTest.render(next);return {committed:true,snapshot:{val:()=>next}}};`}));

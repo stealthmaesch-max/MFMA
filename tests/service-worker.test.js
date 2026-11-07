@@ -8,7 +8,7 @@ function worker(){
  return {handlers,cached,deleted,get shell(){return shell},run:async name=>{let pending;handlers[name]({waitUntil:p=>pending=p});await pending}};
 }
 test('offline shell includes the full Driver module graph, including its pinned Firebase SDK',async()=>{
- const w=worker();await w.run('install');const entry=fs.readFileSync('display.html','utf8').match(/src="(display\.js\?v=\d+)"/)[1],shell=new Set(w.shell),pending=['./'+entry],seen=new Set();
+ const w=worker();await w.run('install');const entries=['display.html','boundary-recorder.html'].map(file=>'./'+fs.readFileSync(file,'utf8').match(/<script[^>]*src="([^"]+)"/)[1]),shell=new Set(w.shell),pending=[...entries],seen=new Set();
  while(pending.length){const file=pending.pop();if(seen.has(file))continue;seen.add(file);assert(shell.has(file),`Offline shell is missing ${file}`);if(file.startsWith('https:'))continue;
   const source=fs.readFileSync(file.replace(/^\.\//,'').split('?')[0],'utf8');
   for(const match of source.matchAll(/from\s*["']([^"']+)["']/g))pending.push(match[1]);
