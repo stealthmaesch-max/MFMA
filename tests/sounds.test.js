@@ -8,6 +8,11 @@ class AudioParam{
  cancelScheduledValues(){}
 }
 
+test("Yellow compliance silences the combined caution while retaining Grip",async()=>{
+ const sounds=await isolatedSounds('compliant yellow grip');await sounds.enableSounds();
+ try{sounds.playSound('yellowGrip');assert.equal(sounds.silencePersistentSound('yellow'),true);assert.equal(sounds.replayLastSound(),'grip');assert.equal(sounds.silencePersistentSound('yellow'),false);sounds.playSound('red');assert.equal(sounds.silencePersistentSound('yellow'),false);assert.equal(sounds.silencePersistentSound('red'),true);assert.equal(sounds.getActiveSoundState().intervals,0)}finally{sounds.stopSounds()}
+});
+
 class FakeGain{
  constructor(){this.gain=new AudioParam()}
  connect(){return this}

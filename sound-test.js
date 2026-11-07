@@ -1,4 +1,4 @@
-import {classicSoundDefinitions,enableSounds,getClassicSoundCandidate,getDesignedSoundSequence,getProductionSoundCandidate,getSoundStatus,normalizeDesignedSound,onSoundStatus,playClassicSound,playDesignedSound,playSound,replayLastSound,soundDefinitions,soundLabels,stopSounds} from "./sounds.js?v=100";
+import {classicSoundDefinitions,enableSounds,getClassicSoundCandidate,getDesignedSoundSequence,getProductionSoundCandidate,getSoundStatus,normalizeDesignedSound,onSoundStatus,playClassicSound,playDesignedSound,playSound,replayLastSound,soundDefinitions,soundLabels,stopSounds} from "./sounds.js?v=101";
 
 const enableButton=document.getElementById("sound-lab-enable");
 const status=document.getElementById("sound-lab-status");

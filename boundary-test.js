@@ -1,7 +1,7 @@
 import {RECORDED_BOUNDARY_INFO} from "./course-boundary.js?v=2";
 import {distanceToRecordedBoundary} from "./gps-assist.js?v=8";
 import {evaluateTrackLimitFix,shouldWarnTrackLimit} from "./track-limits.js?v=4";
-import {enableSounds,onSoundStatus,playSupplementalSound,stopSupplementalSound,stopSounds} from "./sounds.js?v=100";
+import {enableSounds,onSoundStatus,playSupplementalSound,stopSupplementalSound,stopSounds} from "./sounds.js?v=101";
 const _=id=>document.getElementById(id);let fix=null,detector={},watch=null,generation=0,previewUntil=0,wasWarning=false,lastAlarmAt=0,wake=null,starting=false;
 _("boundary-test-version").textContent=`Active perimeter: ${RECORDED_BOUNDARY_INFO.recordedOn} • ${RECORDED_BOUNDARY_INFO.pointCount} recorded points`;
 onSoundStatus(sound=>_("boundary-test-sound").textContent=sound.state==='enabled'?'Sound on':'Sound off • tap Preview warning to enable');

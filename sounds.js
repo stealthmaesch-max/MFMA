@@ -252,6 +252,7 @@ export function stopSupplementalSound(name){
 }
 
 export function silencePersistentSound(name){
+ if(name==='yellow'&&lastSound==='yellowGrip'){playSound('grip');return true}
  if(lastSound!==name)return false;
  stopSounds();lastSound=null;return true;
 }

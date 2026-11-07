@@ -6,6 +6,24 @@ const http=require("node:http");
 const path=require("node:path");
 
 let server,baseUrl;
+test("compliant GPS silences restarted alarms and consecutive Yellow and Red signals",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
+ await page.route('https://www.gstatic.com/firebasejs/**',r=>r.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,cb)=>{if(ref.path==='mfma/state')window.speedSnapshot=cb;return ()=>{}},get=async()=>({exists:()=>false}),update=async()=>{},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'test'}});`}));
+ await page.route(/\/display\.js\?/,r=>r.fulfill({contentType:'text/javascript',body:fs.readFileSync('display.js','utf8')+`\nwindow.speedFix=mph=>{trackLimitsEnabled=true;gpsWatchId=1;gpsFix={latitude:41.29936,longitude:-93.2744,accuracy:5,timestamp:Date.now(),speed:mph/2.236936};processSpeedComplianceFix()};`}));
+ await page.goto(`${baseUrl}/display.html`);await page.waitForFunction(()=>window.speedSnapshot);await page.evaluate(s=>{s.event.vehicleReports={ranger:{driverName:'Test Driver',passengerName:''}};window.speedSnapshot({val:()=>s})},stewardState('session-live','yellow'));
+ await page.evaluate(async()=>window.checkAudio=await import('./sounds.js?v=101'));await page.locator('#display-sound').click();await page.waitForFunction(()=>window.checkAudio.getActiveSoundState().intervals>0);
+ await page.evaluate(()=>window.speedFix(7));assert.equal(await page.evaluate(()=>window.checkAudio.getActiveSoundState().intervals),0);
+ // An audio replay used to leave the old "silenced" latch set, skipping the next compliant fix.
+ await page.evaluate(()=>{window.checkAudio.playSound('yellow');window.speedFix(7)});assert.equal(await page.evaluate(()=>window.checkAudio.getActiveSoundState().intervals),0);
+ await page.locator('#display-sound').dispatchEvent('click');await page.waitForFunction(()=>window.checkAudio.getActiveSoundState().intervals===0);
+ await page.evaluate(s=>{s.event.vehicleReports={ranger:{driverName:'Test Driver',passengerName:''}};window.speedSnapshot({val:()=>s})},stewardState('session-live','red'));await page.waitForFunction(()=>window.checkAudio.getActiveSoundState().intervals>0);
+ await page.evaluate(()=>window.speedFix(0));assert.equal(await page.evaluate(()=>window.checkAudio.getActiveSoundState().intervals),0);
+ await page.evaluate(s=>{s.event.vehicleReports={ranger:{driverName:'Test Driver',passengerName:''}};window.speedSnapshot({val:()=>s})},stewardState('session-live','yellow'));await page.waitForFunction(()=>window.checkAudio.getActiveSoundState().intervals===0);
+ await page.evaluate(()=>window.speedFix(12));await page.waitForFunction(()=>window.checkAudio.getActiveSoundState().intervals>0);
+ await page.evaluate(()=>window.speedFix(7));assert.equal(await page.evaluate(()=>window.checkAudio.getActiveSoundState().intervals),0);
+ await page.evaluate(s=>{s.event.vehicleReports={ranger:{driverName:'Test Driver',passengerName:''}};window.speedSnapshot({val:()=>s})},stewardState('session-live','red'));await page.waitForFunction(()=>window.checkAudio.getActiveSoundState().intervals>0);await page.evaluate(()=>window.speedFix(0));assert.equal(await page.evaluate(()=>window.checkAudio.getActiveSoundState().intervals),0);
+ await browser.close();
+});
 test("Yellow overspeed is distinct, restores Grip, and expires without a new GPS fix",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const viewport of [{width:375,height:667},{width:393,height:852},{width:430,height:932},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
@@ -30,7 +48,7 @@ test("Driver Firebase flag withdrawals cancel real audio playback immediately",a
  const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:393,height:852});
  await page.route('https://www.gstatic.com/firebasejs/**',r=>r.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,cb)=>{if(ref.path==='mfma/state')window.receiveAudioState=cb;if(ref.path==='.info/connected')cb({val:()=>true});return ()=>{}},get=async()=>({exists:()=>false,val:()=>null}),update=async()=>{},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'audio-test'}});`}));
  await page.goto(`${baseUrl}/display.html`);await page.waitForFunction(()=>window.receiveAudioState);const clear=stewardState('session-live','clear',false);clear.event.vehicleReports={ranger:{driverName:'Test Driver',passengerName:''}};await page.evaluate(s=>window.receiveAudioState({val:()=>s}),clear);
- await page.evaluate(async()=>{window.audioChecks=await import('./sounds.js?v=100');const button=document.querySelector('#display-sound'),enable=button.onclick;button.onclick=async event=>{await enable(event);window.audioEnableComplete=true}});await page.locator('#display-sound').click();await page.waitForFunction(()=>window.audioEnableComplete);
+ await page.evaluate(async()=>{window.audioChecks=await import('./sounds.js?v=101');const button=document.querySelector('#display-sound'),enable=button.onclick;button.onclick=async event=>{await enable(event);window.audioEnableComplete=true}});await page.locator('#display-sound').click();await page.waitForFunction(()=>window.audioEnableComplete);
  for(const flag of ['yellow','red','safety-car','move-over']){const active={...clear,activeFlag:flag,session:{...clear.session,flag}};await page.evaluate(s=>window.receiveAudioState({val:()=>s}),active);assert((await page.evaluate(()=>window.audioChecks.getActiveSoundState())).intervals>0);await page.evaluate(s=>window.receiveAudioState({val:()=>s}),{...active,updatedAt:123});assert((await page.evaluate(()=>window.audioChecks.getActiveSoundState())).intervals>0);await page.evaluate(s=>window.receiveAudioState({val:()=>s}),clear);assert.deepEqual(await page.evaluate(()=>window.audioChecks.getActiveSoundState()),{oscillators:0,gains:0,timeouts:0,intervals:0},`${flag} clears on the actual Firebase listener`)}
  const grip={...clear,gripCondition:{type:'rain'}};await page.evaluate(s=>window.receiveAudioState({val:()=>s}),grip);assert((await page.evaluate(()=>window.audioChecks.getActiveSoundState())).intervals>0);await page.evaluate(s=>window.receiveAudioState({val:()=>s}),clear);assert.deepEqual(await page.evaluate(()=>window.audioChecks.getActiveSoundState()),{oscillators:0,gains:0,timeouts:0,intervals:0});await browser.close();
 });
