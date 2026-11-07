@@ -88,7 +88,7 @@ test("Driver Portal exposes limited-connection safety fallbacks",()=>{
  assert.match(source,/gpsFix\.speed\*2\.236936/);
  assert.match(readFileSync(new URL("../display.html",import.meta.url),"utf8"),/id="driver-speed"/);
  assert.match(worker,/event\.request\.mode==="navigate"/);
- assert.match(worker,/new URL\(event\.request\.url\)\.origin!==self\.location\.origin/);
+ assert.match(worker,/url\.origin!==self\.location\.origin&&!sdk/);
 });
 
 test("public sectors stay hidden while the review-only boundary detector remains available",()=>{
