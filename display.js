@@ -12,7 +12,7 @@ import {calibrationExport,summarizeCalibrationSamples} from "./gps-calibration.j
 import {evaluateTrackLimitFix,shouldWarnTrackLimit} from "./track-limits.js?v=4";
 import {GPS_DIAGNOSTIC_WINDOW,summarizeGpsDiagnostics} from "./gps-diagnostics.js?v=1";
 import {evaluateSpeedCompliance,reliableSpeedMph} from "./speed-compliance.js?v=3";
-import { LEGACY_VEHICLES, applyStandingsAdjustments, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=92";
+import { LEGACY_VEHICLES, applyStandingsAdjustments, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=93";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 import {DECISION_LABELS,investigationRecord} from "./enforcement-model.js?v=1";
 const PUBLIC_TRACK_SECTORS=false;

@@ -5,7 +5,7 @@ import { vehicles } from "./personnel.js?v=41";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { getRenderMode } from "./display-state.js?v=87";
 import {qualifyingTime} from "./qualifying-model.js?v=85";
-import {standardizeTeamNames} from "./competition-model.js?v=92";
+import {standardizeTeamNames} from "./competition-model.js?v=93";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null;
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}

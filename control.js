@@ -18,7 +18,7 @@ import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStat
 import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=9";
-import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=92";
+import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=93";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 import {isMraAdminUser,mraAuthErrorMessage} from "./mra-auth.js?v=95";
 import {evaluateRuleVote} from "./governance-model.js?v=1";

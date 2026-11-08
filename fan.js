@@ -6,7 +6,7 @@ import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { signals } from "./signals.js?v=71";
 import { getRenderMode } from "./display-state.js?v=87";
 import {qualifyingTime} from "./qualifying-model.js?v=85";
-import {standardizeTeamNames} from "./competition-model.js?v=92";
+import {standardizeTeamNames} from "./competition-model.js?v=93";
 
 const app=initializeApp(firebaseConfig);
 const db=getDatabase(app);
