@@ -8,6 +8,7 @@ import {qualifyingTime} from "./qualifying-model.js?v=85";
 import {standardizeTeamNames} from "./competition-model.js?v=93";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null;
+const CHAMPIONSHIP_STANDBY_END=Date.parse("2027-01-01T00:00:00-06:00");
 function fmt(ms){const t=Math.max(0,Math.ceil(ms/1000));return `${String(Math.floor(t/60)).padStart(2,"0")}:${String(t%60).padStart(2,"0")}`}
 function sprintTime(){const s=state?.sprint;if(!s||s.timerMode==="none")return 0;const delta=s.running?Math.max(0,Date.now()-(s.lastTickAt||Date.now())):0;return s.timerMode==="count-up"?Math.max(0,(s.elapsedMs||0)+delta):Math.max(0,(s.remainingMs||0)-delta)}
 function setVisible(mode){
@@ -16,7 +17,7 @@ function setVisible(mode){
 }
 function render(){
  const c=$("ops-connection");c.className="pill connected";c.querySelector("span:last-child").textContent="Connected";
- const mode=getRenderMode(state);setVisible(mode);
+ const mode=getRenderMode(state);setVisible(mode);$("ops-championship-standby")?.classList.toggle("hidden",!(Date.now()<CHAMPIONSHIP_STANDBY_END&&new Set(["no-event","standby"]).has(mode)&&(mode==="no-event"||(state?.activeFlag||"clear")==="clear")));
  if(mode==="no-event"){$("ops-event").textContent="No Active Event";$("ops-state").textContent="Waiting for Race Control.";return}
  $("ops-event").textContent=state.event.name;$("ops-state").textContent=mode==="white-termination"?"DISQUALIFICATION":mode==="violation-review"?"MRA STEWARD — INCIDENT UNDER INVESTIGATION":mode.replaceAll("-"," ").toUpperCase();
  const s=state.session;

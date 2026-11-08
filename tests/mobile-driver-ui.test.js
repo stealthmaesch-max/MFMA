@@ -696,6 +696,15 @@ test("2026 championship standby artwork fits portrait landscape tablet and deskt
  await browser.close();
 });
 
+test("2026 champions remain visible before team sign-in and on the MRA no-event screen",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:375,height:667},{width:393,height:852}]){
+  const display=await browser.newPage({viewport});await display.route('https://www.gstatic.com/firebasejs/**',route=>route.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=()=>({}),onValue=()=>()=>{},get=async()=>({exists:()=>false}),update=async()=>{},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'test'}});`}));await display.route(/\/display\.js\?/,route=>route.fulfill({contentType:'text/javascript',body:fs.readFileSync('display.js','utf8')+`\nwindow.previewChampionship=()=>{state={systemState:'no-event'};render()};`}));await display.goto(`${baseUrl}/display.html`,{waitUntil:'domcontentloaded'});await display.waitForFunction(()=>window.previewChampionship);await display.evaluate(()=>window.previewChampionship());const signin=await display.evaluate(()=>{const image=document.querySelector('#signin-championship'),card=document.querySelector('.driver-signin-card'),box=card.getBoundingClientRect();return {visible:!image.classList.contains('hidden'),loaded:image.querySelector('img').complete,width:document.documentElement.scrollWidth,box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},height:innerHeight}});assert(signin.visible&&signin.loaded);assert.equal(signin.width,viewport.width);assert(signin.box.left>=0&&signin.box.right<=viewport.width&&signin.box.top>=0&&signin.box.bottom<=signin.height);await display.close();
+  const control=await browser.newPage({viewport});await control.goto(`${baseUrl}/control.html`,{waitUntil:'domcontentloaded'});const mra=await control.evaluate(()=>{document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');document.querySelector('#control-championship-standby').classList.remove('hidden');const image=document.querySelector('#control-championship-standby img'),box=document.querySelector('#control-championship-standby').getBoundingClientRect();return {loaded:image.complete,width:document.documentElement.scrollWidth,box:{left:box.left,right:box.right}}});assert(mra.loaded);assert.equal(mra.width,viewport.width);assert(mra.box.left>=0&&mra.box.right<=viewport.width);await control.close();
+ }
+ await browser.close();
+});
+
 test("Sound Designer saves candidates locally and stays contained on iPhone and iPad",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const viewport of [{width:393,height:852},{width:1024,height:1366}]){

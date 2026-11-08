@@ -777,8 +777,10 @@ dialog form {
 .status-view.championship-standby-active>:not(.championship-standby){display:none!important}
 .fan-championship-standby{display:block;width:100%;margin:0;overflow:hidden;border:1px solid #5471ff55;border-radius:24px;background:#061126;box-shadow:0 18px 54px #0008}
 .fan-championship-standby img{display:block;width:100%;height:auto;max-height:min(72vh,820px);object-fit:contain}
+.no-event-championship{display:block;width:100%;margin:18px 0 4px;overflow:hidden;border:1px solid #5471ff55;border-radius:20px;background:#061126;box-shadow:0 14px 42px #0007}.no-event-championship img{display:block;width:100%;height:auto;max-height:440px;object-fit:contain}
+.signin-championship{display:block;overflow:hidden;border:1px solid #5471ff55;border-radius:14px;background:#061126}.signin-championship img{display:block;width:100%;height:auto;max-height:190px;object-fit:contain}.driver-signin-card:has(.signin-championship:not(.hidden))>img{display:none}
 @keyframes championshipStandbyShine{0%,72%,100%{transform:translateX(-80%);opacity:0}80%{opacity:.7}92%{transform:translateX(80%);opacity:0}}
-@media(max-width:699px) and (orientation:portrait){.championship-standby{width:min(92vw,430px);max-height:calc(100dvh - 128px);border-radius:22px}.championship-standby img{max-height:calc(100dvh - 128px)}.fan-championship-standby{border-radius:18px}.fan-championship-standby img{max-height:none}}
+@media(max-width:699px) and (orientation:portrait){.championship-standby{width:min(92vw,430px);max-height:calc(100dvh - 128px);border-radius:22px}.championship-standby img{max-height:calc(100dvh - 128px)}.fan-championship-standby{border-radius:18px}.fan-championship-standby img{max-height:none}.no-event-championship img{max-height:62vh}.signin-championship img{max-height:150px}}
 @media(prefers-reduced-motion:reduce){.championship-standby::after{animation:none}}
 
 .status-kicker,
