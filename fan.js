@@ -13,6 +13,7 @@ const db=getDatabase(app);
 const stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);
 let state=null;
+const CHAMPIONSHIP_STANDBY_END=Date.parse("2027-01-01T00:00:00-06:00");
 
 function fmt(ms){
  const total=Math.max(0,Math.ceil(ms/1000));
@@ -39,6 +40,7 @@ function render(){
  connection.querySelector("span:last-child").textContent="Connected";
 
  const mode=getRenderMode(state);
+ const campaign=$("fan-championship-standby"),campaignActive=Date.now()<CHAMPIONSHIP_STANDBY_END&&new Set(["no-event","standby"]).has(mode)&&(mode==="no-event"||(state?.activeFlag||"clear")==="clear");campaign?.classList.toggle("hidden",!campaignActive);
  const visibility={
   "no-event":[],"test-mode":[],standby:[],"course-lap":[],"sprint-live":["fan-timer-panel"],"qualifying-live":["fan-timer-panel"],
   "session-live":["fan-timer-panel","fan-score-panel","fan-circuit-panel","fan-assignments-panel"],

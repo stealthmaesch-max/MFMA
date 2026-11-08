@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#0a0d12">
 <title>MFMA Fan Watch</title>
-<link rel="stylesheet" href="styles.css?v=112">
+<link rel="stylesheet" href="styles.css?v=161">
 </head>
 <body class="control-page fan-page">
 <main class="control-shell">
@@ -18,6 +18,11 @@
 <div><p class="eyebrow">Event</p><h2 id="fan-event">No Active Event</h2><p id="fan-state">Waiting for Race Control.</p></div>
 <div id="fan-flag" class="fan-flag-badge">STANDBY</div>
 </section>
+
+<picture id="fan-championship-standby" class="fan-championship-standby hidden">
+<source media="(max-width: 699px) and (orientation: portrait)" srcset="assets/branding/monarch-2026-double-champions-portrait.png?v=1">
+<img src="assets/branding/monarch-2026-double-champions-landscape.png?v=1" alt="2026 MFMA Champions. Stealth Maeschen, Driver's Champion. Monarch MFMA Team, Team Champion.">
+</picture>
 
 <section id="fan-timer-panel" class="timer-panel">
 <div><p class="eyebrow">Current Session</p><div id="fan-phase" class="phase">STANDBY</div></div>
@@ -40,6 +45,6 @@
 <div id="fan-assignments" class="assignment-grid"></div>
 </section>
 </main>
-<script type="module" src="fan.js?v=90"></script>
+<script type="module" src="fan.js?v=91"></script>
 </body>
 </html>

@@ -769,6 +769,18 @@ dialog form {
   width: min(100%, 980px);
 }
 
+/* 2026 championship standby takeover: display-only and retired automatically in 2027. */
+.championship-standby{position:relative;display:block;width:min(94vw,1180px);max-height:calc(100dvh - 120px);margin:auto;overflow:hidden;border:1px solid #5471ff55;border-radius:clamp(18px,3vw,34px);background:#061126;box-shadow:0 28px 90px #000a,0 0 70px #123bff20}
+.championship-standby::after{position:absolute;inset:-40%;content:"";pointer-events:none;background:linear-gradient(105deg,transparent 42%,#fff2 50%,transparent 58%);transform:translateX(-80%);animation:championshipStandbyShine 9s ease-in-out infinite}
+.championship-standby img{display:block;width:100%;height:auto;max-height:calc(100dvh - 120px);object-fit:contain}
+.status-view.championship-standby-active{width:min(100%,1240px);padding-inline:clamp(8px,2vw,24px);box-sizing:border-box}
+.status-view.championship-standby-active>:not(.championship-standby){display:none!important}
+.fan-championship-standby{display:block;width:100%;margin:0;overflow:hidden;border:1px solid #5471ff55;border-radius:24px;background:#061126;box-shadow:0 18px 54px #0008}
+.fan-championship-standby img{display:block;width:100%;height:auto;max-height:min(72vh,820px);object-fit:contain}
+@keyframes championshipStandbyShine{0%,72%,100%{transform:translateX(-80%);opacity:0}80%{opacity:.7}92%{transform:translateX(80%);opacity:0}}
+@media(max-width:699px) and (orientation:portrait){.championship-standby{width:min(92vw,430px);max-height:calc(100dvh - 128px);border-radius:22px}.championship-standby img{max-height:calc(100dvh - 128px)}.fan-championship-standby{border-radius:18px}.fan-championship-standby img{max-height:none}}
+@media(prefers-reduced-motion:reduce){.championship-standby::after{animation:none}}
+
 .status-kicker,
 .display-session {
   font-size: clamp(12px, 2.8vw, 20px);

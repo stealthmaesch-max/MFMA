@@ -683,6 +683,19 @@ test("all Driver and team visual assets load and scale without distortion",async
  await browser.close();
 });
 
+test("2026 championship standby artwork fits portrait landscape tablet and desktop",async()=>{
+ const browser=await chromium.launch({headless:true});
+ for(const viewport of [{width:393,height:852},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]){
+  const page=await signedDriverPage(browser,viewport);
+  await page.route('https://www.gstatic.com/firebasejs/**',route=>route.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=()=>({}),onValue=()=>()=>{},get=async()=>({exists:()=>false}),update=async()=>{},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'test'}});`}));
+  await page.route(/\/display\.js\?/,route=>route.fulfill({contentType:'text/javascript',body:fs.readFileSync('display.js','utf8')+`\nwindow.previewChampionship=()=>{state={systemState:'no-event'};render()};`}));
+  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});await page.waitForFunction(()=>window.previewChampionship);await page.evaluate(()=>window.previewChampionship());await page.waitForFunction(()=>document.querySelector('#championship-standby img').complete);
+  const metrics=await page.evaluate(()=>{const campaign=document.querySelector('#championship-standby'),image=campaign.querySelector('img'),box=campaign.getBoundingClientRect(),dock=document.querySelector('#driver-tools').getBoundingClientRect();return {pageWidth:document.documentElement.scrollWidth,visible:!campaign.classList.contains('hidden'),box:{left:box.left,right:box.right,top:box.top,bottom:box.bottom},dockTop:dock.top,currentSrc:image.currentSrc,naturalWidth:image.naturalWidth,naturalHeight:image.naturalHeight};});
+  assert(metrics.visible,"campaign is shown during the 2026 No Event state");assert.equal(metrics.pageWidth,viewport.width);assert(metrics.box.left>=0&&metrics.box.right<=viewport.width&&metrics.box.top>=0&&metrics.box.bottom<=viewport.height,"campaign is contained in the visual viewport");assert(metrics.box.bottom<=metrics.dockTop+1,"campaign stays above signed-in Driver controls");assert(metrics.naturalWidth>0&&metrics.naturalHeight>0,"championship artwork loads");if(viewport.width<700&&viewport.height>viewport.width)assert.match(metrics.currentSrc,/portrait/);else assert.match(metrics.currentSrc,/landscape/);await page.screenshot({path:`/tmp/mfma-2026-champions-${viewport.width}x${viewport.height}.png`});await page.close();
+ }
+ await browser.close();
+});
+
 test("Sound Designer saves candidates locally and stays contained on iPhone and iPad",async()=>{
  const browser=await chromium.launch({headless:true});
  for(const viewport of [{width:393,height:852},{width:1024,height:1366}]){
