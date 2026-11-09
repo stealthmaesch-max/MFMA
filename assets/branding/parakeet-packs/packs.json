@@ -1,0 +1,12 @@
+{
+  "team": "Parakeet MFMA Team",
+  "packs": [
+    {
+      "id": "baseline",
+      "label": "Baseline",
+      "folder": "baseline",
+      "season": null,
+      "use": "Evergreen blue-and-yellow Parakeet identity with a white bird badge."
+    }
+  ]
+}

@@ -5,7 +5,7 @@ import { vehicles } from "./personnel.js?v=41";
 import { getCircuitStatus } from "./circuit-model.js?v=52";
 import { getRenderMode } from "./display-state.js?v=87";
 import {qualifyingTime} from "./qualifying-model.js?v=85";
-import {standardizeTeamNames} from "./competition-model.js?v=93";
+import {standardizeTeamNames} from "./competition-model.js?v=94";
 const app=initializeApp(firebaseConfig),db=getDatabase(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);let state=null;
 const CHAMPIONSHIP_STANDBY_END=Date.parse("2027-01-01T00:00:00-06:00");

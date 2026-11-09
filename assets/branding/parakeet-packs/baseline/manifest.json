@@ -1,0 +1,318 @@
+{
+  "README.md": {
+    "bytes": 3413,
+    "sha256": "812cb15cc2dd7c7f1e7ab11a1c384820fe5b72c1baa7235e0daf99cf9bf54739"
+  },
+  "VALIDATION.md": {
+    "bytes": 1117,
+    "sha256": "177bea351ee53c0616555180da807b9e3a6f266e7a6eca2463ca86ff5675869a"
+  },
+  "brand-guide.html": {
+    "bytes": 4123,
+    "sha256": "3f357fca380c5c977381e28b564c5df54a3d0f91fc47f75502e9c0cf307027ad"
+  },
+  "brand-guide.pdf": {
+    "bytes": 157693,
+    "sha256": "767f7c17ea77b0592fc4e4fe028d328c7db0e5781abcde7880665dfa609871a9"
+  },
+  "jpg/parakeet-emblem-light-bg.jpg": {
+    "bytes": 156745,
+    "sha256": "4ee1f1907722bff3a7a6d0e726aa04356ee44e8c05b1f90885d01b218d2cc921"
+  },
+  "jpg/parakeet-primary-light-bg.jpg": {
+    "bytes": 326900,
+    "sha256": "eaa80ab930b0136c7e37090494513a9a86395470dbafea167a5125844183d32c"
+  },
+  "jpg/parakeet-stacked-light-bg.jpg": {
+    "bytes": 226547,
+    "sha256": "ddcc6f29d5fe48f7d4266a266df98ec01c6dc58720e185b2ef476302b09f25a8"
+  },
+  "jpg/parakeet-wordmark-light-bg.jpg": {
+    "bytes": 325899,
+    "sha256": "aaa8b5d958f536453250f67858c6d608f21e1913ef5cd900bf80dbe5775fac76"
+  },
+  "pack.json": {
+    "bytes": 335,
+    "sha256": "5c659b9e96760b1d320af067408d0f1b4c6e90c0a284804c6961128afa33aea3"
+  },
+  "pdf/parakeet-emblem-black.pdf": {
+    "bytes": 1667,
+    "sha256": "b2a9f17e944e90f84de1d1a0dd1517a86a037167a5c8edac611015542d1b6046"
+  },
+  "pdf/parakeet-emblem-dark-bg.pdf": {
+    "bytes": 7015,
+    "sha256": "11ca3b4ef1a7dc1041b22f3484aa6a2682fa902231fc4894eab7c36d20181713"
+  },
+  "pdf/parakeet-emblem-light-bg.pdf": {
+    "bytes": 7015,
+    "sha256": "11ca3b4ef1a7dc1041b22f3484aa6a2682fa902231fc4894eab7c36d20181713"
+  },
+  "pdf/parakeet-emblem-white.pdf": {
+    "bytes": 1668,
+    "sha256": "dc5557410f1354137618402d422a3e69b580f06737556553229a42dfbcf4d633"
+  },
+  "pdf/parakeet-primary-black.pdf": {
+    "bytes": 5261,
+    "sha256": "76e651783236ac5e288bfc14923b550b89cbeed9b48fc0741a1b05d0e11e909e"
+  },
+  "pdf/parakeet-primary-dark-bg.pdf": {
+    "bytes": 10746,
+    "sha256": "14fd032dea26abfab1179a1266c865b940e5a01d872e12b67066aef1ac2dd7aa"
+  },
+  "pdf/parakeet-primary-light-bg.pdf": {
+    "bytes": 10743,
+    "sha256": "e212a15be396d80f48fc37a2dc50380351699e68e6c7d7d9a7d09156f970537c"
+  },
+  "pdf/parakeet-primary-white.pdf": {
+    "bytes": 5262,
+    "sha256": "3f476eca576ad82c04cf6f695b07fdce01dc87fd437f97d237b3978236ab42db"
+  },
+  "pdf/parakeet-stacked-black.pdf": {
+    "bytes": 5277,
+    "sha256": "024411e4ca32a0f8cf041246932a6f1b0e484d90518c1c91bb42ce65eba4ee5b"
+  },
+  "pdf/parakeet-stacked-dark-bg.pdf": {
+    "bytes": 10409,
+    "sha256": "fda863da7126a202c5468d0a9aca34afecc6ca40be20fdc27780f48482a8da8f"
+  },
+  "pdf/parakeet-stacked-light-bg.pdf": {
+    "bytes": 10410,
+    "sha256": "70cfd59497767c16247b2a35a7ea6d639b0468ac6a988985781e0186b691ca28"
+  },
+  "pdf/parakeet-stacked-white.pdf": {
+    "bytes": 5278,
+    "sha256": "e6e24008a1f94e7a19b74cd41a9820ff143aeaa9169b7216e991a0ac78868b62"
+  },
+  "pdf/parakeet-wordmark-black.pdf": {
+    "bytes": 4406,
+    "sha256": "96b53ccc677c4483d1c24781ce81ccabacc00dd3d92fba4cdef87c61c45a1c4b"
+  },
+  "pdf/parakeet-wordmark-dark-bg.pdf": {
+    "bytes": 4433,
+    "sha256": "f75cd8447e6ce477c43959fe5e688eafd928d67a3c888eed4e04bdd632d64b64"
+  },
+  "pdf/parakeet-wordmark-light-bg.pdf": {
+    "bytes": 4435,
+    "sha256": "b548ebe83587e9420629c8ed100c16546009ea51eec2d504f17c8d7bd7667143"
+  },
+  "pdf/parakeet-wordmark-white.pdf": {
+    "bytes": 4408,
+    "sha256": "cb771e0f3348ad35e6438c1cc37a1452019b3951961d67400bc6f9a03ff5eba7"
+  },
+  "png/parakeet-emblem-black.png": {
+    "bytes": 47101,
+    "sha256": "c75815a634de32a577df34cb5d2ff45adbbac44036c450b804dad60791a2bd1c"
+  },
+  "png/parakeet-emblem-dark-bg.png": {
+    "bytes": 130264,
+    "sha256": "3b045e7524a70f16d8d978961c6d8b849a449b6d6a194718d3ea2681e96581b5"
+  },
+  "png/parakeet-emblem-light-bg.png": {
+    "bytes": 130264,
+    "sha256": "3b045e7524a70f16d8d978961c6d8b849a449b6d6a194718d3ea2681e96581b5"
+  },
+  "png/parakeet-emblem-white.png": {
+    "bytes": 52493,
+    "sha256": "5b6c002b21a14d94cb308a2a173300167898ec8c435c25c3dde20b077fab2f81"
+  },
+  "png/parakeet-primary-black.png": {
+    "bytes": 93240,
+    "sha256": "5640d522b8c6fc8537158899fef5fd98dd6c6590f75f0ca14cfd62e19526db3d"
+  },
+  "png/parakeet-primary-dark-bg.png": {
+    "bytes": 251326,
+    "sha256": "20f58d1d761b5da8051063fa9cfd451b10238a2f9e6fc8d32ba518d0ee25cb9b"
+  },
+  "png/parakeet-primary-light-bg.png": {
+    "bytes": 251639,
+    "sha256": "d9743af5e6a2d937168e5f0ad9f597991dea87174b5584946b8e4c5dacfb34c7"
+  },
+  "png/parakeet-primary-white.png": {
+    "bytes": 105730,
+    "sha256": "8396faa4b539b12c13fde6d641e50ee7ea3facf218e148b9a01b0e207cb8d69b"
+  },
+  "png/parakeet-stacked-black.png": {
+    "bytes": 71593,
+    "sha256": "cccaa01bca26e303650b000347a67edfd9d86a1e048f91cdf2ccc2905a39a05f"
+  },
+  "png/parakeet-stacked-dark-bg.png": {
+    "bytes": 183709,
+    "sha256": "8df30c368c545c4e24ecf983be19df35d51f465be036d307142e688d1c98d1e3"
+  },
+  "png/parakeet-stacked-light-bg.png": {
+    "bytes": 184063,
+    "sha256": "00c89f444cdaa60ebd9a383686d5a3a29056ae6c37b49aa274552af743c5e06d"
+  },
+  "png/parakeet-stacked-white.png": {
+    "bytes": 79440,
+    "sha256": "df281dc93cc6bafde8c6d788c626f379ce3e44a56e1e1ccfc2299cdbaeb0dc3f"
+  },
+  "png/parakeet-wordmark-black.png": {
+    "bytes": 86457,
+    "sha256": "bedeb0167ff2cd929abca014f0bcee825f4415efc68036774b8e3ddfc318e00e"
+  },
+  "png/parakeet-wordmark-dark-bg.png": {
+    "bytes": 219453,
+    "sha256": "d075fa1c8decd255dab984e358ac502d46eb0d11a2007f14062461fd4cfa29ed"
+  },
+  "png/parakeet-wordmark-light-bg.png": {
+    "bytes": 220068,
+    "sha256": "683bf558f90f46ba15f7b788517203e48de31a32afb30b5080be0c3a127b0126"
+  },
+  "png/parakeet-wordmark-white.png": {
+    "bytes": 97428,
+    "sha256": "931171ea0166ec87022b71b7ce0517e546c04bfb237b0241d94fda7c813929bc"
+  },
+  "preview.html": {
+    "bytes": 94818,
+    "sha256": "6dd719cb6fbfc4b51b0a8c83698f1b240238e9d46eef4ebe71255ce4027de697"
+  },
+  "preview.png": {
+    "bytes": 301826,
+    "sha256": "f4c128e001a850bbce46faf1d77d8db3ec45cec1d9f5c897e4b60e4c94ef122d"
+  },
+  "social/avatar-1024.png": {
+    "bytes": 82953,
+    "sha256": "1f80abbf6dd19db84effd001ce1adf9ada76f67da2c67ef83383741a482475ff"
+  },
+  "social/avatar-1024.svg": {
+    "bytes": 6369,
+    "sha256": "4d2a522d243bd8e96c68a2f1ffa7dd496eda74a37aa0a793ebdaebee166f8c27"
+  },
+  "social/avatar-180.png": {
+    "bytes": 12587,
+    "sha256": "344a74b5dea48cb7648140d90f0d7867a2c373282c25279db07da2162a99ad59"
+  },
+  "social/avatar-180.svg": {
+    "bytes": 6369,
+    "sha256": "4d2a522d243bd8e96c68a2f1ffa7dd496eda74a37aa0a793ebdaebee166f8c27"
+  },
+  "social/avatar-32.png": {
+    "bytes": 1415,
+    "sha256": "7ce1cea62337d33eb9961d67a01d42f4ac3eb2047cd84feefa8797ac751ae300"
+  },
+  "social/avatar-32.svg": {
+    "bytes": 6369,
+    "sha256": "4d2a522d243bd8e96c68a2f1ffa7dd496eda74a37aa0a793ebdaebee166f8c27"
+  },
+  "social/avatar-512.png": {
+    "bytes": 39113,
+    "sha256": "732c19cba297109b5ddf5a29f6edc14db904affcb9e251e56b5997b9f9649041"
+  },
+  "social/avatar-512.svg": {
+    "bytes": 6369,
+    "sha256": "4d2a522d243bd8e96c68a2f1ffa7dd496eda74a37aa0a793ebdaebee166f8c27"
+  },
+  "social/team-banner.png": {
+    "bytes": 143528,
+    "sha256": "678423bef5563fcd046e7b7445e8b23d197c307d0a2d0767a00a5a6901619660"
+  },
+  "social/team-banner.svg": {
+    "bytes": 12900,
+    "sha256": "375203888fb7dcbf59907b324112c7583fcff48b44e768460a0154d2cd83c764"
+  },
+  "social/team-square.png": {
+    "bytes": 95526,
+    "sha256": "1adfab20b99e29460c144dcaf731072c6fef0f80019b21b857f048ca083cac93"
+  },
+  "social/team-square.svg": {
+    "bytes": 12985,
+    "sha256": "9a4508aae2335f5fa5b979d29f6f4eabef0b84ffaf06249e7f829fe6cacf31c1"
+  },
+  "social/team-story.png": {
+    "bytes": 101844,
+    "sha256": "07059e2d59a793132d0693f01468b35ee31f0eac7fc93b3c898d95d37462c89f"
+  },
+  "social/team-story.svg": {
+    "bytes": 12987,
+    "sha256": "da3ef9c5f2702e71b17530b08a2378c9116e2683e5afac41fb3f1170144b8d1b"
+  },
+  "source/approved-concept.png": {
+    "bytes": 932496,
+    "sha256": "50349a985d4729f66a6b9abcda94744796282ab3b408ec13bfbd1d08d94b4bac"
+  },
+  "source/build.py": {
+    "bytes": 4278,
+    "sha256": "6970a9ec4c4548ca7427a6036b1532667f9cfc7f07739a0a76f7a604f2e56f2c"
+  },
+  "source/export.cjs": {
+    "bytes": 3584,
+    "sha256": "a3f96a9132e2de59f3a77c2aa101e1d3095080b96e79f04b2e5d4a9f5bb734f1"
+  },
+  "source/glyphs.json": {
+    "bytes": 15697,
+    "sha256": "60b6fdb910f85f9a1e14b7660f07c1fdaf62f19ffbecd483117955b7d5d42748"
+  },
+  "source/trace.py": {
+    "bytes": 1448,
+    "sha256": "a953b1a6ee2c84b3376d8a3faf62b0a0d07ad32eed926a3413d3d1c45a0894ad"
+  },
+  "source/verify.cjs": {
+    "bytes": 934,
+    "sha256": "2df18b2db0531769e830e1fd6f13be3549d3488abb5e6ffa3ea237d93adffb17"
+  },
+  "svg/parakeet-emblem-black.svg": {
+    "bytes": 2042,
+    "sha256": "e798c1d0177e9c410c16b9660286440b5fe9de79940771be79afe702232051e5"
+  },
+  "svg/parakeet-emblem-dark-bg.svg": {
+    "bytes": 6423,
+    "sha256": "1b747271a1455cc2345d8f573fced5c9a3505c3e5833aa98049e75378844f34a"
+  },
+  "svg/parakeet-emblem-light-bg.svg": {
+    "bytes": 6423,
+    "sha256": "1b747271a1455cc2345d8f573fced5c9a3505c3e5833aa98049e75378844f34a"
+  },
+  "svg/parakeet-emblem-white.svg": {
+    "bytes": 2042,
+    "sha256": "50506227f8b6350e4c9bc2722ba4e491af2e6a995e0a552a689df7e0aeb263e3"
+  },
+  "svg/parakeet-primary-black.svg": {
+    "bytes": 8325,
+    "sha256": "d58e44929c4882651373c6e091aa42e19ed68420797faab79ac0a50ca3e3c381"
+  },
+  "svg/parakeet-primary-dark-bg.svg": {
+    "bytes": 12707,
+    "sha256": "d0cbd50b2e122944c9aa03e35f066003a39b2b7c44088662777d76c8126e3edb"
+  },
+  "svg/parakeet-primary-light-bg.svg": {
+    "bytes": 12707,
+    "sha256": "5a5db38e8af78a37a9bd1a3d49b1bba8a96147e5df24b00659e7702a68f961c5"
+  },
+  "svg/parakeet-primary-white.svg": {
+    "bytes": 8325,
+    "sha256": "860e3d86b3edf9fa9035fcf14d687038a8dd2018cf69e8a50927e6ffcabc142d"
+  },
+  "svg/parakeet-stacked-black.svg": {
+    "bytes": 8411,
+    "sha256": "73eabe52993bcf297323ca04d324e5f8ee40a7acf8ce74ae59ada65d45c2d6a8"
+  },
+  "svg/parakeet-stacked-dark-bg.svg": {
+    "bytes": 12793,
+    "sha256": "f284829228c1d0a6d405e72fcfa593501b5b957481cc1861d81852b637a6ebb8"
+  },
+  "svg/parakeet-stacked-light-bg.svg": {
+    "bytes": 12793,
+    "sha256": "e3c25687cef00c8568a7039deb6194f837f6ac1bcd406ba6bc0ea42965dad729"
+  },
+  "svg/parakeet-stacked-white.svg": {
+    "bytes": 8411,
+    "sha256": "5e8715c96c8192164ae0a229c51bbf9ec6f534da1a240d875e35dbbe5b462fa4"
+  },
+  "svg/parakeet-wordmark-black.svg": {
+    "bytes": 6547,
+    "sha256": "5d54a0c044f2311e3519dd132605a57644f4267008406a977789c373a1df37ec"
+  },
+  "svg/parakeet-wordmark-dark-bg.svg": {
+    "bytes": 6548,
+    "sha256": "4ad75150bfecec719559fbdd6229147212c6bfd63f13fe542ba6209f5b54894f"
+  },
+  "svg/parakeet-wordmark-light-bg.svg": {
+    "bytes": 6548,
+    "sha256": "348da15664d1193f217a57580b9006eeb5c2776b48eabbf156b994ab1a48b20d"
+  },
+  "svg/parakeet-wordmark-white.svg": {
+    "bytes": 6547,
+    "sha256": "93ccd9fbfe49a3db63eae41387d6d6d0b486dbc0d79faf4adee915cbd9e8dd59"
+  }
+}

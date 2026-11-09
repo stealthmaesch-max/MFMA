@@ -1,0 +1,12 @@
+{
+  "id": "baseline",
+  "label": "Baseline",
+  "team": "Parakeet MFMA Team",
+  "season": null,
+  "use": "Evergreen blue-and-yellow Parakeet identity with a white bird badge.",
+  "logo_variant_count": 16,
+  "preview": "preview.png",
+  "readme": "README.md",
+  "badge_background": "#FFFFFF",
+  "outside_logo_background": "transparent"
+}

@@ -12,7 +12,7 @@ export const DEFAULT_DRIVER_ROLES={"mra-16":"primary","mra-3":"honorary"};
 export const OFFICIAL_TEAM_IDS=["monarch-mfma-team","parakeet-mfma-team"];
 export const TEAM_BRANDING={
  "monarch-mfma-team":{accent:"#7758ff",emblem:"assets/branding/monarch-team-emblem.png?v=2",logo:"assets/branding/monarch-mfma-team-logo-dignified.png?v=2"},
- "parakeet-mfma-team":{accent:"#139ff2",emblem:"assets/branding/parakeet-team-emblem-v2.png",logo:"assets/branding/parakeet-mfma-team-logo-v2.png"}
+ "parakeet-mfma-team":{accent:"#0064D8",emblem:"assets/branding/parakeet-team-emblem-v2.png?v=3",logo:"assets/branding/parakeet-mfma-team-logo-v2.png?v=3"}
 };
 
 export function normalizeMraNumber(value){return String(value??"").trim().toUpperCase().replace(/\s+/g,"")}
