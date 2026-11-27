@@ -185,3 +185,25 @@ test("Drivers cannot register for a closed event or create championship events",
  await assertFails(set(ref(driver,"mfma/competition/events/round-2"),{name:"Round 2",registrationStatus:"open"}));
  await assertSucceeds(set(ref(rd,"mfma/competition/events/round-2"),{name:"Round 2",registrationStatus:"open"}));
 });
+
+test("Mutual Spotting accepts a timely spot once and only the other team can acknowledge it", async () => {
+ await authorizeDriver();
+ const opponent = env.authenticatedContext("opposing-device", {firebase: {sign_in_provider: "anonymous"}}).database();
+ await set(ref(rd, "mfma/driverAccess/opposing-device"), {teamId: "team-two", status: "approved"});
+ const trialId = Date.now();
+ const trial = {phase: "live", attempt: 7, deadline: trialId + 120000, teams: {a: "team-one", b: "team-two"}};
+ await set(ref(rd, "mfma/state"), {systemState: "mutual-spotting", activeFlag: "green", event: {createdAt: trialId}, trial});
+ const spot = {teamId: "team-one", attempt: 7, trialId, at: require("firebase/database").serverTimestamp()};
+ const ack = {...spot, teamId: "team-two"};
+ await assertFails(set(ref(opponent, "mfma/state/trial/ack"), ack));
+ await assertFails(set(ref(driver, "mfma/state/trial/spot"), {...spot, attempt: 6}));
+ await assertFails(set(ref(opponent, "mfma/state/trial/spot"), spot));
+ await assertSucceeds(set(ref(driver, "mfma/state/trial/spot"), spot));
+ await assertFails(set(ref(opponent, "mfma/state/trial/spot"), ack));
+ await assertFails(set(ref(driver, "mfma/state/trial/ack"), spot));
+ await assertSucceeds(set(ref(opponent, "mfma/state/trial/ack"), ack));
+ await assertSucceeds(update(ref(rd, "mfma/state"), {activeFlag: "yellow", "trial/phase": "reset"}));
+ await assertFails(update(ref(driver, "mfma/state"), {activeFlag: "green"}));
+ await set(ref(rd, "mfma/state/trial"), {...trial, deadline: trialId - 1});
+ await assertFails(set(ref(driver, "mfma/state/trial/spot"), spot));
+});

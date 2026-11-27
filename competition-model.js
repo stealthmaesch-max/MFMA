@@ -45,6 +45,37 @@ function rankedEntries(event={}){
 
 function matchingTeam(teams={},name){const wanted=formatTeamName(name).toLocaleLowerCase();return Object.entries(teams).find(([,team])=>formatTeamName(team?.name).toLocaleLowerCase()===wanted)||null}
 
+export function buildMutualSpottingArchive(state, options) {
+ const trial = state.trial;
+ const sides = ["a", "b"];
+ const heats = Object.entries(trial.results || {});
+ if (trial.phase !== "complete" || heats.length !== 4 ||
+     heats.some(([number, result]) => !["1", "2", "3", "4"].includes(number) || !["a", "b", "draw"].includes(result)) ||
+     sides.some(side => !trial.entrants?.[side]?.vehicleId || !trial.entrants[side].driverId)) return;
+ const scores = {a: 0, b: 0};
+ const sessionResults = heats.map(([number, result]) => ({
+  number: Number(number), winnerSide: result === "draw" ? null : result,
+  entrants: sides.map(side => {
+   const outcome = result === "draw" ? "draw" : side === result ? "winner" : "classified";
+   const points = outcome === "draw" ? 1.5 : outcome === "winner" ? 2 : 1;
+   scores[side] += points;
+   return {...trial.entrants[side], side, outcome, position: outcome === "classified" ? 2 : 1, points};
+  })
+ }));
+ const tied = scores.a === scores.b;
+ const classification = sides.sort((a, b) => scores[b] - scores[a]).map((side, index) => {
+  const eventPoints = tied ? 3.5 : index === 0 ? 4 : 3;
+  return {...trial.entrants[side], side, position: tied ? 1 : index + 1,
+   outcome: tied ? "draw" : index === 0 ? "winner" : "classified",
+   points: eventPoints, eventPoints, heatPoints: scores[side]};
+ });
+ const {event} = state;
+ return {name: event.name, eventFormat: "mutual-spotting", seasonId: options.seasonId,
+  pointsEvent: event.pointsEvent !== false, date: options.date, endedAt: options.endedAt,
+  classification, sessionResults, sessionCount: heats.length,
+  scoringPolicy: {sessionPoints: [2, 1], eventPoints: [4, 3], heatDrawPoints: 1.5, eventDrawPoints: 3.5}};
+}
+
 export function buildEventArchive(state,competition={},options={}){
  const event=state?.event||{},reports=event.vehicleReports||{},season=competition?.seasons?.[options.seasonId]||{},points=season.points||DEFAULT_POINTS,sessionPoints=season.sessionPoints||DEFAULT_SESSION_POINTS;
  const explicitOutcomes=options.finalOutcomes&&Object.keys(options.finalOutcomes).length>0,ranked=rankedEntries({...event,lastVehicleIds:state?.session?.setup?.vehicleIds||state?.session?.pursuitVehicleIds||[]}).sort((a,b)=>explicitOutcomes?Number(options.finalOutcomes?.[b.side]==="winner")-Number(options.finalOutcomes?.[a.side]==="winner")||b.wins-a.wins||a.side.localeCompare(b.side):0);
@@ -70,7 +101,7 @@ export function buildEventArchive(state,competition={},options={}){
 
 export function rebuildStandings(archives={}){
  const standings={drivers:{},teams:{},vehicles:{}};
- const add=(type,id,name,row,endedAt,source="event")=>{if(!id)return;const current=standings[type][id]||{id,name:name||id,points:0,eventPoints:0,sessionPoints:0,wins:0,runnerUps:0,events:0,sessions:0};current.name=name||current.name;current.points+=row.points||0;current[source==="session"?"sessionPoints":"eventPoints"]+=row.points||0;if(source==="session")current.sessions+=1;else{current.wins+=row.position===1?1:0;current.runnerUps+=row.position===2?1:0;current.events+=1}if(row.position===1)current.latestWinAt=Math.max(current.latestWinAt||0,endedAt||0);standings[type][id]=current};
+ const add=(type,id,name,row,endedAt,source="event")=>{if(!id)return;const current=standings[type][id]||{id,name:name||id,points:0,eventPoints:0,sessionPoints:0,wins:0,runnerUps:0,events:0,sessions:0};current.name=name||current.name;current.points+=row.points||0;current[source==="session"?"sessionPoints":"eventPoints"]+=row.points||0;if(source==="session")current.sessions+=1;else{current.wins+=row.position===1&&row.outcome!=="draw"?1:0;current.runnerUps+=row.position===2?1:0;current.events+=1}if(row.position===1&&row.outcome!=="draw")current.latestWinAt=Math.max(current.latestWinAt||0,endedAt||0);standings[type][id]=current};
  const validArchives=Object.values(archives||{}).filter(archive=>archive?.pointsEvent!==false&&archive?.status!=="void").sort((a,b)=>(a.endedAt||0)-(b.endedAt||0)),passengerTotals={},sprintTotals={};
  for(const archive of validArchives){
   const classifiedDrivers=new Set();

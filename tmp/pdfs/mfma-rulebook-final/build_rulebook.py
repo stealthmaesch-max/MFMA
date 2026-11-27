@@ -1,4 +1,5 @@
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from PIL import Image, ImageDraw, ImageFont
 from docx import Document
 from docx.enum.section import WD_SECTION
@@ -11,9 +12,9 @@ from docx.shared import Inches, Pt, RGBColor
 ROOT = Path(__file__).resolve().parents[3]
 OUT = ROOT / "output" / "documents"
 ASSET = ROOT / "assets" / "branding"
-WORK = Path(__file__).resolve().parent
+FIGURE_WORK = TemporaryDirectory(prefix="mfma-rulebook-")
+WORK = Path(FIGURE_WORK.name)
 OUT.mkdir(parents=True, exist_ok=True)
-WORK.mkdir(parents=True, exist_ok=True)
 DOCX = OUT / "MFMA_Official_Sporting_Code_2026_Final_Draft.docx"
 
 RED = "E31624"
@@ -25,10 +26,16 @@ BORDER = "D9D9D9"
 
 
 def font(size=20, bold=False):
-    try:
-        return ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", size=size)
-    except Exception:
-        return ImageFont.load_default()
+    names = (
+        "/System/Library/Fonts/Supplemental/Arial Bold.ttf" if bold else "/System/Library/Fonts/Supplemental/Arial.ttf",
+        "LiberationSans-Bold.ttf" if bold else "LiberationSans-Regular.ttf",
+    )
+    for name in names:
+        try:
+            return ImageFont.truetype(name, size=size)
+        except OSError:
+            continue
+    return ImageFont.load_default()
 
 
 def brand_banner(source, target):
@@ -230,7 +237,7 @@ p=doc.add_paragraph(style="Title"); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add
 p=doc.add_paragraph(style="Subtitle"); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run("2026 Final Draft")
 p=doc.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before=Pt(16)
 r=p.add_run("Maeschen Farm Motorsports Association"); r.bold=True; r.font.size=Pt(14)
-p=doc.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run("Revised October 3 2026\nEffective upon adoption by the MFMA")
+p=doc.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.add_run("Revised November 27 2026\nEffective upon adoption by the MFMA")
 p=doc.add_paragraph(); p.alignment=WD_ALIGN_PARAGRAPH.CENTER; p.paragraph_format.space_before=Pt(36)
 r=p.add_run("Safety takes priority over competition at all times."); r.bold=True; r.font.size=Pt(13); r.font.color.rgb=RGBColor.from_string(RED)
 
@@ -244,17 +251,18 @@ add_table(["Signal","Meaning","Required action"],[
     ("Red","Stop","Stop safely as soon as practical and await instructions."),
     ("White","Investigation","Return to the Starting Zone. No penalty has yet been decided."),
     ("White plus folded Yellow","Infraction warning","Continue with caution. The warning lasts 10 seconds."),
-    ("Checkered","Session complete","Cease competition and follow the post-session movement order."),
+    ("Checkered","Session or heat complete","Cease competition and follow the next movement order."),
 ], [1.25,1.7,3.85])
 doc.add_paragraph("Official communications. Flags, MRA digital displays, and Official Radio Channel announcements are parts of one race-control system. A Red instruction always controls. Drivers must obey the safest applicable instruction.")
 doc.add_paragraph("Standard regular session. One-minute Hiding Period followed by a two-minute Finding Period unless the MRA Steward announces another duration before the start.")
-doc.add_paragraph("Spot. A spot is valid when visual identification occurs and the confirming radio transmission begins before official time expires.")
+doc.add_paragraph("Regular Event spot. Visual identification and the start of the confirming radio transmission must occur before official time expires.")
+doc.add_paragraph("Mutual Spotting. Both teams search during the heat. A recorded spot brings out Checkered. The opposing team's acknowledgment brings out Yellow for the reset, subject to any active safety instruction.")
 
 doc.add_page_break()
 title("Contents",1)
 for item in [
     "Article 1 General Provisions","Article 2 Definitions","Article 3 Governance and MRA Steward Authority","Article 4 Registration Teams and Vehicles",
-    "Article 5 Event Administration","Article 6 Regular Event Competition","Article 7 Qualifying","Article 8 Sprint Operations",
+    "Article 5 Event Administration","Article 6 Regular Event Competition","Article 6A Mutual Spotting","Article 7 Qualifying","Article 8 Sprint Operations",
     "Article 9 Championship and Scoring","Article 10 Communications and Digital Race Control","Article 11 Conduct Investigations and Penalties",
     "Article 12 Safety Course and Hazard Management","Article 13 Official Signals","Appendix A Course and Sector Administration",
     "Appendix B Physical Flag Reference","Appendix C Championship Tables","Appendix D Revision Record"
@@ -281,13 +289,15 @@ article(1,"General Provisions",[
 
 article(2,"Definitions",[
  (1,"Competition Terms",[
-  "Event means the complete MFMA-sanctioned activity conducted under one event record, including any sessions, qualifying, Sprint Operations, or non-points activity.",
+  "Event means the complete MFMA-sanctioned activity conducted under one event record, including any sessions, Mutual Spotting heats, qualifying, Sprint Operations, or non-points activity.",
   "Regular Event means an event composed of scored sessions in which teams alternate Pursuit and Evading roles.",
   "Session means one individual Pursuit-versus-Evading competition within a Regular Event.",
   "Circuit means the minimum balanced group of sessions in which every participating team receives proportionate Pursuit and Evading opportunity.",
   "Qualifying means a Shelly time-trial competition on a Short, Medium, or Long approved course.",
   "Sprint Operations means competition or organized driving in which the MRA signal system is used without a formal Regular Event session order.",
-  "Points Event means an event designated before its start as eligible to award championship points."
+  "Points Event means an event designated before its start as eligible to award championship points.",
+  "Mutual Spotting means the format in which both teams search for the opposing vehicle at the same time.",
+  "Heat means one scored period of Mutual Spotting. The starting-spot period is separate and unscored."
  ]),
  (2,"People and Organizations",[
   "MRA Steward means the official appointed as Race Director for the event. Race Director and MRA Steward refer to the same event authority unless additional stewards are expressly appointed.",
@@ -349,7 +359,7 @@ article(4,"Registration Teams and Vehicles",[
 
 article(5,"Event Administration",[
  (1,"Event Opening",[
-  "Before opening an event, the MRA Steward shall select Regular Event, Sprint, or Qualifying and shall designate the event as points or non-points.",
+  "Before opening an event, the MRA Steward shall select Regular Event, Mutual Spotting, Sprint, or Qualifying and shall designate the event as points or non-points.",
   "The competitor briefing shall identify boundaries, open and closed sectors, vehicle assignments, format, timing, signals, Official Radio Channel, special conditions, and whether qualifying serves as a tiebreaker.",
   "Test Mode is solely for display, sound, and system verification. It creates no competition result, point award, hazard record, or official session."
  ]),
@@ -357,13 +367,14 @@ article(5,"Event Administration",[
   "All formal sessions begin at the Starting Zone unless the MRA Steward directs otherwise.",
   "The preparatory start board illuminates five paired groups of Red lights. The team shall be stopped behind the line before the sequence begins.",
   "When the lights extinguish, the Green signal is displayed. Official timing begins with Green, not with the preparatory lights.",
-  "After Checkered, the Return to Start order is given by the folded Yellow movement signal and digital instruction.",
+  "After Checkered, the Return to Start order is given by the folded Yellow movement signal and digital instruction when a return is ordered. Article 6A governs Mutual Spotting resets.",
   "After competitors return and post-session matters are complete, the Proceed to Line order is given by the folded Green movement signal and digital instruction.",
   "An investigation may be opened only before Proceed to Line is issued."
  ]),
  (3,"Event Closure",[
   "The MRA Steward may end and archive a legal event, or end and invalidate an event at any time.",
-  "A Points Event shall not be archived while roles are unbalanced, no official session exists, a safety report or investigation remains unresolved, an emergency replacement lacks approval, or no single final event winner has been recorded.",
+  "A Regular Points Event shall not be archived while roles are unbalanced, no official session exists, a safety report or investigation remains unresolved, an emergency replacement lacks approval, or no single final event winner has been recorded.",
+  "A Mutual Spotting Points Event requires four scored heats and may end in a tie. Safety reports and outstanding reviews affecting the result shall be resolved before the Steward archives the event.",
   "An invalidated or void event remains an administrative record but awards no championship points."
  ])
 ])
@@ -384,6 +395,28 @@ article(6,"Regular Event Competition",[
   "After a stopped or compromised session, the MRA Steward may order all competitors back to the line and initiate the full Red-light start sequence.",
   "A Safety Car neutralizes competitive activity. The MRA Steward may resume with Green, order a restart, or terminate the session after evaluating the circumstances.",
   "A Red condition pauses competition and requires a safe stop. A subsequent instruction shall state whether the session resumes, restarts, or terminates."
+ ])
+])
+
+article("6A","Mutual Spotting",[
+ (1,"Entrants and Timing",[
+  "Two teams compete in four scored heats. Each team shall report one eligible driver and one vehicle before the first heat and retain that lineup for the round.",
+  "Both teams search simultaneously during a heat. The standard starting-spot period is 60 seconds and the standard heat is 180 seconds. The MRA Steward may set these timers independently and shall announce the durations and starting-spot start procedure before the applicable phase begins."
+ ]),
+ (2,"Starting-Spot Period",[
+  "For a standing start, both vehicles shall be stationary as directed by the Steward. The Steward starts the Red-light sequence. When the lights extinguish, Green starts the starting-spot timer.",
+  "For a Safety Car rolling release, both vehicles follow the Official Vehicle without overtaking. The Steward's Green release starts the starting-spot timer.",
+  "Both teams use this unscored period to select starting spots. When its timer expires, Red requires a safe stop. Once both teams are stopped, the Steward starts the heat lights. Green starts the heat timer in either starting procedure."
+ ]),
+ (3,"Spot, Checkered, and Reset",[
+  "A team records a spot on its display when an occupant directly sees and positively identifies the opposing vehicle during the live heat. The spot must be recorded before official time expires. Drivers shall give vehicle control priority.",
+  "A recorded spot immediately brings out Checkered and ends competition. Only the opposing team may acknowledge the spot. Acknowledgment confirms the result and brings out Yellow for the reset, subject to any active safety instruction.",
+  "The MRA Steward records a draw when time expires without a valid spot or when both teams agree to a drawn result. The Steward may void and replay an unacknowledged heat after reviewing a dispute. A voided heat earns no points. The replay counts in its place.",
+  "During the Yellow reset, follow the Steward's movement instructions. The Steward directs the next formation when ready."
+ ]),
+ (4,"Speed and Safety Signals",[
+  "The Green cap is 15 mph. Yellow limits speed to 7 mph and runs a live timer at half rate. The Steward may require lower speeds. Competitive overtaking is prohibited.",
+  "Red, Safety Car, or a mechanical stop pauses the active timer and suspends competition. Checkered and a spot acknowledgment do not override an active stop or Safety Car instruction."
  ])
 ])
 
@@ -421,7 +454,7 @@ article(9,"Championship and Scoring",[
   "Standings are provisional until an entrant has participated in at least two valid Points Events."
  ]),
  (2,"Regular Points",[
-  "At-large event classification awards five points to the winner and three points to the other classified team in the current two-team format.",
+  "At-large event classification awards five points to the winner and three points to the other classified team in a Regular Event.",
   "Each official session awards two points to the session winner and one point to the other classified team. A DNF classification receives one point unless the MRA Steward records a disqualification or no-result outcome.",
   "Driver, Team, and Vehicle standings receive the applicable at-large and session points from the recorded entrant for that result."
  ]),
@@ -434,6 +467,11 @@ article(9,"Championship and Scoring",[
   "The MRA may add or deduct points through an audited adjustment stating the affected championship, entrant, value, reason, official, and date.",
   "Deleting or voiding an adjustment removes its effect without rewriting the underlying event result.",
   "A penalty may affect session results, at-large results, championship points, future participation, or any combination expressly recorded by the MRA Steward."
+ ]),
+ (5,"Mutual Spotting Points",[
+  "The winner of a scored heat receives two points and the other classified team receives one. For a drawn heat, each receives 1.5 points.",
+  "After four scored heats, compare the totals from the heats. The higher total earns four at-large event points and the other classified team earns three. Equal totals produce an event draw worth 3.5 at-large points to each team.",
+  "Heat points and at-large event points are recorded separately and both contribute to the same Driver, Team, and Vehicle standings used by Regular Events. A draw does not count as a win. An incomplete or abandoned round earns no championship points."
  ])
 ])
 
@@ -508,7 +546,7 @@ article(13,"Official Signals",[
   "Yellow indicates caution. Competition continues at no more than 7 mph and the official clock advances at one-half rate.",
   "Safety Car is shown physically by open Yellow with open Red held perpendicular from the Official Vehicle. Overtaking and competitive activity are prohibited.",
   "Red requires competitors to stop safely as soon as practical and await instructions.",
-  "Checkered ends the session. Competitors cease competition and follow the next movement order."
+  "Checkered ends the session or heat. Competitors cease competition and follow the next movement order. In Mutual Spotting, an acknowledged spot initiates the Yellow reset under Article 6A."
  ]),
  (3,"Supplemental and Movement Signals",[
   "Move Over is an MRA digital and radio instruction until a dedicated Blue-with-Yellow-stripe physical flag is acquired.",
@@ -541,7 +579,12 @@ doc.add_paragraph("Digital-only supplements. Move Over uses a Blue-and-Yellow di
 
 doc.add_page_break(); title("Appendix C Championship Tables",1)
 add_table(["Award","Driver","Team","Vehicle"],[
- ("At-large winner","5","5","5"),("At-large classified","3","3","3"),("Session winner","2","2","2"),("Session classified","1","1","1"),("Eligible DNF","1","1","1"),("Passenger participation","1","0","0"),("Sprint participation","1","0","0"),("Qualifying participation","1","0","0"),("Qualifying fastest bonus","1 additional","0","0")
+ ("Regular at-large winner","5","5","5"),("Regular at-large classified","3","3","3"),("Session winner","2","2","2"),("Session classified","1","1","1"),("Regular eligible DNF","1","1","1"),("Passenger participation","1","0","0"),("Sprint participation","1","0","0"),("Qualifying participation","1","0","0"),("Qualifying fastest bonus","1 additional","0","0")
+],[2.25,1.35,1.35,1.35])
+title("Mutual Spotting Points",2)
+add_table(["Award","Winner","Other classified","Draw (each)"],[
+ ("Scored heat","2","1","1.5"),
+ ("At-large event","4","3","3.5"),
 ],[2.25,1.35,1.35,1.35])
 add_table(["Policy","Rule"],[
  ("Passenger cap","Maximum 3 passenger participation points per driver per season"),("Sprint cap","Maximum 3 Sprint participation points per driver per season"),("Dropped score","After 6 valid Points Events drop one lowest at-large event score"),("Team affiliation","Team points follow the driver's registered team"),("Non-points","Archived for history but excluded from standings"),("Void event","Retained administratively but excluded from standings"),("Adjustment","Audited additions or deductions; underlying results remain intact")
@@ -551,7 +594,8 @@ doc.add_page_break(); title("Appendix D Revision Record",1)
 add_table(["Edition","Date","Status","Summary"],[
  ("2026 Summer Edition","July 10 2026","Superseded upon adoption","Original comprehensive Sporting Code"),
  ("2026 Final Draft","October 2 2026","Final draft","MRA Steward model, current formats, championship scoring, digital race control, investigation workflow, GPS and sector safety, and illustrated flag standard"),
- ("2026 Final Draft Revision 1","October 3 2026","Final draft","Recorded roll-call governance for mid-season amendments and mid-session suspensions; official team registry corrected")
+ ("2026 Final Draft Revision 1","October 3 2026","Final draft","Recorded roll-call governance for mid-season amendments and mid-session suspensions; official team registry corrected"),
+ ("2026 Final Draft Revision 2","November 27 2026","Final draft","Mutual Spotting added alongside Regular Events, with two starting-spot procedures, independent timers, and four-heat championship scoring")
 ],[1.35,1.35,1.4,3.0])
 doc.add_paragraph("Adoption. Upon formal adoption by the MFMA, this edition supersedes prior rules and practices that conflict with it. Event-specific temporary rulings remain limited to the event in which they are issued unless incorporated into a later adopted edition.")
 

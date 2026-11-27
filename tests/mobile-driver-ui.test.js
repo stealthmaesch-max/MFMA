@@ -721,3 +721,129 @@ test("Sound Designer saves candidates locally and stays contained on iPhone and 
  }
  await browser.close();
 });
+
+test("Mutual Spotting driver spot triggers Checkered and opposing acknowledgment triggers Yellow", async () => {
+ const browser = await chromium.launch({headless: true});
+ try {
+  const viewport = {width: 393, height: 852};
+  const control = await stewardHarness(browser, viewport);
+  const drivers = [], errors = [];
+  for (const teamId of ["monarch-mfma-team", "parakeet-mfma-team"]) {
+   const driver = await browser.newPage({viewport});
+   await driver.addInitScript(teamId => localStorage.setItem("mfma-driver-profile", JSON.stringify({
+    teamId, teamName: teamId, driverId: teamId, driverName: "Trial Driver", mraNumber: "MRA100", vehicleId: "ranger"
+   })), teamId);
+   await driver.route("https://www.gstatic.com/firebasejs/**", route => route.fulfill({
+    contentType: "text/javascript",
+    body: `export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,cb)=>{if(ref.path==='mfma/state')window.trialSnapshot=cb;return ()=>{}},get=async()=>({exists:()=>false}),update=async(ref,patch)=>{window.trialWrite=patch},push=()=>({}),serverTimestamp=()=>Date.now(),getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'test'}});`
+   }));
+   driver.on("pageerror", error => errors.push(error.message));
+   await driver.goto(`${baseUrl}/display.html`);
+   await driver.waitForFunction(() => window.trialSnapshot, null, {timeout: 7000});
+   drivers.push(driver);
+  }
+  await control.evaluate(() => window.stewardTest.render({systemState: "no-event"}));
+  await control.locator("#start-mutual-trial").click();
+  await control.locator("#mutual-trial-panel").waitFor();
+  const read = () => control.evaluate(() => window.testRoot);
+  const sync = async () => {
+   const state = await read();
+   for (const driver of drivers) await driver.evaluate(state => window.trialSnapshot({val: () => state}), state);
+  };
+  const action = name => control.locator(`[data-trial-action="${name}"]`).click();
+  const phase = expected => control.waitForFunction(expected => window.testRoot?.trial?.phase === expected, expected);
+  const expire = () => control.evaluate(() => {
+   const state = window.testRoot;
+   state.trial.deadline = Date.now() - 10;
+   window.stewardTest.render(state);
+  });
+  await sync();
+  assert.match(await drivers[0].locator("#multi-function-zone span strong").textContent(), /SAFETY CAR/);
+  await control.locator("#mutual-find-seconds").fill("45");
+  await control.locator("#mutual-heat-seconds").fill("120");
+  await control.getByRole("button", {name: "Save Timers"}).click();
+  await control.waitForFunction(() => window.testRoot.trial.heatMs === 120000);
+  await action("lights");
+  await sync();
+  assert.equal(await drivers[0].locator("#display-timer.dot-timer > span").count(), 5);
+  await expire();
+  await phase("finding");
+  await sync();
+  assert.match(await drivers[0].locator("#multi-function-zone span small").textContent(), /15 MPH MAX/);
+  await expire();
+  await phase("start-hold");
+  await sync();
+  assert.equal(await drivers[0].locator("#signal-symbol").getAttribute("data-signal"), "red");
+  assert.match(await drivers[0].locator("#multi-status").textContent(), /STOP SAFELY • AWAIT HEAT LIGHTS/);
+  await action("lights");
+  await expire();
+  await phase("live");
+  await sync();
+  const send = async (driver, label, key) => {
+   await driver.getByRole("button", {name: label}).click();
+   await driver.waitForFunction(key => window.trialWrite?.[`trial/${key}`], key);
+   const payload = await driver.evaluate(key => window.trialWrite[`trial/${key}`], key);
+   await control.evaluate(({payload, key}) => {
+    const state = window.testRoot;
+    state.trial[key] = payload;
+    window.stewardTest.render(state);
+   }, {payload, key});
+   await sync();
+  };
+  await send(drivers[0], "Record Spot", "spot");
+  assert.equal(await drivers[0].locator("#signal-symbol").getAttribute("data-signal"), "checkered");
+  assert(await drivers[0].locator("#driver-trial-action").isHidden());
+  await drivers[0].evaluate(state => window.trialSnapshot({val: () => ({...state, activeFlag: "yellow"})}), await read());
+  assert.match(await drivers[0].locator("#multi-status").textContent(), /END COMPETITION • AWAIT ACKNOWLEDGMENT/);
+  await send(drivers[1], "Acknowledge Opposing Spot", "ack");
+  await phase("reset");
+  await sync();
+  assert.equal(await drivers[1].locator("#signal-symbol").getAttribute("data-signal"), "yellow");
+  assert.match(await drivers[1].locator("#display-timer").textContent(), /RESET/);
+  assert.match(await drivers[1].locator("#multi-status").textContent(), /7 MPH MAX • NO SPOTTING/);
+  assert.equal((await read()).trial.results[1], "a");
+  assert.deepEqual(errors, []);
+ } finally {
+  await browser.close();
+ }
+});
+
+test("Race Control can launch and archive an official Mutual Spotting round", async () => {
+ const browser = await chromium.launch({headless: true});
+ try {
+  const page = await stewardHarness(browser, {width: 1200, height: 900});
+  await page.evaluate(() => {
+   window.testWrites = [];
+   window.stewardTest.render({systemState: "no-event"});
+  });
+  await page.getByRole("button", {name: "Mutual Spotting Event"}).click();
+  await page.locator("#new-event-submit").click();
+  const next = await page.evaluate(() => window.testWrites.at(-1).state);
+  assert.equal(next.event.eventFormat, "mutual-spotting");
+  assert.equal(next.event.pointsEvent, true);
+  assert.equal(next.activeFlag, "safety-car");
+  await page.evaluate(state => window.stewardTest.render(state), next);
+  await page.locator("#mutual-start-style").selectOption("safety-car");
+  await page.getByRole("button", {name: "Save Timers"}).click();
+  await page.getByRole("button", {name: "Release from Safety Car"}).click();
+  await page.waitForFunction(() => window.testRoot.trial.phase === "finding");
+  await page.evaluate(() => {
+   const state = window.testRoot;
+   const {a, b} = state.trial.teams;
+   state.trial = {...state.trial, phase: "complete", deadline: null, results: {1: "a", 2: "draw", 3: "a", 4: "b"},
+    entrants: {a: {teamId: a, teamName: "Monarch", driverId: "m", vehicleId: "ranger"},
+     b: {teamId: b, teamName: "Parakeet", driverId: "p", vehicleId: "shelly"}}};
+   state.activeFlag = "yellow";
+   window.stewardTest.render(state);
+  });
+  await page.getByRole("button", {name: "Archive Championship Result"}).click();
+  await page.getByRole("button", {name: "Archive Event", exact: true}).click();
+  const update = await page.evaluate(() => window.testWrites.at(-1));
+  const archive = Object.entries(update).find(([path]) => path.startsWith("competition/archives/"))[1];
+  assert.equal(archive.sessionResults.length, 4);
+  assert.deepEqual(archive.classification.map(row => [row.heatPoints, row.eventPoints]), [[6.5, 4], [5.5, 3]]);
+  assert.equal(update.state.systemState, "no-event");
+ } finally {
+  await browser.close();
+ }
+});

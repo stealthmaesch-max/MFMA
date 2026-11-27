@@ -1,6 +1,7 @@
 export const renderModes={
  "no-event":"no-event",
  "test-mode":"test-mode",
+ "mutual-spotting":"mutual-spotting",
  standby:"standby",
  "course-lap":"course-lap",
  "session-live":"session-live",

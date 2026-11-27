@@ -33,3 +33,26 @@ test("regular event ties retain qualifying as the audited tiebreaker",()=>{const
 test("event archives preserve the roll-call rule vote audit trail",()=>{const state={event:{ruleVotes:{v1:{id:"v1",status:"in-force",votes:{a:{choice:"yes"},b:{choice:"yes"}}}}}},archive=m.buildEventArchive(state,{}, {seasonId:"2026"});assert.equal(archive.ruleVotes.v1.status,"in-force");assert.equal(archive.ruleVotes.v1.votes.b.choice,"yes")});
 test("standalone qualifying awards participation plus one fastest-lap bonus",()=>{const competition={drivers:{d1:{name:"Fast",mraNumber:"1",status:"approved"},d2:{name:"Second",mraNumber:"2",status:"approved"}}},state={event:{eventFormat:"qualifying",pointsEvent:true,qualifying:{winner:{driverId:"d1",driverName:"Fast",timeMs:10000},laps:{a:{driverId:"d1",driverName:"Fast",timeMs:10000,status:"valid"},b:{driverId:"d2",driverName:"Second",timeMs:11000,status:"valid"},c:{driverId:"d2",driverName:"Second",timeMs:12000,status:"valid"}}}}},archive=m.buildEventArchive(state,competition,{seasonId:"2026"}),standings=m.rebuildStandings({qualifying:archive});assert.equal(JSON.stringify(archive.participationAwards.map(row=>[row.driverId,row.points])),JSON.stringify([["d1",2],["d2",1]]));assert.equal(standings.drivers.d1.points,2);assert.equal(standings.drivers.d2.points,1);assert.equal(Object.keys(standings.teams).length,0);assert.equal(Object.keys(standings.vehicles).length,0)});
 test("regular-event tiebreaker qualifying does not create separate qualifying points",()=>{const competition={drivers:{d1:{name:"Fast",status:"approved"}}},state={event:{eventFormat:"regular",pointsEvent:true,qualifying:{winner:{driverId:"d1",driverName:"Fast",timeMs:10000},laps:{a:{driverId:"d1",driverName:"Fast",timeMs:10000,status:"valid"}}}}},archive=m.buildEventArchive(state,competition,{seasonId:"2026"});assert.equal(archive.participationAwards.some(row=>row.role==="qualifying"),false)});
+
+test("Mutual Spotting awards exact half-points alongside the original championship format", async () => {
+ const {buildMutualSpottingArchive, rebuildStandings} = await import("../competition-model.js");
+ const entrants = {
+  a: {teamId: "team-a", driverId: "driver-a", vehicleId: "ranger"},
+  b: {teamId: "team-b", driverId: "driver-b", vehicleId: "shelly"}
+ };
+ const state = {event: {name: "Round 2", pointsEvent: true}, trial: {phase: "complete", entrants, results: {1:"a", 2:"draw", 3:"b", 4:"draw"}}};
+ const options = {seasonId: "2026", date: "2026-11-27", endedAt: 2};
+ const round2 = buildMutualSpottingArchive(state, options);
+ assert.deepEqual(round2.classification.map(row => [row.heatPoints, row.eventPoints, row.outcome]), [[6, 3.5, "draw"], [6, 3.5, "draw"]]);
+ const round1 = {endedAt: 1, classification: [{...entrants.a, points: 5, position: 1}, {...entrants.b, points: 3, position: 2}]};
+ const standings = rebuildStandings({round1, round2});
+ assert.equal(standings.teams["team-a"].points, 14.5);
+ assert.equal(standings.teams["team-a"].wins, 1);
+ assert.equal(standings.teams["team-b"].wins, 0);
+ assert.equal(standings.drivers["driver-b"].eventPoints, 6.5);
+ assert.equal(standings.vehicles.shelly.sessionPoints, 6);
+ state.trial.results[4] = "a";
+ assert.deepEqual(buildMutualSpottingArchive(state, options).classification.map(row => [row.heatPoints, row.eventPoints]), [[6.5, 4], [5.5, 3]]);
+ delete state.trial.results[4];
+ assert.equal(buildMutualSpottingArchive(state, options), undefined);
+});

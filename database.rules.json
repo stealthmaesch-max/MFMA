@@ -19,6 +19,7 @@
               "vehicleId": { ".validate": "newData.isString()" },
               "vehicleName": { ".validate": "newData.isString()" },
               "status": { ".validate": "newData.isString()" },
+              "emergencyReason": { ".validate": "newData.parent().child('vehicleId').val() === 'gator' && newData.isString() && newData.val().length > 0 && newData.val().length <= 100" },
               "registeredAt": { ".validate": "newData.isNumber()" },
               "$other": { ".validate": false }
             }
@@ -61,6 +62,46 @@
       "state": {
         ".read": true,
         ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
+        "trial": {
+          "spot": {
+            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && root.child('mfma').child('state').child('systemState').val() === 'mutual-spotting' && data.parent().child('phase').val() === 'live' && (root.child('mfma').child('state').child('activeFlag').val() === 'green' || root.child('mfma').child('state').child('activeFlag').val() === 'yellow') && !data.exists() && newData.exists() && (newData.child('teamId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() || newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val()) && (newData.child('teamId').val() === data.parent().child('teams').child('a').val() || newData.child('teamId').val() === data.parent().child('teams').child('b').val()) && newData.child('attempt').val() === data.parent().child('attempt').val() && newData.child('trialId').val() === root.child('mfma').child('state').child('event').child('createdAt').val() && data.parent().child('deadline').val() > now",
+            ".validate": "newData.hasChildren(['teamId','attempt','trialId','at'])",
+            "teamId": {
+              ".validate": "newData.isString()"
+            },
+            "attempt": {
+              ".validate": "newData.isNumber()"
+            },
+            "trialId": {
+              ".validate": "newData.isNumber()"
+            },
+            "at": {
+              ".validate": "newData.isNumber() && newData.val() === now || (data.exists() && newData.val() === data.val())"
+            },
+            "$other": {
+              ".validate": false
+            }
+          },
+          "ack": {
+            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && root.child('mfma').child('state').child('systemState').val() === 'mutual-spotting' && data.parent().child('phase').val() === 'live' && !data.exists() && newData.exists() && (newData.child('teamId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() || newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val()) && (newData.child('teamId').val() === data.parent().child('teams').child('a').val() || newData.child('teamId').val() === data.parent().child('teams').child('b').val()) && newData.child('attempt').val() === data.parent().child('attempt').val() && newData.child('trialId').val() === root.child('mfma').child('state').child('event').child('createdAt').val() && data.parent().child('spot').exists() && data.parent().child('spot').child('teamId').val() !== newData.child('teamId').val()",
+            ".validate": "newData.hasChildren(['teamId','attempt','trialId','at'])",
+            "teamId": {
+              ".validate": "newData.isString()"
+            },
+            "attempt": {
+              ".validate": "newData.isNumber()"
+            },
+            "trialId": {
+              ".validate": "newData.isNumber()"
+            },
+            "at": {
+              ".validate": "newData.isNumber() && newData.val() === now || (data.exists() && newData.val() === data.val())"
+            },
+            "$other": {
+              ".validate": false
+            }
+          }
+        },
         "event": {
           "vehicleReports": {
             "$vehicleId": {

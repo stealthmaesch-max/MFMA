@@ -13,12 +13,13 @@ import {
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
 import { signals } from "./signals.js?v=100";
-import { getRenderMode, showOnly } from "./display-state.js?v=87";
+import { getRenderMode, showOnly } from "./display-state.js?v=88";
+import { MUTUAL_SPOTTING_MODE, HEAT_COUNT, trialRemaining, changeTrial, trialDisplay } from "./mutual-spotting.js?v=4";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound, soundDefinitions, soundLabels } from "./sounds.js?v=101";
 import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=9";
-import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=94";
+import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, buildMutualSpottingArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=95";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 import {isMraAdminUser,mraAuthErrorMessage} from "./mra-auth.js?v=95";
 import {evaluateRuleVote} from "./governance-model.js?v=1";
@@ -251,6 +252,26 @@ async function createEvent(){
  if(!requireAuthenticatedWrite())return;
  const championshipEventId=$("new-event-championship").value||null,championshipEvent=competition.events?.[championshipEventId],seasonId=String(championshipEvent?.seasonId||$("new-event-season").value||currentSeasonId()).slice(0,4);
  const eventFormat=championshipEvent?.eventFormat||$("new-event-format").value||"regular",pointsEvent=championshipEvent?championshipEvent.pointsEvent!==false:$("new-event-points").value==="points";
+ if (eventFormat === MUTUAL_SPOTTING_MODE) {
+  if (state?.systemState !== "no-event" || controlConnected !== true) return alert("Race Control must be connected with no active event.");
+  const event = {name: championshipEvent?.name || normalizeName($("new-event-name").value) || "Mutual Spotting",
+   eventFormat, seasonId, championshipEventId, pointsEvent};
+  const next = changeTrial(state, "open", trialNow(), {event, teams: {a: OFFICIAL_TEAM_IDS[0], b: OFFICIAL_TEAM_IDS[1]}});
+  const updates = {state: {...next, updatedAt: serverTimestamp()}};
+  if (championshipEventId) {
+   const prefix = `competition/events/${championshipEventId}`;
+   updates[`${prefix}/status`] = "active";
+   updates[`${prefix}/registrationStatus`] = "closed";
+   updates[`${prefix}/startedAt`] = serverTimestamp();
+  }
+  try {
+   await update(ref(db, "mfma"), updates);
+   $("event-dialog").close();
+  } catch (error) {
+   alert(error.message || "Unable to open Mutual Spotting.");
+  }
+  return;
+ }
  await set(stateRef,{systemState:"standby",activeFlag:"clear",event:{name:championshipEvent?.name||$("new-event-name").value||"MFMA Event",eventFormat,seasonId,championshipEventId,pointsEvent,scores:{},sessionNumber:1,circuit:{format:null,roleIndex:0,roles:{}},pendingAdjustment:null,courseLap:{required:eventFormat==="regular",status:eventFormat==="regular"?"pending":"not-required"}},session:null,sprint:null,updatedAt:serverTimestamp()});
  if(championshipEventId)await update(ref(db,`mfma/competition/events/${championshipEventId}`),{status:"active",registrationStatus:"closed",startedAt:serverTimestamp()});
  $("event-dialog").close();
@@ -365,6 +386,7 @@ function instructionPatch(type,label){const id=Date.now();return {"event/current
 function clearInstructionPatch(){return {"event/currentInstruction":null}}
 
 async function issueFlag(flag){
+ if (state?.systemState === MUTUAL_SPOTTING_MODE) return sendTrialAction(flag);
  if(!requireAuthenticatedWrite())return;
  if(flagCommandPending&&flag!=="red")return;
  if(flag==="red"&&state?.event&&state.systemState!=="test-mode"){
@@ -580,7 +602,7 @@ async function startNextCountdown(){if(!requireAuthenticatedWrite()||state?.syst
 
 async function issueReturnToStart(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{activeFlag:"return-to-start","session/postSessionStage":"return-to-start",...instructionPatch("return-to-start","EVERYONE RETURN TO STARTING ZONE"),updatedAt:serverTimestamp()})}
 async function swapNextRoles(){if(!requireAuthenticatedWrite()||!new Set(["provisional","session-complete"]).has(state?.systemState))return;await update(stateRef,{"event/circuit/nextRolesSwapped":!state.event.circuit?.nextRolesSwapped,updatedAt:serverTimestamp()})}
-function countdownDots(element,endsAt){if(!element)return;const elapsed=Math.max(0,10000-(endsAt-Date.now())),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;element.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
+function countdownDots(element,endsAt,now=Date.now()){if(!element)return;const elapsed=Math.max(0,10000-(endsAt-now)),lit=elapsed<9300?Math.min(5,Math.floor(elapsed/1500)+1):0;element.innerHTML=Array.from({length:5},(_,index)=>`<span class="${index<lit?"lit":"out"}"><i></i><i></i></span>`).join("")}
 function scheduleNextStart(){
  if(nextStartTimer){clearTimeout(nextStartTimer);nextStartTimer=null}
  if(state?.systemState!=="next-session-countdown"||!state.session?.countdownEndsAt)return;
@@ -636,7 +658,7 @@ async function restartTerminatedSession(){
 }
 
 function pendingEntries(group={}){return Object.entries(group||{}).filter(([,item])=>item?.status==="pending")}
-function renderChampionshipEventOptions(){const select=$("new-event-championship"),prior=select.value,events=Object.entries(competition.events||{}).filter(([,event])=>event.status!=="complete").sort((a,b)=>(a[1].date||"").localeCompare(b[1].date||""));select.innerHTML='<option value="">Unscheduled / standalone event</option>'+events.map(([id,event])=>`<option value="${escapeHtml(id)}">${escapeHtml(event.date||"TBA")} — ${escapeHtml(event.name)}</option>`).join("");if(events.some(([id])=>id===prior))select.value=prior;updateChampionshipEventPreview()}
+function renderChampionshipEventOptions(){const select=$("new-event-championship"),prior=select.value,events=Object.entries(competition.events||{}).filter(([,event])=>!["active","complete","cancelled"].includes(event.status)).sort((a,b)=>(a[1].date||"").localeCompare(b[1].date||""));select.innerHTML='<option value="">Unscheduled / standalone event</option>'+events.map(([id,event])=>`<option value="${escapeHtml(id)}">${escapeHtml(event.date||"TBA")} — ${escapeHtml(event.name)}</option>`).join("");if(events.some(([id])=>id===prior))select.value=prior;updateChampionshipEventPreview()}
 function updateChampionshipEventPreview(){const id=$("new-event-championship").value,event=competition.events?.[id],format=$("new-event-format").value||"regular",entries=Object.values(competition.eventRegistrations?.[id]||{}).filter(entry=>entry.status==="registered"),vehicleCounts=entries.reduce((counts,entry)=>(counts[entry.vehicleId]=(counts[entry.vehicleId]||0)+1,counts),{}),conflicts=Object.entries(vehicleCounts).filter(([,count])=>count>1).map(([vehicleId])=>vehicleLabel(vehicleId));if(event){$("new-event-name").value=event.name;$("new-event-season").value=event.seasonId||currentSeasonId();$("new-event-points").value=event.pointsEvent===false?"non-points":"points";$("new-event-points").disabled=true;$("new-event-entries").innerHTML=`<strong>${event.pointsEvent===false?"Non-points event":"Championship points event"}</strong> • ${entries.length} registered${entries.length?` • ${entries.map(entry=>`${escapeHtml(entry.driverName)} / ${escapeHtml(entry.vehicleName)}`).join(" • ")}`:" • No driver entries yet."}${conflicts.length?`<br><b class="warning-text">Vehicle conflict: ${escapeHtml(conflicts.join(", "))}. Resolve assignments before starting.</b>`:""}`}else{$("new-event-points").disabled=false;$("new-event-entries").textContent=format==="qualifying"?"Points qualifying awards 1 participation point per timed driver plus 1 fastest-lap bonus. Choose non-points for an exhibition.":"Choose whether this standalone event awards championship points."}}
 function votingTeams(){return OFFICIAL_TEAM_IDS.map(id=>[id,competition.teams?.[id]]).filter(([,team])=>team?.status==="approved")}
 function syncRuleVoteForm(){const suspension=$("rule-vote-type").value==="session-suspension";$("rule-vote-safety-row").classList.toggle("hidden",!suspension);if(!suspension)$("rule-vote-safety").checked=false}
@@ -742,7 +764,7 @@ function renderReports(){
  document.querySelectorAll("[data-remove-passenger]").forEach(button=>button.onclick=async()=>{if(await requestConfirmation("Remove Passenger Entry","Remove this passenger participation entry from the current event?","Remove Entry"))await update(stateRef,{[`event/passengerParticipants/${button.dataset.removePassenger}`]:null,updatedAt:serverTimestamp()})});
  document.querySelectorAll("[data-approve-replacement]").forEach(button=>button.onclick=async()=>{const teamId=button.dataset.approveReplacement,teamName=competition.teams?.[teamId]?.name||teamId,reason=normalizeName(await requestText("Approve Vehicle Replacement",`Record why ${teamName} may use an emergency replacement for championship scoring.`,"Replacement reason")||"");if(!reason||!await requestConfirmation("Confirm Vehicle Replacement",`Approve ${teamName}'s emergency replacement for championship scoring?\n\n${reason}`,"Approve Replacement"))return;await update(stateRef,{[`event/vehicleReplacements/${teamId}`]:{approved:true,reason,approvedBy:currentUser?.uid||null,approvedByName:displayUserName(currentUser),approvedAt:Date.now()},updatedAt:serverTimestamp()})});
  const hazards=Object.entries(state?.event?.hazards||{}).map(([id,hazard])=>({id,...hazard})).filter(h=>h.status!=="resolved").sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
- const canApplyFlag=new Set(["standby","sprint-live","session-live"]).has(state?.systemState);
+ const canApplyFlag=new Set(["standby","sprint-live","session-live"]).has(state?.systemState)||state?.systemState===MUTUAL_SPOTTING_MODE;
  $("hazard-panel").classList.toggle("hidden",!hazards.length);$("hazard-list").innerHTML=hazards.map(h=>`<article class="hazard-alert ${escapeHtml(h.status)}"><div class="hazard-alert-head"><b>REQUEST • ${escapeHtml(vehicleLabel(h.vehicleId).toUpperCase())}</b><span>${h.status==="open"?"NEW":"ACKNOWLEDGED"}</span></div><strong>${h.requestSafetyCar?"Safety Car requested":"Red Flag requested"}</strong>${h.mraNumber?`<small>${escapeHtml(h.mraNumber)}</small>`:""}<div class="hazard-requests">${h.requestStopClock?"<b>RED FLAG</b>":""}${h.requestSafetyCar?"<b>SAFETY CAR</b>":""}</div>${canApplyFlag?"":"<small>Session action unavailable in the current state.</small>"}<div class="button-row">${h.status==="open"?`<button class="mini-btn" data-hazard-ack="${h.id}">Acknowledge</button>`:""}${h.status!=="resolved"?`<button class="mini-btn" data-hazard-resolve="${h.id}">Resolve</button>`:""}${canApplyFlag&&h.requestStopClock?`<button class="mini-btn" data-hazard-red="${h.id}">Red Flag</button>`:""}${canApplyFlag&&h.requestSafetyCar?`<button class="mini-btn" data-hazard-safety="${h.id}">Safety Car</button>`:""}</div></article>`).join("");
  document.querySelectorAll("[data-hazard-ack]").forEach(b=>b.onclick=()=>update(stateRef,{[`event/hazards/${b.dataset.hazardAck}/status`]:"acknowledged",[`event/hazards/${b.dataset.hazardAck}/acknowledgedAt`]:serverTimestamp()}));
  document.querySelectorAll("[data-hazard-resolve]").forEach(b=>b.onclick=()=>resolveHazard(b.dataset.hazardResolve));
@@ -757,11 +779,191 @@ function renderEnforcementCase(){
  $("enforcement-history").classList.toggle("hidden",!records.length);$("enforcement-case-count").textContent=records.length?String(records.length):"";
  $("enforcement-case-list").innerHTML=records.map(item=>`<article><small>${escapeHtml(item.caseId||item.violationId||"MRA case")} • ${item.status==="open"?"OPEN":"CLOSED"}</small><strong>${escapeHtml(item.teamName||"Team")} • ${escapeHtml(item.status==="open"?"Investigation":DECISION_LABELS[item.decision]||item.status)}</strong><p>${escapeHtml(item.status==="open"?`Allegation: ${item.reason||"Under review"}`:item.rationale||item.detail||"No additional rationale in this legacy record.")}</p>${item.followUpRequired?'<b class="warning-text">Administration follow-up required</b>':""}</article>`).join("");
 }
+let trialCommandPending = false;
+let trialServerOffset = 0;
+const trialNow = () => Date.now() + trialServerOffset;
+const trialButtons = [...document.querySelectorAll("[data-trial-action]")];
+
+function mutualEntrants(current = state) {
+ const trial = current?.trial;
+ if (!trial) return;
+ if (trial.entrants) return trial.entrants;
+ const entrants = {};
+ for (const [side, teamId] of Object.entries(trial.teams)) {
+  const crew = Object.entries(current.event.vehicleReports || {}).filter(([, report]) => report.teamId === teamId);
+  if (crew.length !== 1 || competition.teams?.[teamId]?.status !== "approved") return;
+  const [vehicleId, report] = crew[0];
+  const driver = competition.drivers?.[report.driverId];
+  if (!isScoringDriverEligible(report.driverId, driver) || driver.teamId !== teamId) return;
+  entrants[side] = {teamId, teamName: formatTeamName(competition.teams[teamId].name),
+   driverId: report.driverId, driverName: driver.name, mraNumber: driver.mraNumber || report.mraNumber || null,
+   vehicleId, vehicleName: vehicleLabel(vehicleId)};
+ }
+ if (entrants.a?.vehicleId !== entrants.b?.vehicleId) return entrants;
+}
+
+let mutualArchivePending = false;
+async function archiveMutualEvent() {
+ if (!requireAuthenticatedWrite() || controlConnected !== true || mutualArchivePending) return;
+ const opening = state?.event?.createdAt;
+ const prepare = () => {
+  if (state?.event?.eventFormat !== MUTUAL_SPOTTING_MODE || state.event.createdAt !== opening) return;
+  if (Object.values(state.event.hazards || {}).some(item => item.status !== "resolved")) return;
+  const now = trialNow();
+  return buildMutualSpottingArchive(state, {seasonId: state.event.seasonId,
+   date: new Date(now).toISOString().slice(0, 10), endedAt: now});
+ };
+ const preview = prepare();
+ if (!preview) return alert("Complete all four heats and resolve open safety reports before archiving.");
+ const summary = preview.classification.map(row => `${row.teamName}: ${row.heatPoints} heat + ${row.eventPoints} event points`).join("\n");
+ mutualArchivePending = true;
+ try {
+  if (!await requestConfirmation("Archive Mutual Spotting", summary, "Archive Event")) return;
+  const archive = prepare();
+  if (!archive || controlConnected !== true) return alert("Event status changed. Review the active event before archiving.");
+  const {seasonId} = archive;
+  const scheduledId = state.event.championshipEventId;
+  const id = `mutual-spotting-${opening}`;
+  const archives = {...competition.archives?.[seasonId], [id]: archive};
+  const updates = {
+   [`competition/archives/${seasonId}/${id}`]: archive,
+   [`competition/standings/${seasonId}`]: applyStandingsAdjustments(rebuildStandings(archives), competition.pointsAdjustments?.[seasonId]),
+   state: {systemState: "no-event", activeFlag: "clear", updatedAt: serverTimestamp()}
+  };
+  if (scheduledId) {
+   const prefix = `competition/events/${scheduledId}`;
+   updates[`${prefix}/status`] = "complete";
+   updates[`${prefix}/registrationStatus`] = "closed";
+   updates[`${prefix}/completedAt`] = serverTimestamp();
+  }
+  await update(ref(db, "mfma"), updates);
+ } catch (error) {
+  alert(error.message || "Unable to archive Mutual Spotting.");
+ } finally {
+  mutualArchivePending = false;
+ }
+}
+
+async function sendTrialAction(action) {
+ if (!requireAuthenticatedWrite() || (trialCommandPending && action !== "red")) return;
+ const output = $("mutual-trial-status");
+ if (controlConnected !== true) {
+  output.textContent = "Connection unavailable. Use flags and radio.";
+  if (action === "open") alert(output.textContent);
+  return;
+ }
+ const expectedState = state;
+ const expected = expectedState?.trial;
+ const options = action === "open" ? {teams: {a: OFFICIAL_TEAM_IDS[0], b: OFFICIAL_TEAM_IDS[1]}}
+  : action === "configure" ? {findMs: Number($("mutual-find-seconds").value) * 1000,
+   heatMs: Number($("mutual-heat-seconds").value) * 1000, startStyle: $("mutual-start-style").value} : {};
+ trialCommandPending = true;
+ output.textContent = "Awaiting server confirmation…";
+ try {
+  const result = await runTransaction(stateRef, current => {
+   const actual = current?.trial;
+   if (action !== "open" && action !== "red" &&
+       (current?.event?.createdAt !== expectedState?.event?.createdAt || current?.activeFlag !== expectedState?.activeFlag ||
+        actual?.heat !== expected?.heat || actual?.phase !== expected?.phase ||
+        actual?.attempt !== expected?.attempt || actual?.deadline !== expected?.deadline ||
+        actual?.spot?.at !== expected?.spot?.at || actual?.ack?.at !== expected?.ack?.at)) return;
+   const now = trialNow();
+   const next = changeTrial(current, action, now, action === "lights" && actual?.phase === "start-hold" ? {entrants: mutualEntrants(current)} : options);
+   if (next) return {...next, updatedAt: serverTimestamp()};
+  }, {applyLocally: false});
+  output.textContent = result.committed ? "Confirmed by server." : "Trial state changed. Check the current signal.";
+  if (action === "open" && !result.committed) alert(output.textContent);
+ } catch (error) {
+  output.textContent = "Command unconfirmed. Use flags and radio.";
+  if (action === "open") alert(output.textContent);
+  console.error("Mutual Spotting command failed", error);
+ } finally {
+  trialCommandPending = false;
+ }
+}
+
+function renderTrialControl() {
+ if (state?.systemState !== MUTUAL_SPOTTING_MODE || !state.trial) return;
+ const {trial} = state;
+ const {heat, phase, results} = trial;
+ const now = trialNow();
+ const remaining = trialRemaining(trial, now);
+ const [, title] = trialDisplay(state, now);
+
+ $("mutual-trial-heat").textContent = `Heat ${heat} of ${HEAT_COUNT} • ${title}`;
+ $("mutual-trial-timer").textContent = fmt(remaining);
+ $("toolbar-event-name").textContent = state.event.name;
+ const official = state.event.eventFormat === MUTUAL_SPOTTING_MODE;
+ const entrants = official ? mutualEntrants() : null;
+ $("mutual-event-heading").textContent = state.event.name;
+ $("toolbar-state").textContent = official ? "EVENT" : "TRIAL";
+ $("mutual-entrants").textContent = !official ? "" : entrants
+  ? Object.values(entrants).map(row => `${row.teamName}: ${row.driverName} / ${row.vehicleName}`).join(" • ")
+  : "Each team must submit one eligible driver and vehicle in the Driver Portal before the first heat.";
+ $("archive-mutual-event").classList.toggle("hidden", !official || phase !== "complete");
+ $("cancel-mutual-event").classList.toggle("hidden", !official || !["red", "safety-car"].includes(state.activeFlag));
+ $("toolbar-flag").textContent = title;
+ $("toolbar-timer").textContent = fmt(remaining);
+ const guidance = {
+  formation: trial.startStyle === "safety-car"
+   ? "Release the field from Safety Car to start the starting-spot timer."
+   : "Start the lights once both teams are stationary.",
+  "find-lights": "Standing start for the starting-spot timer.",
+  finding: "Both teams find their starting spots. Red follows when the timer expires.",
+  "start-hold": "Confirm both teams are stopped, then start the heat lights.",
+  "heat-lights": "Standing start for the heat.",
+  live: trial.spot ? "Checkered. The opposing team can acknowledge the spot on its display." :
+   remaining > 0 ? "Drivers record their own spots on the display." : "Record a draw after confirming neither team spotted.",
+  reset: trial.replay ? "Yellow reset. Begin the Safety Car formation for the replay when ready." : "Yellow reset. Begin the next Safety Car formation when ready.",
+  complete: official ? "All four heats are recorded. Review and archive the event." : "All four heat results are recorded. Copy the trial results before closing."
+ };
+ $("mutual-trial-guidance").textContent = guidance[phase];
+ const settings = $("mutual-timer-settings");
+ if (settings.dataset.config !== `${state.event.createdAt}:${trial.findMs}:${trial.heatMs}:${trial.startStyle}`) {
+  settings.dataset.config = `${state.event.createdAt}:${trial.findMs}:${trial.heatMs}:${trial.startStyle}`;
+  $("mutual-find-seconds").value = trial.findMs / 1000;
+  $("mutual-heat-seconds").value = trial.heatMs / 1000;
+  $("mutual-start-style").value = trial.startStyle || "standing";
+ }
+ settings.disabled = !["formation", "start-hold", "reset"].includes(phase);
+ for (const button of trialButtons) {
+  button.disabled = !changeTrial(state, button.dataset.trialAction, now, {entrants});
+ }
+ $("mutual-trial-lights").classList.toggle("hidden", !phase.endsWith("-lights"));
+ if (phase.endsWith("-lights")) countdownDots($("mutual-trial-lights"), trial.deadline, now);
+ if (!trialCommandPending && controlConnected === true && changeTrial(state, "advance", now)) {
+  void sendTrialAction("advance");
+ }
+ const list = $("mutual-trial-results");
+ const summary = Object.entries(results || {}).map(([number, result]) =>
+  `Heat ${number} · ${result === "draw" ? "Draw" : `${formatTeamName(competition.teams?.[trial.teams[result]]?.name || trial.teams[result])} spot`}`
+ );
+ if (list.dataset.results !== summary.join("|")) {
+  list.dataset.results = summary.join("|");
+  list.replaceChildren(...summary.map(text => {
+   const item = document.createElement("li");
+   item.textContent = text;
+   return item;
+  }));
+ }
+}
+
 function render(){
  renderGlobalGripControls();
  renderEnforcementCase();
  const championshipMode=getRenderMode(state);$("control-championship-standby")?.classList.toggle("hidden",!(championshipMode==="no-event"&&Date.now()<CHAMPIONSHIP_STANDBY_END));
- const mode=getRenderMode(state),has=mode!=="no-event",management=$("mra-management"),managementKey=state?.event?`${state.event.name||"event"}:${state.event.createdAt||state.event.date||"active"}`:null;document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has){management.open=true;managementEventKey=null}else if(managementEventKey!==managementKey){management.open=false;managementEventKey=managementKey}const safetyActive=safetyManagementActive(),currentSafetyMessage=safetyActive&&state.safetyMessage?.flag===state.activeFlag?state.safetyMessage.text||"":"";$("safety-message-open").classList.toggle("hidden",!safetyActive);$("safety-message-open").textContent=currentSafetyMessage?"Safety Info • Live":"Safety Info";if(!has)return;renderStewardNotices();
+ const mode=getRenderMode(state),has=mode!=="no-event",management=$("mra-management"),managementKey=state?.event?`${state.event.name||"event"}:${state.event.createdAt||state.event.date||"active"}`:null;document.body.dataset.mode=mode;document.body.classList.toggle("flag-controls-active",["standby","session-live","sprint-live"].includes(mode));E.noEvent.classList.toggle("hidden",has);E.eventArea.classList.toggle("hidden",!has);if(!has){management.open=true;managementEventKey=null}else if(managementEventKey!==managementKey){management.open=false;managementEventKey=managementKey}const safetyActive=safetyManagementActive(),currentSafetyMessage=safetyActive&&state.safetyMessage?.flag===state.activeFlag?state.safetyMessage.text||"":"";$("safety-message-open").classList.toggle("hidden",!safetyActive);$("safety-message-open").textContent=currentSafetyMessage?"Safety Info • Live":"Safety Info";const trialMode = mode === MUTUAL_SPOTTING_MODE;
+ $("mutual-trial-panel").classList.toggle("hidden", !trialMode);
+ const reportArea = trialMode ? $("mutual-report-area") : E.eventArea;
+ const hazardPanel = $("hazard-panel");
+ if (hazardPanel.parentElement !== reportArea) reportArea.append(hazardPanel);
+ if (trialMode) {
+  E.eventArea.classList.add("hidden");
+  renderReports();
+  renderTrialControl();
+  return;
+ }
+ if(!has)return;renderStewardNotices();
  const eventFormat=state.event.eventFormat||"regular",formatLabel={regular:"Regular Event",sprint:"Sprint",qualifying:"Qualifying"}[eventFormat]||"Regular Event";E.eventName.textContent=state.event.name;E.eventMeta.textContent=state.event.circuit?.format?`${formatLabel} • ${state.event.circuit.format.replace("-","–")}`:formatLabel;
  const testMode=mode==="test-mode",standby=mode==="standby",course=mode==="course-lap",sprintLive=mode==="sprint-live",qualifyingLive=mode==="qualifying-live",live=mode==="session-live"||mode==="awaiting-finding-start",awaiting=mode==="awaiting-finding-start",prov=mode==="provisional",complete=mode==="session-complete",staging=mode==="next-session-staging",countdown=mode==="next-session-countdown",safetyTerm=mode==="safety-car-termination",review=mode==="violation-review",whiteTerm=mode==="white-termination";
  showOnly(mode,{"test-mode":E.testMode,standby:E.standby,"course-lap":E.courseLap,"sprint-live":E.sprint,"qualifying-live":E.qualifying,"session-live":E.live,"awaiting-finding-start":E.live,provisional:E.provisional,"session-complete":E.provisional,"next-session-staging":E.nextStart,"next-session-countdown":E.nextStart,"safety-car-termination":E.termination,"violation-review":E.termination,"white-termination":E.termination});renderInstructionSync();
@@ -823,8 +1025,22 @@ function render(){
 
 $("vv-team-1").onchange=updateRoleSummary;$("vv-team-2").onchange=updateRoleSummary;$("vv-team-id-1").onchange=updateRoleSummary;$("vv-team-id-2").onchange=updateRoleSummary;
 $("swap-teams").onclick=()=>{roleIndex=roleIndex%2===0?1:0;updateRoleSummary()};
-function openEventDialog(format){const copy={regular:["Start Regular Event","Official sessions determine the result. Qualifying is used only to break a tied Regular Event.","MFMA Event","Open Regular Event"],sprint:["Start Sprint","A participation competition with no finishing order. Eligible drivers can earn one capped Sprint participation point.","MFMA Sprint","Open Sprint"],qualifying:["Start Qualifying","A standalone Shelly time trial with a warm-up and 2–10 timed laps. Each timed driver earns 1 participation point and fastest lap earns 1 additional point.","MFMA Qualifying","Open Qualifying"]}[format]||[];$("new-event-format").value=format;$("new-event-title").textContent=copy[0];$("new-event-description").textContent=copy[1];$("new-event-name").value=copy[2];$("new-event-submit").textContent=copy[3];$("new-event-points").value="points";$("new-event-points").disabled=false;$("event-dialog").showModal();renderChampionshipEventOptions()}
+function openEventDialog(format){const copy={"mutual-spotting":["Start Mutual Spotting","Choose a scheduled event or open a standalone event. Four heats determine the result.","MFMA Mutual Spotting","Open Mutual Spotting"],regular:["Start Regular Event","Official sessions determine the result. Qualifying is used only to break a tied Regular Event.","MFMA Event","Open Regular Event"],sprint:["Start Sprint","A participation competition with no finishing order. Eligible drivers can earn one capped Sprint participation point.","MFMA Sprint","Open Sprint"],qualifying:["Start Qualifying","A standalone Shelly time trial with a warm-up and 2–10 timed laps. Each timed driver earns 1 participation point and fastest lap earns 1 additional point.","MFMA Qualifying","Open Qualifying"]}[format]||[];$("new-event-format").value=format;$("new-event-title").textContent=copy[0];$("new-event-description").textContent=copy[1];$("new-event-name").value=copy[2];$("new-event-submit").textContent=copy[3];$("new-event-points").value="points";$("new-event-points").disabled=false;$("event-dialog").showModal();renderChampionshipEventOptions()}
 document.querySelectorAll("[data-create-event]").forEach(button=>button.onclick=()=>openEventDialog(button.dataset.createEvent));$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};$("new-event-championship").onchange=updateChampionshipEventPreview;
+$("mutual-timer-form").onsubmit = event => {
+ event.preventDefault();
+ return sendTrialAction("configure");
+};
+$("archive-mutual-event").onclick = archiveMutualEvent;
+$("cancel-mutual-event").onclick = discardInvalidEvent;
+$("start-mutual-trial").onclick = () => sendTrialAction("open");
+for (const button of trialButtons) {
+ button.onclick = async () => {
+  const action = button.dataset.trialAction;
+  if (action === "close" && !await requestConfirmation("Close Mutual Spotting Trial", "End the trial and clear its results from the display network?", "Close Trial")) return;
+  await sendTrialAction(action);
+ };
+}
 installTestControls();$("start-test-mode").onclick=startTestMode;$("end-test-mode").onclick=async()=>{if(await requestConfirmation("End Test Mode","Clear every test signal and return the network to No Active Event?","End Test Mode"))await endTestMode()};
 $("end-event").onclick=archiveAndEndEvent;
 $("discard-invalid-event").onclick=discardInvalidEvent;
@@ -863,5 +1079,6 @@ $("confirmation-form").onsubmit=event=>{event.preventDefault();finishConfirmatio
 $("driver-manager-open").onclick=()=>{renderManagerDriverOptions();$("driver-manager-dialog").showModal()};$("driver-manager-close").onclick=()=>$("driver-manager-dialog").close();$("driver-manager-form").onsubmit=saveManagerDriverProfile;$("manager-driver").onchange=()=>renderManagerPassengerOptions($("manager-driver").value,$("manager-passenger").value);$("manager-vehicle").onchange=()=>$("manager-gator-reason-field").classList.toggle("hidden",$("manager-vehicle").value!=="gator");
 
 onValue(stateRef,s=>{const previous=state;state=standardizeTeamNames(s.val()||{systemState:"no-event"});playStateTransition(previous,state);scheduleNextStart();const newHazards=newOpenHazardIds(previous,state);if(newHazards.length){try{playSound("hazard")}catch{}if(new Set(["clear","green","move-over"]).has(state.activeFlag||"clear"))issueFlag("yellow").catch(error=>console.error("Unable to call immediate yellow",error))}roleIndex=state.event?.circuit?.roleIndex||roleIndex;if(!state.event){$("toolbar-event-name").textContent="MRA Steward";$("toolbar-state").textContent="NO EVENT";$("toolbar-flag").textContent="CLEAR";$("toolbar-timer").textContent="--:--"}render()},e=>{controlConnected=false;setConn("error","Connection error");commandStatus("CONNECTION ERROR • Use flags and radio.");console.error(e)});
+onValue(ref(db,".info/serverTimeOffset"), snapshot => { trialServerOffset = Number(snapshot.val()) || 0; });
 onValue(ref(db,".info/connected"),snapshot=>{controlConnected=snapshot.val()===true;setConn(controlConnected?"connected":"error",controlConnected?"Connected":"OFFLINE");if(!controlConnected)commandStatus(flagCommandPending?"UNCONFIRMED • Connection lost. Use flags and radio.":"OFFLINE • Commands cannot be sent. Use flags and radio.");else if(!flagCommandPending)commandStatus("")});
-onValue(competitionRef,snapshot=>{competition=standardizeTeamNames(snapshot.val()||{});renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();renderManagerDriverOptions();if(state)render()});$("new-event-season").value=currentSeasonId();renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();renderManagerDriverOptions();setInterval(()=>{tick();sprintTick();qualifyingTick();if(state?.systemState==="next-session-countdown")countdownDots($("control-start-dots"),state.session.countdownEndsAt)},50);
+onValue(competitionRef,snapshot=>{competition=standardizeTeamNames(snapshot.val()||{});renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();renderManagerDriverOptions();if(state)render()});$("new-event-season").value=currentSeasonId();renderVehicleSetup();renderQualifyingDriverOptions();renderManagement();renderChampionshipEventOptions();renderManagerDriverOptions();setInterval(()=>{tick();sprintTick();qualifyingTick();renderTrialControl();if(state?.systemState==="next-session-countdown")countdownDots($("control-start-dots"),state.session.countdownEndsAt)},50);
