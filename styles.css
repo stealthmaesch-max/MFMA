@@ -1,4 +1,3 @@
-
 :root {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", sans-serif;
   color: #f4f7fb;
@@ -2124,4 +2123,105 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
   flex-wrap:nowrap!important;
  }
  .instrument-panel #driver-trial-action{flex:0 1 220px;width:auto!important}
+}
+
+/* Coordinated event workspace and Driver instrument. Signal artwork is retained. */
+.race-control-page .mutual-timing{display:block!important;text-align:left!important}
+.race-control-page #mutual-trial-timer{display:block!important;white-space:nowrap;overflow-wrap:normal;width:100%;font-size:clamp(48px,7vw,80px)!important}
+.race-control-page .mutual-signals .flag b{font-size:13px!important;white-space:nowrap!important;overflow-wrap:normal!important}
+.race-control-page .mutual-signals .flag strong{font-size:14px!important;line-height:1.2!important;overflow-wrap:normal!important}
+.race-control-page #mutual-report-area:empty{display:none}
+.display-body:has(#championship-standby:not(.hidden)) .status-view{position:fixed;inset:0 0 calc(88px + env(safe-area-inset-bottom));height:auto;min-height:0;display:grid;place-items:center;margin:0!important}
+.display-body #championship-standby,.display-body #championship-standby img{max-height:calc(100dvh - 120px)!important}
+.display-body .flag-start-lights .instrument-panel>.instrument-session-row{display:block!important}
+.display-body .instrument-topbar #display-sound{pointer-events:auto!important}
+.display-body .instrument-signal-core{grid-template-rows:auto auto auto!important;padding-block:8px!important;row-gap:12px!important;align-content:center!important;overflow:visible!important}
+.display-body .instrument-topbar{grid-row:1!important}.display-body .instrument-session-row{grid-row:2!important}.display-body .instrument-gauge-strip{grid-row:3!important}.display-body .instrument-signal-well{grid-row:4!important}.display-body .instrument-panel .multi-function-zone{grid-row:5!important}.display-body .driver-action-row{grid-row:6!important}
+.race-control-page{background:#090e14;color:#edf2f7;font-family:Arial,sans-serif}
+.race-control-page .panel,.race-control-page .timer-panel,.race-control-page .race-command-panel{background:#111923;background-image:none;border:1px solid #2a3644;border-radius:14px;box-shadow:none}
+.race-control-page .panel{padding:20px}
+.race-control-page h2{font-size:25px;letter-spacing:-.02em}
+.race-control-page button,.race-control-page input,.race-control-page select{min-height:44px}
+.race-control-page .timer{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:-.05em}
+.race-control-page .control-workspace-nav{border-radius:10px;background:#0e161f;box-shadow:none}
+.mutual-workspace .section-head{margin-bottom:18px}
+.mutual-workspace-grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:14px;align-items:start}
+.mutual-workspace-grid> *{min-width:0}
+.mutual-timing{grid-column:1;grid-row:1;padding:22px!important}
+.timer-heading{display:flex;justify-content:space-between;gap:12px;color:#aebdce;font-size:12px}
+#mutual-trial-timer{margin:12px 0 0;font-size:clamp(52px,7vw,88px);line-height:1.1}
+.mutual-next-action{grid-column:2;grid-row:1 / span 2;align-self:stretch;padding:20px;border:1px solid #33475b;border-left:3px solid #66aef3;border-radius:12px;background:#152332}
+.mutual-next-action>p:first-child{margin:0 0 20px;font-size:18px;line-height:1.45}
+.mutual-next-action .button-row{display:grid;gap:8px}
+.mutual-signals{grid-column:1;grid-row:2;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.mutual-signals .flag{display:grid;place-items:center;gap:6px;min-height:94px;padding:10px 4px;font-size:12px;border-radius:10px}
+.mutual-signals .flag b{font-size:18px}
+.mutual-settings,.mutual-results,.mutual-event-actions,.mutual-crew,#mutual-report-area{grid-column:1 / -1;border:1px solid #2a3644;border-radius:10px;padding:14px;background:#0d151e}
+.mutual-workspace summary{cursor:pointer;font-weight:700;min-height:30px;line-height:1.5}
+.mutual-workspace summary span{float:right;font-size:12px;color:#a6b6c8;font-weight:400}
+.mutual-settings fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:0;padding:14px 0 0;margin:0}
+.mutual-settings label{display:grid;gap:6px;font-size:12px;color:#bac6d4}
+.mutual-settings input,.mutual-settings select{width:100%;box-sizing:border-box}
+.mutual-crew h3{margin:0 0 8px;font-size:13px;color:#9eafc2}
+.mutual-crew p{margin:0}
+#mutual-trial-results{display:grid;gap:8px;margin-bottom:0;padding-left:22px}
+.penalty-dialog,.safety-message-dialog{background:#111923;border:1px solid #405166;border-radius:16px;box-shadow:0 20px 90px #000a}
+.penalty-dialog label{font-size:13px;line-height:1.5}
+.penalty-dialog textarea{min-height:100px}
+#driver-case-record dl{display:grid;gap:14px;margin:0}
+#driver-case-record dl>div{display:grid;gap:4px;padding-bottom:10px;border-bottom:1px solid #293746}
+#driver-case-record dt{font-size:11px;text-transform:uppercase;color:#9fafc2}
+#driver-case-record dd{margin:0;font-size:15px;line-height:1.4}
+@media(max-width:699px){.race-control-page .panel{padding:14px}.mutual-workspace-grid{grid-template-columns:1fr}.mutual-timing{grid-row:1}.mutual-signals{grid-row:2}.mutual-next-action{grid-column:1;grid-row:3}.mutual-settings fieldset{grid-template-columns:1fr}.mutual-workspace summary span{float:none;display:block}.mutual-signals .flag{min-height:78px}}
+
+.display-body .live-view:not(.hidden){position:fixed!important;inset:0!important;width:100vw!important;height:100dvh!important;min-height:0!important;margin:0!important;padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-right)) calc(84px + env(safe-area-inset-bottom)) max(10px,env(safe-area-inset-left))!important;box-sizing:border-box;transform:none!important;background:#080d12!important;overflow:hidden!important}
+.display-body .instrument-panel{display:grid!important;grid-template-columns:1fr!important;grid-template-rows:44px auto auto minmax(0,1fr) auto auto!important;gap:8px!important;width:min(100%,760px)!important;height:100%!important;min-height:0!important;padding:0!important;border:0!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;overflow:hidden!important}
+.display-body .instrument-topbar{display:flex!important;align-items:center;justify-content:space-between;gap:8px;padding:0!important;min-width:0}
+.display-body .instrument-brand{width:88px;height:32px;flex:0 0 88px}
+.display-body .instrument-topbar #display-sound{position:static!important;width:auto!important;height:44px!important;min-height:44px!important;padding:0 10px!important;border:1px solid #354656!important;border-radius:8px!important;background:#14202c!important;color:#fff!important;font-size:11px!important;line-height:1.1!important;box-shadow:none!important;transform:none!important}
+.display-body .instrument-topbar #display-sound::after{display:none!important}
+.display-body .instrument-topbar .gps-satellite{position:static!important;transform:none!important;min-width:40px!important;height:36px!important;margin:0!important;padding:4px!important;border:0!important;background:transparent!important}
+.display-body .instrument-topbar .display-status{position:static!important;min-width:0!important;max-width:80px!important;margin:0!important;padding:4px!important;border:0!important;background:transparent!important;font-size:9px!important}
+.display-body .instrument-session-row{display:grid;gap:6px;text-align:center;border-bottom:1px solid #263441;padding:2px 0 10px}
+.display-body .instrument-panel .display-session{white-space:normal!important;font-size:10px!important;line-height:1.25!important;letter-spacing:.08em!important}
+.display-body .instrument-panel .display-timer{font-size:clamp(32px,6dvh,56px)!important;font-weight:700!important;letter-spacing:-.04em!important}
+.display-body .instrument-gauge-strip{display:block!important;min-height:0!important;height:auto!important;padding:8px 12px!important;border:1px solid #45586d!important;border-radius:8px!important;background:#162431!important;font-size:12px!important;line-height:1.3!important;text-align:center;overflow-wrap:anywhere}
+.display-body .instrument-gauge-strip::before{display:none!important}
+.display-body .instrument-gauge-strip::after{position:static!important;display:block!important;content:attr(data-message)!important;font-size:12px!important;line-height:1.3!important;white-space:normal!important;text-overflow:clip!important;overflow:visible!important}
+.display-body .instrument-gauge-strip[data-message-type="system"]{display:none!important}
+.display-body .instrument-signal-well{display:grid!important;grid-template-rows:minmax(0,1fr) auto!important;padding:4px 8px!important;border:0!important;border-radius:0!important;background:transparent!important;overflow:hidden!important}
+.display-body .instrument-signal-well::before,.display-body .instrument-signal-well::after{display:none!important}
+.display-body .instrument-signal-core{gap:8px!important;min-height:0!important}
+.display-body .instrument-panel .signal-label{font-size:clamp(24px,4dvh,38px)!important;font-weight:700!important;letter-spacing:.02em!important}
+.display-body .instrument-panel .signal-symbol{width:min(28dvh,52vw,260px)!important;height:min(28dvh,52vw,260px)!important;min-height:0!important;margin:0!important;flex:none!important}
+.display-body .instrument-panel .signal-instruction{font-size:14px!important;line-height:1.2!important;margin:0!important}
+.display-body .instrument-context{display:flex!important;justify-content:center;align-items:center;margin:4px 0!important;min-height:30px!important;border:0!important}
+.display-body .instrument-context-copy{display:none!important}
+.display-body .instrument-panel .instrument-speed{position:static!important;display:flex!important;align-items:baseline;gap:5px;padding:0!important;border:0!important;background:transparent!important}
+.display-body .instrument-speed strong{font-size:24px!important}.display-body .instrument-speed small{font-size:10px!important}
+.display-body .instrument-panel .multi-function-zone{min-height:54px!important;height:auto!important;width:100%!important;margin:0!important;padding:10px!important;box-sizing:border-box;border:1px solid #354554!important;border-radius:10px!important;background:#111e29!important;gap:8px!important}
+.display-body .instrument-panel .multi-function-zone>span>strong{font-size:clamp(15px,2.7dvh,21px)!important;font-weight:700!important;line-height:1.15!important}
+.display-body .instrument-panel .multi-function-zone small{font-size:11px!important;line-height:1.3!important}
+.display-body .driver-action-row{display:grid;gap:5px;min-height:0}
+.display-body .driver-action-row:not(:has(button:not(.hidden))){display:none}
+.display-body .driver-action-row button{position:static!important;transform:none!important;width:100%!important;min-height:44px!important;height:auto!important;max-width:none!important;margin:0!important;padding:8px 10px!important;border:1px solid #8ecbfa!important;border-radius:8px!important;background:#163b56!important;color:#fff!important;font-size:13px!important;line-height:1.2!important;box-sizing:border-box}
+.display-body .driver-action-row output{margin:0!important;font-size:11px!important}
+.display-body .driver-tools{width:min(760px,calc(100vw - 20px))!important;bottom:max(8px,env(safe-area-inset-bottom))!important;border-radius:12px!important;background:#111b25!important;padding:5px!important}
+.display-body .driver-dock button{min-height:54px!important;border-radius:8px!important}
+.display-body .display-top{display:none!important}
+@media(max-height:700px) and (orientation:portrait){.display-body .instrument-panel{gap:5px!important}.display-body .instrument-panel .signal-symbol{width:min(23dvh,48vw)!important;height:min(23dvh,48vw)!important}.display-body .instrument-panel .signal-label{font-size:24px!important}.display-body .instrument-panel .display-timer{font-size:32px!important}}
+@media(orientation:landscape) and (max-height:550px){.display-body .live-view:not(.hidden){padding-bottom:calc(70px + env(safe-area-inset-bottom))!important}.display-body .instrument-panel{width:min(100%,1040px)!important;grid-template-columns:1fr 1fr!important;grid-template-rows:44px auto minmax(0,1fr) auto!important;gap:5px 18px!important}.display-body .instrument-topbar{grid-column:1 / -1!important;grid-row:1!important}.display-body .instrument-session-row{grid-column:1!important;grid-row:2!important;padding:0!important;border:0}.display-body .instrument-gauge-strip{grid-column:1!important;grid-row:3!important;align-self:center}.display-body .instrument-signal-well{grid-column:2!important;grid-row:2 / span 2!important}.display-body .instrument-panel .signal-symbol{width:min(28dvh,130px)!important;height:min(28dvh,130px)!important}.display-body .instrument-panel .signal-label{font-size:22px!important}.display-body .instrument-panel .signal-instruction{font-size:11px!important}.display-body .instrument-panel .multi-function-zone{grid-column:1!important;grid-row:4!important;min-height:44px!important;padding:5px!important}.display-body .driver-action-row{grid-column:2!important;grid-row:4!important}.display-body .instrument-context{margin:0!important}.display-body .instrument-speed strong{font-size:18px!important}.display-body .driver-dock button{min-height:44px!important}}
+.display-body .instrument-panel .signal-symbol:is([data-signal="yellow"],[data-signal="red"],[data-signal="safety-car"],[data-signal="move-over"],[data-signal="under-review"],[data-signal="grip-deterioration"]){margin:calc(min(28dvh,52vw,260px) * .22) 0!important}
+.display-body .instrument-panel .signal-symbol[data-signal="mechanical-incident"]{width:min(30dvh,54vw,270px)!important;height:min(18dvh,34vw,170px)!important}
+@media(max-height:700px) and (orientation:portrait){.display-body .instrument-panel .signal-symbol:is([data-signal="yellow"],[data-signal="red"],[data-signal="safety-car"],[data-signal="move-over"],[data-signal="under-review"],[data-signal="grip-deterioration"]){margin:calc(min(23dvh,48vw) * .22) 0!important}}
+@media(orientation:landscape) and (max-height:550px){.display-body .instrument-panel .signal-symbol:is([data-signal="yellow"],[data-signal="red"],[data-signal="safety-car"],[data-signal="move-over"],[data-signal="under-review"],[data-signal="grip-deterioration"]){margin:calc(min(28dvh,130px) * .22) 0!important}.display-body .instrument-panel .signal-symbol[data-signal="mechanical-incident"]{width:min(29dvh,140px)!important;height:min(18dvh,85px)!important}}
+@media(orientation:landscape) and (max-height:550px){
+ .display-body .instrument-signal-core{padding:0!important;gap:4px!important}
+ .display-body .instrument-panel .signal-label{font-size:18px!important}
+ .display-body .instrument-panel .signal-symbol{width:64px!important;height:64px!important;border-width:7px!important}
+ .display-body .instrument-panel .signal-symbol span{font-size:38px!important}
+ .display-body .instrument-panel .signal-symbol:is([data-signal="yellow"],[data-signal="red"],[data-signal="safety-car"],[data-signal="move-over"],[data-signal="under-review"],[data-signal="grip-deterioration"]){margin:14px 0!important}
+ .display-body .instrument-panel .signal-symbol[data-signal="mechanical-incident"]{width:80px!important;height:48px!important}
+ .display-body .instrument-context{height:24px!important;min-height:24px!important}
+ .display-body .instrument-panel .signal-symbol[data-signal="under-review"] span{font-size:18px!important}
 }

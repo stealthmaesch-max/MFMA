@@ -48,9 +48,9 @@ function matchingTeam(teams={},name){const wanted=formatTeamName(name).toLocaleL
 export function buildMutualSpottingArchive(state, options) {
  const trial = state.trial;
  const sides = ["a", "b"];
- const heats = Object.entries(trial.results || {});
- if (trial.phase !== "complete" || heats.length !== 4 ||
-     heats.some(([number, result]) => !["1", "2", "3", "4"].includes(number) || !["a", "b", "draw"].includes(result)) ||
+ const heats = Object.entries(trial.results || {}).sort((a, b) => Number(a[0]) - Number(b[0]));
+ if (trial.phase !== "complete" || heats.length < 2 || heats.length % 2 !== 0 ||
+     heats.some(([number, result], index) => number !== String(index + 1) || !["a", "b", "draw"].includes(result)) ||
      sides.some(side => !trial.entrants?.[side]?.vehicleId || !trial.entrants[side].driverId)) return;
  const scores = {a: 0, b: 0};
  const sessionResults = heats.map(([number, result]) => ({

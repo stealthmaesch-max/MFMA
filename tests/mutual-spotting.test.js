@@ -91,7 +91,32 @@ test("unresolved fourth heat can replay before completing the trial", () => {
  assert.equal(state.trial.heat, 4);
  state = startHeat(state, now);
  state = changeTrial(state, "draw", state.trial.deadline);
+ assert.equal(state.trial.phase, "reset");
+ assert.equal(changeTrial(state, "formation", ++now), undefined);
+ state = changeTrial(state, "finish", ++now);
  assert.equal(state.trial.phase, "complete");
+});
+
+test("flexible events extend in pairs and finish only after a completed pair", () => {
+ let state = open(), now = 1000;
+ assert.equal(changeTrial(state, "configure", now, {findMs: 1000, heatMs: 1000, plannedHeats: 3}), undefined);
+ state = changeTrial(state, "configure", now, {findMs: 1000, heatMs: 1000, plannedHeats: 2});
+ for (let heat = 1; heat <= 6; heat++) {
+  state = startHeat(state, now);
+  now = state.trial.deadline;
+  state = changeTrial(state, "draw", now);
+  assert.equal(state.trial.phase, "reset");
+  if (heat % 2) assert.equal(changeTrial(state, "finish", now), undefined);
+  else {
+   assert.equal(changeTrial(state, "finish", now).trial.finalizedHeatCount, heat);
+   assert.equal(changeTrial(state, "formation", now), undefined);
+   state = changeTrial(state, "extend", now);
+   assert.equal(state.trial.plannedHeats, heat + 2);
+  }
+  if (heat < 6) state = changeTrial(state, "formation", ++now);
+ }
+ state = changeTrial(state, "replay", ++now);
+ assert.equal(changeTrial(state, "finish", now), undefined);
 });
 
 test("Safety Car rolling release starts the adjustable finding timer and keeps the heat lights", () => {

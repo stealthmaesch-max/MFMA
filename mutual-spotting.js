@@ -1,6 +1,16 @@
 export const MUTUAL_SPOTTING_MODE = "mutual-spotting";
 export const GREEN_LIMIT_MPH = 15;
 export const HEAT_COUNT = 4;
+export function plannedHeatCount(trial) {
+ const count = trial?.plannedHeats;
+ return Number.isSafeInteger(count) && count >= 2 && count % 2 === 0 ? count : HEAT_COUNT;
+}
+
+export function completedHeatCount(trial) {
+ const entries = Object.entries(trial?.results || {}).sort((a, b) => Number(a[0]) - Number(b[0]));
+ if (entries.some(([key, result], index) => key !== String(index + 1) || !['a', 'b', 'draw'].includes(result))) return 0;
+ return entries.length;
+}
 export const LIGHTS_MS = 10000;
 const DEFAULT_FIND_MS = 60000;
 const DEFAULT_HEAT_MS = 180000;
@@ -30,7 +40,8 @@ export function changeTrial(state, action, now, options = {}) {
    systemState: MUTUAL_SPOTTING_MODE, activeFlag: "safety-car",
    event: {name: "Mutual Spotting Trial", pointsEvent: false, ...options.event, createdAt: now},
    trial: {heat: 1, phase: "formation", attempt: 1, teams: options.teams,
-    findMs: DEFAULT_FIND_MS, heatMs: DEFAULT_HEAT_MS, startStyle: "standing"}
+    findMs: DEFAULT_FIND_MS, heatMs: DEFAULT_HEAT_MS, startStyle: "standing",
+    flexibleHeats: true, plannedHeats: HEAT_COUNT}
   };
  }
  if (state?.systemState !== MUTUAL_SPOTTING_MODE || !state.trial) return;
@@ -39,18 +50,29 @@ export function changeTrial(state, action, now, options = {}) {
  const remaining = trialRemaining(trial, now);
  const change = (activeFlag, patch) => ({...state, activeFlag, trial: {...trial, ...patch}});
  const finish = result => change(STOP_FLAGS.includes(flag) ? flag : "yellow", {
-  phase: heat === HEAT_COUNT && result ? "complete" : "reset", deadline: null, remainingMs: 0,
+  phase: !trial.flexibleHeats && heat === HEAT_COUNT && result ? "complete" : "reset", deadline: null, remainingMs: 0,
   replay: !result, results: result ? {...trial.results, [heat]: result} : trial.results || null
  });
+ if (action === 'extend' && ['formation', 'reset', 'complete'].includes(phase)) {
+  const plannedHeats = Math.max(plannedHeatCount(trial), heat + heat % 2) + 2;
+  if (!Number.isSafeInteger(plannedHeats)) return;
+  return change(flag, {plannedHeats, flexibleHeats: true, ...(phase === 'complete' ? {phase: 'reset'} : {})});
+ }
+ if (action === 'finish' && phase === 'reset' && !trial.replay) {
+  const completed = completedHeatCount(trial);
+  if (completed < 2 || completed % 2 !== 0 || completed !== heat) return;
+  return change(flag, {phase: 'complete', finalizedHeatCount: completed, deadline: null, remainingMs: 0});
+ }
  if (action === "close" && !state.event.eventFormat && (flag === "red" || ["reset", "complete"].includes(phase))) {
   return {systemState: "no-event", activeFlag: "clear"};
  }
  if (action === "configure" && ["formation", "start-hold", "reset"].includes(phase)) {
-  const {findMs, heatMs, startStyle = trial.startStyle || "standing"} = options;
+  const {findMs, heatMs, startStyle = trial.startStyle || "standing", plannedHeats = plannedHeatCount(trial)} = options;
   if (![findMs, heatMs].every(ms => Number.isInteger(ms) && ms >= 1000 && ms <= 3600000)) return;
   if (!["standing", "safety-car"].includes(startStyle)) return;
+  if (!Number.isSafeInteger(plannedHeats) || plannedHeats < Math.max(2, heat + heat % 2) || plannedHeats % 2 !== 0) return;
   return change(phase === "formation" && startStyle === "safety-car" ? "safety-car" : flag,
-   {findMs, heatMs, startStyle});
+   {findMs, heatMs, startStyle, plannedHeats});
  }
  if (STOP_FLAGS.includes(action)) {
   if (LIGHT_PHASES.includes(phase)) {
@@ -59,6 +81,7 @@ export function changeTrial(state, action, now, options = {}) {
   return change(action, {remainingMs: remaining, deadline: null});
  }
  if (action === "formation" && phase === "reset") {
+  if (trial.flexibleHeats && !trial.replay && heat >= plannedHeatCount(trial)) return;
   return change("safety-car", {phase: "formation", heat: trial.replay ? heat : heat + 1,
    attempt: trial.attempt + 1, replay: false, spot: null, ack: null, deadline: null, remainingMs: 0});
  }
@@ -84,7 +107,7 @@ export function changeTrial(state, action, now, options = {}) {
      (!spot && action === "draw" && remaining === 0))) return finish(action === "draw" ? "draw" : null);
  if (phase === "live" && spot && ack && action === "yellow") {
   const result = spot.teamId === trial.teams.a ? "a" : "b";
-  return change("yellow", {phase: heat === HEAT_COUNT ? "complete" : "reset",
+  return change("yellow", {phase: !trial.flexibleHeats && heat === HEAT_COUNT ? "complete" : "reset",
    deadline: null, remainingMs: 0, results: {...trial.results, [heat]: result}});
  }
  if (MOVING_PHASES.includes(phase) && !spot && remaining > 0) {

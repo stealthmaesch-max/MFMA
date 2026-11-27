@@ -14,12 +14,12 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
 import { signals } from "./signals.js?v=100";
 import { getRenderMode, showOnly } from "./display-state.js?v=88";
-import { MUTUAL_SPOTTING_MODE, HEAT_COUNT, trialRemaining, changeTrial, trialDisplay } from "./mutual-spotting.js?v=4";
+import { MUTUAL_SPOTTING_MODE, plannedHeatCount, completedHeatCount, trialRemaining, changeTrial, trialDisplay } from "./mutual-spotting.js?v=5";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound, soundDefinitions, soundLabels } from "./sounds.js?v=101";
 import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
 import { newOpenHazardIds } from "./report-model.js?v=57";
 import { TRACK_SECTORS, TRACK_SIGNAL_TYPES, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=9";
-import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, buildMutualSpottingArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=95";
+import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SEASON_CAP, OFFICIAL_TEAM_IDS, applyStandingsAdjustments, approvedVehicles, buildEventArchive, buildMutualSpottingArchive, rebuildStandings, currentSeasonId, driverCompetitionRole, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, slugify, sortedStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=96";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 import {isMraAdminUser,mraAuthErrorMessage} from "./mra-auth.js?v=95";
 import {evaluateRuleVote} from "./governance-model.js?v=1";
@@ -814,7 +814,7 @@ async function archiveMutualEvent() {
    date: new Date(now).toISOString().slice(0, 10), endedAt: now});
  };
  const preview = prepare();
- if (!preview) return alert("Complete all four heats and resolve open safety reports before archiving.");
+ if (!preview) return alert("Finish an even number of heats and resolve open safety reports before archiving.");
  const summary = preview.classification.map(row => `${row.teamName}: ${row.heatPoints} heat + ${row.eventPoints} event points`).join("\n");
  mutualArchivePending = true;
  try {
@@ -856,7 +856,8 @@ async function sendTrialAction(action) {
  const expected = expectedState?.trial;
  const options = action === "open" ? {teams: {a: OFFICIAL_TEAM_IDS[0], b: OFFICIAL_TEAM_IDS[1]}}
   : action === "configure" ? {findMs: Number($("mutual-find-seconds").value) * 1000,
-   heatMs: Number($("mutual-heat-seconds").value) * 1000, startStyle: $("mutual-start-style").value} : {};
+   heatMs: Number($("mutual-heat-seconds").value) * 1000, startStyle: $("mutual-start-style").value,
+   plannedHeats: Number($("mutual-planned-heats").value)} : {};
  trialCommandPending = true;
  output.textContent = "Awaiting server confirmation…";
  try {
@@ -865,7 +866,7 @@ async function sendTrialAction(action) {
    if (action !== "open" && action !== "red" &&
        (current?.event?.createdAt !== expectedState?.event?.createdAt || current?.activeFlag !== expectedState?.activeFlag ||
         actual?.heat !== expected?.heat || actual?.phase !== expected?.phase ||
-        actual?.attempt !== expected?.attempt || actual?.deadline !== expected?.deadline ||
+        actual?.attempt !== expected?.attempt || actual?.deadline !== expected?.deadline || actual?.plannedHeats !== expected?.plannedHeats ||
         actual?.spot?.at !== expected?.spot?.at || actual?.ack?.at !== expected?.ack?.at)) return;
    const now = trialNow();
    const next = changeTrial(current, action, now, action === "lights" && actual?.phase === "start-hold" ? {entrants: mutualEntrants(current)} : options);
@@ -890,8 +891,11 @@ function renderTrialControl() {
  const remaining = trialRemaining(trial, now);
  const [, title] = trialDisplay(state, now);
 
- $("mutual-trial-heat").textContent = `Heat ${heat} of ${HEAT_COUNT} • ${title}`;
- $("mutual-trial-timer").textContent = fmt(remaining);
+ $("mutual-trial-heat").textContent = `Heat ${heat} • ${completedHeatCount(trial)} recorded • ${plannedHeatCount(trial)} planned`;
+ $("mutual-signal-state").textContent = title;
+ $("mutual-completed-count").textContent = `${completedHeatCount(trial)} recorded`;
+ $("mutual-settings-summary").textContent = `${plannedHeatCount(trial)} planned • ${fmt(trial.findMs)} starting spot • ${fmt(trial.heatMs)} heat`;
+ $("mutual-trial-timer").textContent = phase === "complete" ? "ENDED" : fmt(phase === "formation" ? trial.findMs : phase === "start-hold" ? trial.heatMs : remaining);
  $("toolbar-event-name").textContent = state.event.name;
  const official = state.event.eventFormat === MUTUAL_SPOTTING_MODE;
  const entrants = official ? mutualEntrants() : null;
@@ -915,19 +919,29 @@ function renderTrialControl() {
   live: trial.spot ? "Checkered. The opposing team can acknowledge the spot on its display." :
    remaining > 0 ? "Drivers record their own spots on the display." : "Record a draw after confirming neither team spotted.",
   reset: trial.replay ? "Yellow reset. Begin the Safety Car formation for the replay when ready." : "Yellow reset. Begin the next Safety Car formation when ready.",
-  complete: official ? "All four heats are recorded. Review and archive the event." : "All four heat results are recorded. Copy the trial results before closing."
+  complete: official ? "Event finished. Review the recorded heats and archive the result, or extend the event." : "Trial finished. Review the results before closing, or extend the trial."
  };
  $("mutual-trial-guidance").textContent = guidance[phase];
+ if (phase === "reset" && !trial.replay && heat >= plannedHeatCount(trial)) $("mutual-trial-guidance").textContent = "Planned heats recorded. Finish the event or add two heats to continue.";
  const settings = $("mutual-timer-settings");
- if (settings.dataset.config !== `${state.event.createdAt}:${trial.findMs}:${trial.heatMs}:${trial.startStyle}`) {
-  settings.dataset.config = `${state.event.createdAt}:${trial.findMs}:${trial.heatMs}:${trial.startStyle}`;
+ if (settings.dataset.config !== `${state.event.createdAt}:${trial.findMs}:${trial.heatMs}:${trial.startStyle}:${plannedHeatCount(trial)}`) {
+  settings.dataset.config = `${state.event.createdAt}:${trial.findMs}:${trial.heatMs}:${trial.startStyle}:${plannedHeatCount(trial)}`;
+  $("mutual-planned-heats").value = plannedHeatCount(trial);
+  $("mutual-planned-heats").min = Math.max(2, heat + heat % 2);
   $("mutual-find-seconds").value = trial.findMs / 1000;
   $("mutual-heat-seconds").value = trial.heatMs / 1000;
   $("mutual-start-style").value = trial.startStyle || "standing";
  }
  settings.disabled = !["formation", "start-hold", "reset"].includes(phase);
+ const settingsPanel = $("mutual-settings");
+ if (settingsPanel.dataset.phase !== phase) {
+  document.querySelector(".mutual-event-actions").open = phase === "complete";
+  settingsPanel.open = phase === 'formation' && heat === 1;
+  settingsPanel.dataset.phase = phase;
+ }
  for (const button of trialButtons) {
   button.disabled = !changeTrial(state, button.dataset.trialAction, now, {entrants});
+  if (button.hasAttribute('data-trial-primary')) button.classList.toggle('hidden', button.disabled);
  }
  $("mutual-trial-lights").classList.toggle("hidden", !phase.endsWith("-lights"));
  if (phase.endsWith("-lights")) countdownDots($("mutual-trial-lights"), trial.deadline, now);
@@ -1025,7 +1039,7 @@ function render(){
 
 $("vv-team-1").onchange=updateRoleSummary;$("vv-team-2").onchange=updateRoleSummary;$("vv-team-id-1").onchange=updateRoleSummary;$("vv-team-id-2").onchange=updateRoleSummary;
 $("swap-teams").onclick=()=>{roleIndex=roleIndex%2===0?1:0;updateRoleSummary()};
-function openEventDialog(format){const copy={"mutual-spotting":["Start Mutual Spotting","Choose a scheduled event or open a standalone event. Four heats determine the result.","MFMA Mutual Spotting","Open Mutual Spotting"],regular:["Start Regular Event","Official sessions determine the result. Qualifying is used only to break a tied Regular Event.","MFMA Event","Open Regular Event"],sprint:["Start Sprint","A participation competition with no finishing order. Eligible drivers can earn one capped Sprint participation point.","MFMA Sprint","Open Sprint"],qualifying:["Start Qualifying","A standalone Shelly time trial with a warm-up and 2–10 timed laps. Each timed driver earns 1 participation point and fastest lap earns 1 additional point.","MFMA Qualifying","Open Qualifying"]}[format]||[];$("new-event-format").value=format;$("new-event-title").textContent=copy[0];$("new-event-description").textContent=copy[1];$("new-event-name").value=copy[2];$("new-event-submit").textContent=copy[3];$("new-event-points").value="points";$("new-event-points").disabled=false;$("event-dialog").showModal();renderChampionshipEventOptions()}
+function openEventDialog(format){const copy={"mutual-spotting":["Start Mutual Spotting","Choose a scheduled event or open a standalone event. Plan an even number of heats; extend by pairs before finishing.","MFMA Mutual Spotting","Open Mutual Spotting"],regular:["Start Regular Event","Official sessions determine the result. Qualifying is used only to break a tied Regular Event.","MFMA Event","Open Regular Event"],sprint:["Start Sprint","A participation competition with no finishing order. Eligible drivers can earn one capped Sprint participation point.","MFMA Sprint","Open Sprint"],qualifying:["Start Qualifying","A standalone Shelly time trial with a warm-up and 2–10 timed laps. Each timed driver earns 1 participation point and fastest lap earns 1 additional point.","MFMA Qualifying","Open Qualifying"]}[format]||[];$("new-event-format").value=format;$("new-event-title").textContent=copy[0];$("new-event-description").textContent=copy[1];$("new-event-name").value=copy[2];$("new-event-submit").textContent=copy[3];$("new-event-points").value="points";$("new-event-points").disabled=false;$("event-dialog").showModal();renderChampionshipEventOptions()}
 document.querySelectorAll("[data-create-event]").forEach(button=>button.onclick=()=>openEventDialog(button.dataset.createEvent));$("close-dialog").onclick=()=>$("event-dialog").close();$("event-form").onsubmit=e=>{e.preventDefault();createEvent()};$("new-event-championship").onchange=updateChampionshipEventPreview;
 $("mutual-timer-form").onsubmit = event => {
  event.preventDefault();

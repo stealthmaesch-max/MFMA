@@ -38,7 +38,7 @@ test("Yellow overspeed is distinct, restores Grip, and expires without a new GPS
   await page.evaluate(()=>window.speedPreview(7));assert(!/overspeed/.test(await zone.getAttribute('class')));assert.equal(await zone.locator('span strong').textContent(),'7 MPH MAX');
   await page.evaluate(()=>window.speedPreview(7.1));assert.equal(await page.locator('#instrument-speed strong').textContent(),'7.1');
   await page.evaluate(()=>window.speedPreview(12,'yellow',true));assert.match(await zone.locator('span strong').textContent(),/SLOW DOWN/);assert.match(await page.locator('#multi-status').textContent(),/LOW GRIP/);
-  await page.evaluate(()=>window.speedPreview(5,'yellow',true));assert.equal(await zone.locator('span strong').textContent(),'GRIP DETERIORATION');
+  await page.evaluate(()=>window.speedPreview(5,'yellow',true));assert.equal(await zone.locator('span strong').textContent(),'7 MPH MAX');assert.match(await page.locator('.instrument-gauge-strip').getAttribute('data-message'),/LOW GRIP/);
   await page.evaluate(()=>window.speedPreview(12));await page.evaluate(()=>window.speedNow+=10001);await page.waitForFunction(()=>document.querySelector('#instrument-speed strong').textContent==='—');assert(!/overspeed/.test(await zone.getAttribute('class')));
   await page.evaluate(()=>window.speedPreview(12,'green'));assert(!/overspeed/.test(await zone.getAttribute('class')));await page.close();
  }
@@ -238,7 +238,7 @@ test("live Driver instrument keeps its MRA and timer header inside the visual vi
  for(const viewport of [{width:375,height:667},{width:393,height:852}]){
   const page=await signedDriverPage(browser,viewport);await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
   const result=await page.evaluate(()=>{document.body.style.minHeight="1600px";window.scrollTo(0,240);document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const live=document.querySelector("#live-view").getBoundingClientRect(),header=document.querySelector(".instrument-topbar").getBoundingClientRect(),brand=document.querySelector(".instrument-brand").getBoundingClientRect(),timer=document.querySelector("#display-timer").getBoundingClientRect();return {live:live.toJSON(),header:header.toJSON(),brand:brand.toJSON(),timer:timer.toJSON(),position:getComputedStyle(document.querySelector("#live-view")).position}});
-  assert.equal(result.position,"fixed");assert(result.live.top>=0&&result.live.bottom<=viewport.height,"live surface is constrained to the visual viewport");assert(result.header.top>=0&&result.header.bottom<=viewport.height,"instrument header remains visible");assert(result.brand.top>=result.header.top&&result.brand.bottom<=result.header.bottom,"MRA brand remains inside the header");assert(result.timer.top>=result.header.top&&result.timer.bottom<=result.header.bottom,"timer remains inside the header");await page.close();
+  assert.equal(result.position,"fixed");assert(result.live.top>=0&&result.live.bottom<=viewport.height,"live surface is constrained to the visual viewport");assert(result.header.top>=0&&result.header.bottom<=viewport.height,"instrument header remains visible");assert(result.brand.top>=result.header.top&&result.brand.bottom<=result.header.bottom,"MRA brand remains inside the header");assert(result.timer.top>=result.header.bottom&&result.timer.bottom<=viewport.height,"timer remains visible below the header");await page.close();
  }
  await browser.close();
 });
@@ -253,14 +253,14 @@ test("compact Driver context wraps and live landscape controls remain visible",a
    const session=document.querySelector("#display-session");session.textContent="SESSION 2 • FINDING • PURSUIT: RANGER • EVADING: SHELLY";
    document.querySelector("#label").textContent="GREEN";document.querySelector("#signal-symbol").dataset.signal="green";
    const rect=selector=>document.querySelector(selector).getBoundingClientRect().toJSON();
-   return {sessionFits:session.scrollWidth<=session.clientWidth&&session.scrollHeight<=session.clientHeight,header:rect(".instrument-topbar"),symbol:rect("#signal-symbol"),zone:rect("#multi-function-zone"),dock:rect(".driver-dock"),gps:getComputedStyle(document.querySelector(".instrument-system-icons"),"::after").content};
+   return {sessionFits:session.scrollWidth<=session.clientWidth&&session.scrollHeight<=session.clientHeight,header:rect(".instrument-topbar"),symbol:rect("#signal-symbol"),zone:rect("#multi-function-zone"),dock:rect(".driver-dock"),gps:document.querySelector("#gps-satellite").getAttribute("aria-label")};
   });
-  assert(result.sessionFits,"the complete session context is readable");assert.match(result.gps,/GPS OFF|OFFLINE/,"GPS is not falsely shown as connected");
+  assert(result.sessionFits,"the complete session context is readable");assert.match(result.gps,/GPS off|OFFLINE/,"GPS is not falsely shown as connected");
   for(const key of ["header","symbol","zone","dock"]){const box=result[key];assert(box.top>=0&&box.bottom<=viewport.height&&box.left>=0&&box.right<=viewport.width,`${key} stays visible at ${viewport.width}x${viewport.height}`)}
   assert(result.symbol.bottom<=result.zone.top,"primary signal stays above the instruction band");assert(result.zone.bottom<=result.dock.top,"instructions stay clear of the touch controls");
   if(viewport.width>viewport.height){
    const movement=await page.evaluate(()=>{document.querySelector("#signal-symbol").dataset.signal="return-to-start";document.querySelector("#label").textContent="RETURN TO START";document.querySelector("#instruction").textContent="RETURN TO THE STARTING ZONE";return ["#display-session","#label","#signal-symbol","#instruction",".instrument-context"].map(s=>document.querySelector(s).getBoundingClientRect().toJSON())});
-   for(let i=1;i<movement.length;i++)assert(movement[i-1].bottom<=movement[i].top+1,"movement context, title, symbol, instruction, and speed stay separated");
+   for(let i=2;i<movement.length;i++)assert(movement[i-1].bottom<=movement[i].top+1,`movement title, symbol, instruction, and speed stay separated at ${viewport.width}: ${JSON.stringify(movement)}`);
   }
   await page.close();
  }
@@ -272,9 +272,9 @@ test("revised status bar enables sound and preserves long priority messages",asy
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
  await page.evaluate(()=>{document.querySelector("#driver-signin").classList.add("hidden");document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");const bar=document.querySelector(".instrument-gauge-strip");bar.dataset.message="MRA STEWARD · INVESTIGATION PENDING POST-SESSION · MONARCH MFMA TEAM"});
  const before=await page.evaluate(()=>{const bar=document.querySelector(".instrument-gauge-strip").getBoundingClientRect(),button=document.querySelector("#display-sound"),box=button.getBoundingClientRect();return {bar:bar.toJSON(),button:box.toJSON(),pointer:getComputedStyle(button).pointerEvents,message:document.querySelector(".instrument-gauge-strip").dataset.message}});
- assert(before.button.width>=before.bar.width-2&&before.button.height>=44,"the full revised status bar remains a large sound control");assert.equal(before.pointer,"auto");assert.match(before.message,/INVESTIGATION PENDING POST-SESSION/);
- await page.locator(".instrument-gauge-strip").click();await page.waitForTimeout(100);
- assert.equal(await page.locator("#display-sound").getAttribute("aria-pressed"),"true","tapping the visible status slot arms Driver audio");
+ assert(before.button.width>=44&&before.button.height>=44,"sound has its own touch target in the header");assert.equal(before.pointer,"auto");assert.match(before.message,/INVESTIGATION PENDING POST-SESSION/);
+ await page.locator("#display-sound").click();await page.waitForTimeout(100);
+ assert.equal(await page.locator("#display-sound").getAttribute("aria-pressed"),"true","tapping the header sound control arms Driver audio");
  await browser.close();
 });
 
@@ -358,9 +358,9 @@ for(const viewport of [{width:375,height:667},{width:390,height:844},{width:393,
 test("Driver desktop keeps the approved revised instrument instead of the retired split layout",async()=>{
  const browser=await chromium.launch({headless:true}),page=await signedDriverPage(browser,{width:1440,height:900});
  await page.goto(`${baseUrl}/display.html`,{waitUntil:"domcontentloaded"});
- const metrics=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#driver-tools").classList.remove("hidden");const panel=document.querySelector(".instrument-panel").getBoundingClientRect(),title=document.querySelector("#label").getBoundingClientRect(),symbol=document.querySelector("#signal-symbol").getBoundingClientRect(),message=document.querySelector(".instrument-gauge-strip").getBoundingClientRect();return {panel:panel.toJSON(),title:title.toJSON(),symbol:symbol.toJSON(),message:message.toJSON()}});
- assert(metrics.panel.width<=393,"desktop uses the same compact revised instrument");
- assert(metrics.message.height>=56&&metrics.message.width<=metrics.panel.width,"revised status and Steward message slot is present");
+ const metrics=await page.evaluate(()=>{document.querySelector("#status-view").classList.add("hidden");document.querySelector("#live-view").classList.remove("hidden");document.querySelector("#driver-tools").classList.remove("hidden");document.querySelector(".instrument-gauge-strip").dataset.messageType="steward";document.querySelector(".instrument-gauge-strip").dataset.message="INVESTIGATION OPEN";const panel=document.querySelector(".instrument-panel").getBoundingClientRect(),title=document.querySelector("#label").getBoundingClientRect(),symbol=document.querySelector("#signal-symbol").getBoundingClientRect(),message=document.querySelector(".instrument-gauge-strip").getBoundingClientRect();return {panel:panel.toJSON(),title:title.toJSON(),symbol:symbol.toJSON(),message:message.toJSON()}});
+ assert(metrics.panel.width<=760,"desktop retains a bounded instrument width");
+ assert(metrics.message.height>=24&&metrics.message.width<=metrics.panel.width,"supplemental message slot is present");
  assert(Math.abs((metrics.title.left+metrics.title.width/2)-(metrics.symbol.left+metrics.symbol.width/2))<2,"signal title and symbol remain in one centered stack");
  await browser.close();
 });
@@ -431,6 +431,9 @@ test("real Driver rendering preserves the dock through tests and renders five pa
   assert.equal(await page.locator('#label').textContent(),'UNDER REVIEW');
   assert.match(await page.locator('.instrument-gauge-strip').getAttribute('data-message'),/NO PENALTY DECIDED/);
   assert.match(await page.locator('#driver-case-record').textContent(),/Allegation/);
+  await page.locator('#driver-case-open').click();
+  assert(await page.locator('#driver-portal-controls').isVisible(), 'View Case opens the stopped-use case drawer');
+  await page.locator('#driver-portal-close').click();
   assert.equal(await page.locator('#signal-symbol').getAttribute('data-signal'),'under-review');
   assert.equal(await page.locator('#signal-symbol span').evaluate(el=>{const range=document.createRange();range.selectNodeContents(el);return range.getClientRects().length}),1,'MRA remains on one line inside the investigation symbol');
   for(const mode of ["qualifying-live","course-lap","next-session-staging","violation-review","white-termination"]){
@@ -573,6 +576,7 @@ test("all public shells stay contained across phone, landscape, tablet, and desk
   for(const pageName of ["index.html","control.html","display.html","fan.html","operations.html","championship.html"]){
    const page=pageName==="display.html"?await signedDriverPage(browser,viewport):await browser.newPage({viewport});
    await page.goto(`${baseUrl}/${pageName}`,{waitUntil:"domcontentloaded"});
+   await page.waitForLoadState("load");
    const metrics=await page.evaluate(pageName=>{
     if(pageName==="control.html"){
      document.querySelector("#auth-gate")?.classList.add("hidden");
@@ -848,6 +852,9 @@ test("Race Control can launch and archive an official Mutual Spotting round", as
   assert.equal(next.event.pointsEvent, true);
   assert.equal(next.activeFlag, "safety-car");
   await page.evaluate(state => window.stewardTest.render(state), next);
+  await page.locator('.mutual-event-actions summary').click();
+  await page.waitForTimeout(150);
+  assert(await page.locator('.mutual-event-actions').getAttribute('open') !== null, 'event actions stay open through timer refreshes');
   await page.locator("#mutual-start-style").selectOption("safety-car");
   await page.getByRole("button", {name: "Save Timers"}).click();
   await page.getByRole("button", {name: "Release from Safety Car"}).click();
@@ -855,12 +862,16 @@ test("Race Control can launch and archive an official Mutual Spotting round", as
   await page.evaluate(() => {
    const state = window.testRoot;
    const {a, b} = state.trial.teams;
-   state.trial = {...state.trial, phase: "complete", deadline: null, results: {1: "a", 2: "draw", 3: "a", 4: "b"},
+   state.trial = {...state.trial, heat: 4, phase: "reset", deadline: null, results: {1: "a", 2: "draw", 3: "a", 4: "b"},
     entrants: {a: {teamId: a, teamName: "Monarch", driverId: "m", vehicleId: "ranger"},
      b: {teamId: b, teamName: "Parakeet", driverId: "p", vehicleId: "shelly"}}};
    state.activeFlag = "yellow";
    window.stewardTest.render(state);
   });
+  await page.getByRole("button", {name: "Add 2 Heats"}).click();
+  assert.equal(await page.evaluate(() => window.testRoot.trial.plannedHeats), 6);
+  await page.getByRole("button", {name: "Finish Event", exact: true}).click();
+  assert.equal(await page.evaluate(() => window.testRoot.trial.phase), "complete");
   await page.getByRole("button", {name: "Archive Championship Result"}).click();
   await page.getByRole("button", {name: "Archive Event", exact: true}).click();
   const update = await page.evaluate(() => window.testWrites.at(-1));

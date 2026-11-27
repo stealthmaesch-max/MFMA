@@ -55,4 +55,11 @@ test("Mutual Spotting awards exact half-points alongside the original championsh
  assert.deepEqual(buildMutualSpottingArchive(state, options).classification.map(row => [row.heatPoints, row.eventPoints]), [[6.5, 4], [5.5, 3]]);
  delete state.trial.results[4];
  assert.equal(buildMutualSpottingArchive(state, options), undefined);
+ state.trial.results = {1:"a", 2:"draw", 3:"b", 4:"draw", 5:"b", 6:"a"};
+ const extended = buildMutualSpottingArchive(state, options);
+ assert.equal(extended.sessionResults.length, 6);
+ assert.deepEqual(extended.classification.map(row => row.heatPoints), [9, 9]);
+ delete state.trial.results[2];
+ state.trial.results[7] = "a";
+ assert.equal(buildMutualSpottingArchive(state, options), undefined, "missing heats cannot be archived as a completed pair");
 });
