@@ -2090,3 +2090,38 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
 .instrument-panel .instrument-speed.overspeed strong{color:#ffd43b!important;text-shadow:0 0 15px #ffd43b66}
 .instrument-panel .multi-function-zone.overspeed{border:3px solid #ffd43b!important;background:#423500!important}
 .instrument-panel .multi-function-zone.overspeed>span>strong{color:#ffe276!important;font-size:20px!important;font-weight:800!important}
+
+/* Reserve room for Mutual Spotting actions below the current flag instruction. */
+.instrument-panel .multi-function-zone:has(#driver-trial-action:not(.hidden)){
+ height:auto!important;
+ min-height:120px!important;
+ flex-wrap:wrap!important;
+ row-gap:6px!important;
+}
+.instrument-panel #driver-trial-action{
+ position:static!important;
+ transform:none!important;
+ width:100%!important;
+ max-width:none!important;
+ flex:0 0 100%;
+ min-height:44px;
+ margin:0;
+ padding:8px 10px;
+ box-sizing:border-box;
+ font-size:13px;
+ line-height:1.2;
+ font-weight:800;
+ border:2px solid #fff;
+ border-radius:12px;
+ background:#0b1017;
+ color:#fff;
+ cursor:pointer;
+}
+.instrument-panel #driver-trial-status{flex:0 0 100%;margin:0;text-align:center}
+@media(min-width:700px) and (max-height:550px){
+ .instrument-panel .multi-function-zone:has(#driver-trial-action:not(.hidden)){
+  min-height:54px!important;
+  flex-wrap:nowrap!important;
+ }
+ .instrument-panel #driver-trial-action{flex:0 1 220px;width:auto!important}
+}

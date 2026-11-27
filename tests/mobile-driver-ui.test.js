@@ -722,6 +722,31 @@ test("Sound Designer saves candidates locally and stays contained on iPhone and 
  await browser.close();
 });
 
+test("Mutual Spotting actions leave the speed cap and flag instructions visible", async () => {
+ const browser = await chromium.launch({headless:true});
+ try {
+  for (const viewport of [{width:375,height:667},{width:393,height:852},{width:430,height:932},{width:844,height:390},{width:768,height:1024},{width:1440,height:900}]) {
+   const page = await signedDriverPage(browser,viewport);
+   await page.route('https://www.gstatic.com/firebasejs/**',route=>route.fulfill({contentType:'text/javascript',body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=()=>({}),onValue=()=>()=>{},get=async()=>({exists:()=>false}),update=async()=>{},push=()=>({}),serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},signInAnonymously=async()=>({user:{uid:'test'}});`}));
+   await page.route(/\/display\.js\?/,route=>route.fulfill({contentType:'text/javascript',body:fs.readFileSync('display.js','utf8')+`\nwindow.previewMutualAction=ack=>{state={systemState:'mutual-spotting',activeFlag:'green',event:{createdAt:1,eventFormat:'mutual-spotting',name:'Mutual Spotting'},trial:{heat:1,phase:'live',attempt:1,teams:{a:'test-team',b:'other-team'},deadline:Date.now()+120000,clockRate:1,...(ack?{spot:{teamId:'other-team',at:Date.now(),attempt:1,trialId:1}}:{})}};render();tick()};`}));
+   await page.goto(`${baseUrl}/display.html`);
+   await page.waitForFunction(()=>window.previewMutualAction);
+   for (const ack of [false,true]) {
+    await page.evaluate(ack=>window.previewMutualAction(ack),ack);
+    const button=page.locator('#driver-trial-action'),text=page.locator('#multi-status');
+    assert(await button.isVisible());
+    assert.match(await text.textContent(),ack?/AWAIT ACKNOWLEDGMENT/:/15 MPH MAX/);
+    const b=await button.boundingBox(),t=await text.boundingBox(),dock=await page.locator('#driver-tools').boundingBox();
+    assert(b.y>=t.y+t.height-1 || b.x>=t.x+t.width-1,'the action button must not cover the instruction');
+    assert(b.y+b.height<=dock.y+1,'the action button stays above the Driver dock');
+    assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),viewport.width);
+    await page.screenshot({path:`/tmp/mfma-mutual-action-${viewport.width}-${ack?'ack':'spot'}.png`});
+   }
+   await page.close();
+  }
+ } finally {await browser.close()}
+});
+
 test("Mutual Spotting driver spot triggers Checkered and opposing acknowledgment triggers Yellow", async () => {
  const browser = await chromium.launch({headless: true});
  try {
