@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gsta
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=100";
 import { getRenderMode } from "./display-state.js?v=88";
-import { MUTUAL_SPOTTING_MODE, trialDisplay, trialRemaining, trialTeamAction } from "./mutual-spotting.js?v=6";
+import { MUTUAL_SPOTTING_MODE, trialDisplay, trialRemaining, trialTeamAction } from "./mutual-spotting.js?v=7";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState as playSignalState, playSound, playStateTransition as playSignalTransition, playSupplementalSound, stopSupplementalSound, silencePersistentSound, speakStewardNotice } from "./sounds.js?v=101";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { TRACK_SECTORS, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=9";
@@ -15,7 +15,7 @@ import {GPS_DIAGNOSTIC_WINDOW,summarizeGpsDiagnostics} from "./gps-diagnostics.j
 import {evaluateSpeedCompliance,reliableSpeedMph} from "./speed-compliance.js?v=3";
 import { LEGACY_VEHICLES, applyStandingsAdjustments, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=97";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
-import {DECISION_LABELS,investigationRecord} from "./enforcement-model.js?v=2";
+import {DECISION_LABELS,investigationRecord} from "./enforcement-model.js?v=3";
 const PUBLIC_TRACK_SECTORS=false;
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);const LAST_STATE_KEY="mfma-last-known-state",PENDING_KEY="mfma-pending-driver-actions";let state=(()=>{try{return JSON.parse(localStorage.getItem(LAST_STATE_KEY)||"null")}catch{return null}})(),wake=null,wakeRequestPending=false,networkConnected=null;
@@ -151,7 +151,7 @@ function showMutualTrial() {
  sessionLine.textContent = `MUTUAL SPOTTING • HEAT ${trial.heat}`;
  const paused = ["red", "safety-car", "mechanical-incident"].includes(activeFlag) && ["finding", "live"].includes(trial.phase);
  const remaining = trialRemaining(trial, now);
- timer.textContent = trial.phase === "reset" ? "RESET" : paused ? "PAUSED" : fmt(remaining);
+ timer.textContent = ["return-to-start","proceed-to-start"].includes(flag) ? "WAIT" : trial.phase === "reset" ? "RESET" : paused ? "PAUSED" : fmt(remaining);
  theme.content = sig.theme;
 }
 function showLive(){const visualFlag=state.activeFlag==="grip-deterioration"?"green":state.activeFlag,sig=signals[visualFlag]||signals.clear,s=state.session,awaiting=s.phase==="awaiting-finding-start",neutralized=visualFlag==="safety-car",paused=new Set(["red","mechanical-incident"]).has(visualFlag);statusView.classList.add("hidden");liveView.classList.remove("hidden");applyDisplayClass(`display ${sig.className}${sig.flash?" flash":""}`,`${state.systemState}:${state.activeFlag}:${s.phase}`);label.textContent=awaiting?"HIDING COMPLETE":sig.label;instruction.textContent=awaiting?"Awaiting MRA Steward.":enforcementCitation(sig.instruction);theme.content=sig.theme;sessionLine.textContent=awaiting?`SESSION ${s.number} • AWAITING FINDING START`:neutralized?`SESSION ${s.number} • NEUTRALIZED • AWAIT MRA STEWARD`:`SESSION ${s.number} • ${s.phase.toUpperCase()} • PURSUIT: ${formatTeamName(s.teamNames[s.pursuitTeam])} • EVADING: ${formatTeamName(s.teamNames[s.evadingTeam])}`;timer.textContent=neutralized||paused?"PAUSED":fmt(s.remainingMs)}

@@ -1,4 +1,4 @@
-import {trialRemaining} from "./mutual-spotting.js?v=6";
+import {trialRemaining} from "./mutual-spotting.js?v=7";
 import {applyDisqualificationWin} from "./circuit-model.js?v=54";
 
 export const DECISION_LABELS={"no-action":"No Further Action",warning:"Warning","time-remedy":"Time Remedy",restart:"Restart Ordered","no-result":"No Result",disqualification:"Session Disqualification","event-disqualification":"Event Disqualification","point-adjustment":"Point Adjustment","participation-restriction":"Participation Restriction","removal-event":"Removal From Event","removal-mfma":"Removal From MFMA Competition"};

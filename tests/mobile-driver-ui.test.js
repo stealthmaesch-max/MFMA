@@ -832,6 +832,13 @@ test("Mutual Spotting driver spot triggers Checkered and opposing acknowledgment
   assert.match(await drivers[1].locator("#display-timer").textContent(), /RESET/);
   assert.match(await drivers[1].locator("#multi-status").textContent(), /7 MPH MAX • NO SPOTTING/);
   assert.equal((await read()).trial.results[1], "a");
+  await control.locator('.mutual-event-actions summary').click();
+  for(const order of ['return-to-start','proceed-to-start']){
+   await action(order);await sync();
+   assert.equal(await drivers[0].locator('#signal-symbol').getAttribute('data-signal'),order);
+   assert.equal(await drivers[0].locator('#display-timer').textContent(),'WAIT');
+   assert.match(await drivers[0].locator('#instruction').textContent(),/PROCEED UNDER CONTROL/);
+  }
   assert.deepEqual(errors, []);
  } finally {
   await browser.close();

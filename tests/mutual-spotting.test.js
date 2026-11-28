@@ -174,3 +174,10 @@ test("runoff clocks and official spot fallbacks enforce eligibility and clear it
  assert.equal(state.trial.heatOutcomes[1].a,'no-result');
  state=changeTrial(state,'formation',now+3);assert.equal(state.trial.runoff,null);
 });
+
+test("flag-free movement orders are available between heats and cannot interrupt live competition",()=>{
+ let state=open();state=changeTrial(state,'return-to-start',2000);
+ assert.deepEqual(trialDisplay(state,2000),['return-to-start','RETURN TO START','PROCEED UNDER CONTROL • AWAIT MRA INSTRUCTIONS']);
+ state=changeTrial(state,'proceed-to-start',3000);assert.equal(trialDisplay(state,3000)[0],'proceed-to-start');
+ state=startHeat(state,4000);assert.equal(changeTrial(state,'return-to-start',5000),undefined);
+});

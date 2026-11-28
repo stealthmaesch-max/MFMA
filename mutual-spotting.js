@@ -47,7 +47,7 @@ export function changeTrial(state, action, now, options = {}) {
  }
  if (state?.systemState !== MUTUAL_SPOTTING_MODE || !state.trial) return;
  const {activeFlag: flag, trial} = state;
- if(trial.endedByDecision&&!STOP_FLAGS.includes(action)&&action!=="close")return;
+ if(trial.endedByDecision&&!STOP_FLAGS.includes(action)&&!["close","return-to-start","proceed-to-start"].includes(action))return;
  const {phase, heat, spot, ack} = trial;
  const remaining = trialRemaining(trial, now);
  const change = (activeFlag, patch) => ({...state, activeFlag, trial: {...trial, ...patch}});
@@ -55,6 +55,7 @@ export function changeTrial(state, action, now, options = {}) {
   phase: !trial.flexibleHeats && heat === HEAT_COUNT && result ? "complete" : "reset", deadline: null, remainingMs: 0,
   replay: !result, ...(trial.runoff&&result?{heatOutcomes:{...trial.heatOutcomes,[heat]:{[trial.runoff.againstTeam]:"no-result",[trial.runoff.eligibleTeam]:result==="draw"?"classified":"winner"}}}:{}), results: result ? {...trial.results, [heat]: result} : trial.results || null
  });
+ if(["return-to-start","proceed-to-start"].includes(action)&&["formation","start-hold","reset","complete"].includes(phase))return change(action,{deadline:null,remainingMs:0});
  if (action.startsWith("spot-")) {
   const side=action.slice(5),teamId=trial.teams?.[side];
   if(!teamId||trialTeamAction(state,teamId,now)!=="spot")return;
@@ -140,6 +141,7 @@ export function trialDisplay(state, now) {
  const {trial, activeFlag: flag} = state;
  const {phase, spot, ack} = trial;
  const remaining = trialRemaining(trial, now);
+ if(["return-to-start","proceed-to-start"].includes(flag))return [flag,flag==="return-to-start"?"RETURN TO START":"PROCEED TO LINE","PROCEED UNDER CONTROL • AWAIT MRA INSTRUCTIONS"];
  if (flag === "disqualification") return [flag,"DISQUALIFIED","HEAT ENDED • AWAIT MRA MOVEMENT ORDER"];
  if (LIGHT_PHASES.includes(phase)) return ["red", "STANDING START", "HOLD POSITION UNTIL GREEN"];
  const findingExpired = phase === "finding" && trial.deadline != null && remaining === 0;

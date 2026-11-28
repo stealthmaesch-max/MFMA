@@ -14,7 +14,7 @@ import { firebaseConfig } from "./firebase-config.js?v=40";
 import { vehicles } from "./personnel.js?v=41";
 import { signals } from "./signals.js?v=100";
 import { getRenderMode, showOnly } from "./display-state.js?v=88";
-import { MUTUAL_SPOTTING_MODE, plannedHeatCount, completedHeatCount, trialRemaining, changeTrial, trialDisplay } from "./mutual-spotting.js?v=6";
+import { MUTUAL_SPOTTING_MODE, plannedHeatCount, completedHeatCount, trialRemaining, changeTrial, trialDisplay } from "./mutual-spotting.js?v=7";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState, playStateTransition, playSound, soundDefinitions, soundLabels } from "./sounds.js?v=101";
 import { getCircuitStatus, applyOfficialSessionResult, applyDisqualificationWin } from "./circuit-model.js?v=54";
 import { newOpenHazardIds } from "./report-model.js?v=57";
@@ -23,7 +23,7 @@ import { DEFAULT_POINTS, DEFAULT_SESSION_POINTS, PASSENGER_SEASON_CAP, SPRINT_SE
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
 import {isMraAdminUser,mraAuthErrorMessage} from "./mra-auth.js?v=95";
 import {evaluateRuleVote} from "./governance-model.js?v=1";
-import {DECISION_LABELS, mutualEvent, enforcementTeams,applyParticipationRuling,investigationRecord,openInvestigation,decideInvestigation} from "./enforcement-model.js?v=2";
+import {DECISION_LABELS, mutualEvent, enforcementTeams,applyParticipationRuling,investigationRecord,openInvestigation,decideInvestigation} from "./enforcement-model.js?v=3";
 
 const app=initializeApp(firebaseConfig);
 const auth=getAuth(app);
