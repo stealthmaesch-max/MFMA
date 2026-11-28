@@ -28,6 +28,7 @@ export function trialTeamAction(state, teamId, now) {
  const {trial, activeFlag} = state || {};
  if (state?.systemState !== MUTUAL_SPOTTING_MODE || !trial?.teams ||
      !Object.values(trial.teams).includes(teamId) || trial.phase !== "live") return;
+ if (trial.runoff?.againstTeam && trial.teams[trial.runoff.againstTeam] === teamId && !trial.spot) return;
  if (trial.spot) {
   if (!trial.ack && trial.spot.teamId !== teamId) return "ack";
  } else if (["green", "yellow"].includes(activeFlag) && trial.deadline > now) return "spot";
@@ -46,13 +47,28 @@ export function changeTrial(state, action, now, options = {}) {
  }
  if (state?.systemState !== MUTUAL_SPOTTING_MODE || !state.trial) return;
  const {activeFlag: flag, trial} = state;
+ if(trial.endedByDecision&&!STOP_FLAGS.includes(action)&&action!=="close")return;
  const {phase, heat, spot, ack} = trial;
  const remaining = trialRemaining(trial, now);
  const change = (activeFlag, patch) => ({...state, activeFlag, trial: {...trial, ...patch}});
  const finish = result => change(STOP_FLAGS.includes(flag) ? flag : "yellow", {
   phase: !trial.flexibleHeats && heat === HEAT_COUNT && result ? "complete" : "reset", deadline: null, remainingMs: 0,
-  replay: !result, results: result ? {...trial.results, [heat]: result} : trial.results || null
+  replay: !result, ...(trial.runoff&&result?{heatOutcomes:{...trial.heatOutcomes,[heat]:{[trial.runoff.againstTeam]:"no-result",[trial.runoff.eligibleTeam]:result==="draw"?"classified":"winner"}}}:{}), results: result ? {...trial.results, [heat]: result} : trial.results || null
  });
+ if (action.startsWith("spot-")) {
+  const side=action.slice(5),teamId=trial.teams?.[side];
+  if(!teamId||trialTeamAction(state,teamId,now)!=="spot")return;
+  return change(flag,{spot:{teamId,at:now,attempt:trial.attempt,trialId:state.event.createdAt,source:"race-control"}});
+ }
+ if(action==="ack"){
+  if(phase!=="live"||!spot||ack||STOP_FLAGS.includes(flag))return;
+  return change(flag,{ack:{teamId:spot.teamId===trial.teams.a?trial.teams.b:trial.teams.a,at:now,attempt:trial.attempt,trialId:state.event.createdAt,source:"race-control"}});
+ }
+ if (flag === "disqualification" && !["formation","finish","extend","close"].includes(action)) return;
+ if(action==="replay"&&["finding","start-hold","live","reset"].includes(phase)){
+  const results={...trial.results},heatOutcomes={...trial.heatOutcomes};delete results[heat];delete heatOutcomes[heat];
+  return change(STOP_FLAGS.includes(flag)?flag:"yellow",{phase:"reset",replay:true,results,heatOutcomes,spot:null,ack:null,deadline:null,remainingMs:0});
+ }
  if (action === 'extend' && ['formation', 'reset', 'complete'].includes(phase)) {
   const plannedHeats = Math.max(plannedHeatCount(trial), heat + heat % 2) + 2;
   if (!Number.isSafeInteger(plannedHeats)) return;
@@ -83,7 +99,7 @@ export function changeTrial(state, action, now, options = {}) {
  if (action === "formation" && phase === "reset") {
   if (trial.flexibleHeats && !trial.replay && heat >= plannedHeatCount(trial)) return;
   return change("safety-car", {phase: "formation", heat: trial.replay ? heat : heat + 1,
-   attempt: trial.attempt + 1, replay: false, spot: null, ack: null, deadline: null, remainingMs: 0});
+   attempt: trial.attempt + 1, replay: false, spot: null, ack: null, deadline: null, remainingMs: 0, runoff: trial.replay ? trial.runoff || null : null});
  }
  if (action === "release" && phase === "formation" && trial.startStyle === "safety-car" && flag === "safety-car") {
   return change("green", {phase: "finding", clockRate: 1, deadline: now + trial.findMs});
@@ -99,7 +115,7 @@ export function changeTrial(state, action, now, options = {}) {
   }
   if (trial.deadline == null || remaining > 0) return;
   if (phase === "find-lights") return change("green", {phase: "finding", clockRate: 1, deadline: now + trial.findMs});
-  if (phase === "heat-lights") return change("green", {phase: "live", clockRate: 1, deadline: now + trial.heatMs});
+  if (phase === "heat-lights") return change("green", {phase: "live", clockRate: 1, deadline: now + (trial.runoff ? trial.runoff.seconds*1000 : trial.heatMs)});
   if (phase === "finding") return change("red", {phase: "start-hold", deadline: null, remainingMs: 0});
   return;
  }
@@ -124,6 +140,7 @@ export function trialDisplay(state, now) {
  const {trial, activeFlag: flag} = state;
  const {phase, spot, ack} = trial;
  const remaining = trialRemaining(trial, now);
+ if (flag === "disqualification") return [flag,"DISQUALIFIED","HEAT ENDED • AWAIT MRA MOVEMENT ORDER"];
  if (LIGHT_PHASES.includes(phase)) return ["red", "STANDING START", "HOLD POSITION UNTIL GREEN"];
  const findingExpired = phase === "finding" && trial.deadline != null && remaining === 0;
  if ((flag === "red" && phase === "start-hold") ||
@@ -142,6 +159,7 @@ export function trialDisplay(state, now) {
  if (phase === "live" && spot) return ["checkered", "CHECKERED • SPOT RECORDED", "END COMPETITION • AWAIT ACKNOWLEDGMENT"];
  if (phase === "live" && remaining === 0) return ["checkered", "CHECKERED • TIME EXPIRED", "END COMPETITION • AWAIT RACE DIRECTOR"];
  if (flag === "yellow") return ["yellow", "YELLOW CAUTION", "7 MPH MAX • TIMER RUNS AT HALF SPEED"];
+ if(trial.runoff&&phase==="live")return ["green","ELIGIBILITY RUNOFF",`${trial.runoff.eligibleTeam.toUpperCase()} ONLY MAY RECORD A SPOT • 15 MPH MAX`];
  return ["green", phase === "finding" ? "FIND A STARTING SPOT" : "BOTH TEAMS SPOTTING",
   `${GREEN_LIMIT_MPH} MPH MAX • NO COMPETITIVE OVERTAKING`];
 }

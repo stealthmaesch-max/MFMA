@@ -94,7 +94,7 @@ test("perimeter recorder pauses on location failure and retains the draft",async
 
 async function stewardHarness(browser,viewport){
  const page=await browser.newPage({viewport});
- await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,callback)=>{if(ref.path==='.info/connected')window.testConnection=callback;return ()=>{}},serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},setPersistence=async()=>{},browserLocalPersistence={},GithubAuthProvider=class{},GoogleAuthProvider=class{},signInWithPopup=async()=>{},signOut=async()=>{},set=async(ref,patch)=>{(window.testWrites??=[]).push(patch);if(window.rejectWrite)throw Error('Rejected test command');if(window.holdWrite)await new Promise(resolve=>window.finishWrite=resolve)},update=set,runTransaction=async(ref,updater)=>{const next=updater(window.testRoot);if(!next)return {committed:false};window.testRoot=next;window.stewardTest.render(next);return {committed:true,snapshot:{val:()=>next}}};`}));
+ await page.route("https://www.gstatic.com/firebasejs/**",route=>route.fulfill({contentType:"text/javascript",body:`export const initializeApp=()=>({}),getDatabase=()=>({}),ref=(db,path)=>({path}),onValue=(ref,callback)=>{if(ref.path==='.info/connected')window.testConnection=callback;return ()=>{}},serverTimestamp=()=>0,getAuth=()=>({}),onAuthStateChanged=()=>{},setPersistence=async()=>{},browserLocalPersistence={},GithubAuthProvider=class{},GoogleAuthProvider=class{},signInWithPopup=async()=>{},signOut=async()=>{},set=async(ref,patch)=>{(window.testWrites??=[]).push(patch);if(window.rejectWrite)throw Error('Rejected test command');if(window.holdWrite)await new Promise(resolve=>window.finishWrite=resolve)},update=set,runTransaction=async(ref,updater)=>{const next=updater(ref.path==='mfma'?{state:window.testRoot,competition:window.testCompetition||{}}:window.testRoot);if(!next)return {committed:false};window.testRoot=ref.path==='mfma'?next.state:next;if(ref.path==='mfma')window.testCompetition=next.competition;window.stewardTest.render(window.testRoot);return {committed:true,snapshot:{val:()=>next}}};`}));
  await page.route(/\/control\.js\?/,route=>route.fulfill({contentType:"text/javascript",body:fs.readFileSync("control.js","utf8")+`\nwindow.stewardTest={render(next){window.testRoot=next;currentUser={uid:\"2DCyQB0Js1UpWGI0LkEQtnOhGPl1\",isAnonymous:false};state=next;document.querySelector('#auth-panel').classList.add('hidden');document.querySelector('#secured-control').classList.remove('hidden');render()},flag(flag){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return issueFlag(flag)},resume(kind){currentUser={uid:"2DCyQB0Js1UpWGI0LkEQtnOhGPl1",isAnonymous:false};return kind==="finding"?startFinding():startSprintTimer()},spot(id){currentUser={uid:'2DCyQB0Js1UpWGI0LkEQtnOhGPl1',isAnonymous:false};return confirmSpot(id)}};window.testConnection({val:()=>true});`}));
  await page.goto(`${baseUrl}/control.html`,{waitUntil:"load"});await page.waitForFunction(()=>window.stewardTest);return page;
 }
@@ -788,6 +788,7 @@ test("Mutual Spotting driver spot triggers Checkered and opposing acknowledgment
   });
   await sync();
   assert.match(await drivers[0].locator("#multi-function-zone span strong").textContent(), /SAFETY CAR/);
+  await control.locator("#mutual-settings summary").click();
   await control.locator("#mutual-find-seconds").fill("45");
   await control.locator("#mutual-heat-seconds").fill("120");
   await control.getByRole("button", {name: "Save Timers"}).click();
@@ -836,6 +837,36 @@ test("Mutual Spotting driver spot triggers Checkered and opposing acknowledgment
   await browser.close();
  }
 });
+test("Mutual Spotting officials can investigate, decide, replay, and record radio fallbacks",async()=>{
+ const browser=await chromium.launch({headless:true});
+ try{for(const viewport of [{width:375,height:667},{width:834,height:1194}]){
+  const page=await stewardHarness(browser,viewport);
+  const base={systemState:'mutual-spotting',activeFlag:'green',event:{name:'Mutual Spotting',eventFormat:'mutual-spotting',createdAt:1,teamNames:{a:'Monarch',b:'Parakeet'}},trial:{heat:1,phase:'live',attempt:1,teams:{a:'monarch',b:'parakeet'},findMs:60000,heatMs:180000,deadline:Date.now()+120000,clockRate:1,plannedHeats:4,flexibleHeats:true,entrants:{a:{teamId:'monarch',teamName:'Monarch',driverId:'a',vehicleId:'ranger'},b:{teamId:'parakeet',teamName:'Parakeet',driverId:'b',vehicleId:'shelly'}}}};
+  await page.evaluate(s=>window.stewardTest.render(s),base);
+  assert(await page.locator('#mutual-trial-panel').isVisible());
+  const style=await page.locator('.mutual-signals .red').evaluate(el=>getComputedStyle(el).backgroundImage);assert.equal(style,'none','signals use the flat mockup treatment');
+  if(await page.locator('.mutual-event-actions').getAttribute('open')===null)await page.locator('.mutual-event-actions summary').click();
+  await page.locator('.mutual-event-actions [data-mutual-investigate]').click();
+  await page.locator('#investigation-detail').fill('Reported speed-based pass');
+  await page.locator('#issue-violation-submit').click();
+  await page.waitForFunction(()=>window.testRoot.systemState==='violation-review');
+  assert.equal(await page.locator('#mutual-trial-timer').textContent(),'PAUSED');assert(await page.locator('#mutual-trial-panel').isVisible());
+  await page.locator('#mutual-decide').click();await page.locator('#penalty-decision').selectOption('warning');await page.locator('#penalty-rationale').fill('Reviewed radio reports; warning is proportionate.');await page.locator('#record-penalty-decision').click();
+  await page.waitForFunction(()=>window.testRoot.systemState==='mutual-spotting');
+  assert.equal(await page.evaluate(()=>window.testRoot.activeFlag),'green');assert.match(await page.locator('#mutual-case-copy').textContent(),/Warning/);
+  // All spot/ack actions are available to the official when a Driver cannot use its screen.
+  if(await page.locator('.mutual-event-actions').getAttribute('open')===null)await page.locator('.mutual-event-actions summary').click();
+  await page.locator('[data-trial-action="spot-b"]').click();await page.getByRole('button',{name:'Confirm',exact:true}).click();
+  await page.waitForFunction(()=>window.testRoot.trial.spot?.teamId==='parakeet');
+  await page.locator('[data-trial-action="ack"]').click();await page.getByRole('button',{name:'Confirm',exact:true}).click();
+  await page.waitForFunction(()=>window.testRoot.trial.phase==='reset');
+  assert.equal(await page.evaluate(()=>window.testRoot.trial.results[1]),'b');
+  assert.equal(await page.evaluate(()=>window.testRoot.activeFlag),'yellow');
+  assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),viewport.width);
+  await page.screenshot({path:`/tmp/mfma-mutual-audit-${viewport.width}.png`,fullPage:true});await page.close();
+ }}finally{await browser.close()}
+});
+
 
 test("Race Control can launch and archive an official Mutual Spotting round", async () => {
  const browser = await chromium.launch({headless: true});
@@ -852,9 +883,10 @@ test("Race Control can launch and archive an official Mutual Spotting round", as
   assert.equal(next.event.pointsEvent, true);
   assert.equal(next.activeFlag, "safety-car");
   await page.evaluate(state => window.stewardTest.render(state), next);
-  await page.locator('.mutual-event-actions summary').click();
+  if(await page.locator('.mutual-event-actions').getAttribute('open')===null)await page.locator('.mutual-event-actions summary').click();
   await page.waitForTimeout(150);
   assert(await page.locator('.mutual-event-actions').getAttribute('open') !== null, 'event actions stay open through timer refreshes');
+  await page.locator("#mutual-settings summary").click();
   await page.locator("#mutual-start-style").selectOption("safety-car");
   await page.getByRole("button", {name: "Save Timers"}).click();
   await page.getByRole("button", {name: "Release from Safety Car"}).click();
@@ -871,6 +903,7 @@ test("Race Control can launch and archive an official Mutual Spotting round", as
   await page.getByRole("button", {name: "Add 2 Heats"}).click();
   assert.equal(await page.evaluate(() => window.testRoot.trial.plannedHeats), 6);
   await page.getByRole("button", {name: "Finish Event", exact: true}).click();
+  await page.getByRole("button", {name: "Confirm", exact: true}).click();
   assert.equal(await page.evaluate(() => window.testRoot.trial.phase), "complete");
   await page.getByRole("button", {name: "Archive Championship Result"}).click();
   await page.getByRole("button", {name: "Archive Event", exact: true}).click();
@@ -882,4 +915,30 @@ test("Race Control can launch and archive an official Mutual Spotting round", as
  } finally {
   await browser.close();
  }
+});
+test("every Mutual Spotting penalty menu action has a working outcome",async()=>{
+ const browser=await chromium.launch({headless:true}),page=await stewardHarness(browser,{width:834,height:1194});
+ try{
+  for(const decision of ['no-action','warning','time-remedy','restart','no-result','disqualification','event-disqualification','point-adjustment','participation-restriction','removal-event','removal-mfma']){
+   const state={systemState:'mutual-spotting',activeFlag:'green',event:{name:'Penalty audit',eventFormat:'mutual-spotting',createdAt:1,teamNames:{a:'Monarch',b:'Parakeet'}},trial:{heat:1,phase:'live',attempt:1,teams:{a:'monarch',b:'parakeet'},deadline:Date.now()+120000,clockRate:1,findMs:60000,heatMs:180000,plannedHeats:4,entrants:{a:{teamId:'monarch',teamName:'Monarch',driverId:'a',vehicleId:'ranger'},b:{teamId:'parakeet',teamName:'Parakeet',driverId:'b',vehicleId:'shelly'}}}};
+   await page.evaluate(s=>{window.testCompetition={teams:{monarch:{name:'Monarch',status:'approved'}},drivers:{a:{teamId:'monarch',status:'approved'},b:{teamId:'parakeet',status:'approved'}}};window.stewardTest.render(s)},state);
+   if(await page.locator('.mutual-event-actions').getAttribute('open')===null)await page.locator('.mutual-event-actions summary').click();
+   await page.locator('.mutual-event-actions [data-mutual-investigate]').click();await page.locator('#dq-team').selectOption('a');await page.locator('#investigation-detail').fill('Radio report reviewed by Steward');await page.locator('#issue-violation-submit').click();
+   await page.locator('#mutual-decide').click();await page.locator('#penalty-decision').selectOption(decision);await page.locator('#penalty-rationale').fill('Evidence reviewed; this is the recorded proportional decision.');
+   if(decision==='time-remedy'){await page.locator('#benefiting-team').selectOption('b');await page.locator('#time-seconds').fill('20')}
+   if(decision==='point-adjustment')await page.locator('#decision-points').fill('-2');
+   await page.locator('#record-penalty-decision').click();await page.waitForFunction(()=>window.testRoot.systemState==='mutual-spotting');
+   assert.equal(await page.evaluate(()=>window.testRoot.event.lastEnforcementDecision.decision),decision);
+   if(['participation-restriction','removal-event','removal-mfma'].includes(decision)){
+    await page.locator('#mutual-sanction-admin').click();await page.getByRole('button',{name:'Apply Ruling',exact:true}).click();
+    await page.waitForFunction(()=>window.testRoot.event.lastEnforcementDecision.followUpRequired===false);
+    assert.equal(await page.evaluate(()=>window.testRoot.event.enforcementOutcomes.a),'dq');
+    if(decision==='removal-mfma')assert.equal(await page.evaluate(()=>window.testCompetition.drivers.a.status),'removed');
+   }
+   if(decision==='time-remedy')assert.equal(await page.evaluate(()=>window.testRoot.trial.runoff.seconds),20);
+   if(decision==='point-adjustment')assert.equal(await page.evaluate(()=>window.testRoot.event.pointAdjustments.a),-2);
+   if(decision==='disqualification')assert.equal(await page.evaluate(()=>window.testRoot.trial.heatOutcomes[1].a),'dq');
+   assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth),834);
+  }
+ }finally{await browser.close()}
 });

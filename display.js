@@ -4,7 +4,7 @@ import { getAuth, onAuthStateChanged, signInAnonymously } from "https://www.gsta
 import { firebaseConfig } from "./firebase-config.js?v=40";
 import { signals } from "./signals.js?v=100";
 import { getRenderMode } from "./display-state.js?v=88";
-import { MUTUAL_SPOTTING_MODE, trialDisplay, trialRemaining, trialTeamAction } from "./mutual-spotting.js?v=5";
+import { MUTUAL_SPOTTING_MODE, trialDisplay, trialRemaining, trialTeamAction } from "./mutual-spotting.js?v=6";
 import { enableSounds, getSoundStatus, onSoundStatus, playCurrentState as playSignalState, playSound, playStateTransition as playSignalTransition, playSupplementalSound, stopSupplementalSound, silencePersistentSound, speakStewardNotice } from "./sounds.js?v=101";
 import { cleanOccupantReport, cleanHazardReport } from "./report-model.js?v=52";
 import { TRACK_SECTORS, activeTrackSignals, trackOutlineMarkup } from "./track-signals.js?v=9";
@@ -13,9 +13,9 @@ import {calibrationExport,summarizeCalibrationSamples} from "./gps-calibration.j
 import {evaluateTrackLimitFix,shouldWarnTrackLimit} from "./track-limits.js?v=4";
 import {GPS_DIAGNOSTIC_WINDOW,summarizeGpsDiagnostics} from "./gps-diagnostics.js?v=1";
 import {evaluateSpeedCompliance,reliableSpeedMph} from "./speed-compliance.js?v=3";
-import { LEGACY_VEHICLES, applyStandingsAdjustments, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=96";
+import { LEGACY_VEHICLES, applyStandingsAdjustments, formatTeamName, isScoringDriverEligible, normalizeMraNumber, normalizeName, currentSeasonId, rebuildStandings, standardizeTeamNames, teamBranding } from "./competition-model.js?v=97";
 import {QUALIFYING_TRACKS,fastestQualifyingLap,qualifyingTime,rankedQualifyingLaps} from "./qualifying-model.js?v=85";
-import {DECISION_LABELS,investigationRecord} from "./enforcement-model.js?v=1";
+import {DECISION_LABELS,investigationRecord} from "./enforcement-model.js?v=2";
 const PUBLIC_TRACK_SECTORS=false;
 const app=initializeApp(firebaseConfig),db=getDatabase(app),auth=getAuth(app),stateRef=ref(db,"mfma/state");
 const $=id=>document.getElementById(id);const LAST_STATE_KEY="mfma-last-known-state",PENDING_KEY="mfma-pending-driver-actions";let state=(()=>{try{return JSON.parse(localStorage.getItem(LAST_STATE_KEY)||"null")}catch{return null}})(),wake=null,wakeRequestPending=false,networkConnected=null;
@@ -39,7 +39,7 @@ function currentEnforcementRecord(){if(state?.systemState==="violation-review"||
 function enforcementCitation(fallback){const record=currentEnforcementRecord(),team=record?.teamName&&formatTeamName(record.teamName),reason=record?.decision?record.rationale:record?.reason;if(!team&&!reason)return fallback;return [team,reason&&`${record?.decision?"RATIONALE":"ALLEGATION"}: ${reason}`].filter(Boolean).join(" • ")}
 function renderDriverCase(){
  const panel=$("driver-case-record"),record=investigationRecord(state)||state?.event?.lastEnforcementDecision||state?.event?.activePenalty;$("driver-case-open")?.classList.toggle("hidden",!record);if(!panel)return;panel.classList.toggle("hidden",!record);if(!record)return;
- const decided=Boolean(record.decision),rows=[["Case",record.caseId||record.violationId||"MRA case"],["Affected team",record.teamName||"Team"],["Allegation",record.reason||"Under review"],...(decided?[["Decision",DECISION_LABELS[record.decision]||record.decision],["Rationale",record.rationale||record.detail||"Recorded by MRA"]]:[["Status","Investigation open • no penalty decided"]])];
+ const decided=Boolean(record.decision),rows=[["Case",record.caseId||record.violationId||"MRA case"],["Affected team",record.teamName||"Team"],["Allegation",record.reason||"Under review"],...(decided?[["Decision",DECISION_LABELS[record.decision]||record.decision],["Rationale",record.rationale||record.detail||"Recorded by MRA"],...(record.timeRemedy?[["Time remedy",`${record.timeRemedy.seconds} seconds • ${record.timeRemedy.remedy.replaceAll("-"," ")}`]]:[]),...(Number.isFinite(record.points)?[["Event points adjustment",String(record.points)]]:[])]:[["Status","Investigation open • no penalty decided"]])];
  panel.innerHTML=`<h3>${decided?"Steward Decision":"Open Investigation"}</h3><dl>${rows.map(([label,value])=>`<div><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join("")}</dl>`;
 }
 function applyDisplayClass(className,signal){

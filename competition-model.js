@@ -23,7 +23,7 @@ export function slugify(value){return normalizeName(value).toLowerCase().replace
 export function currentSeasonId(date=new Date()){return String(date.getFullYear())}
 export function teamBranding(teamId){return TEAM_BRANDING[teamId]||{accent:"#f11524",emblem:null,logo:null}}
 export function driverCompetitionRole(driverId,driver={}){return driver.competitionRole||DEFAULT_DRIVER_ROLES[driverId]||"primary"}
-export function isScoringDriverEligible(driverId,driver={}){return Boolean(driverId&&Object.keys(driver||{}).length&&driver?.status!=="pending"&&driver?.status!=="rejected"&&driverCompetitionRole(driverId,driver)!=="honorary")}
+export function isScoringDriverEligible(driverId,driver={}){return Boolean(driverId&&Object.keys(driver||{}).length&&driver?.status!=="pending"&&driver?.status!=="rejected"&&driver?.status!=="removed"&&driver?.status!=="suspended"&&driverCompetitionRole(driverId,driver)!=="honorary")}
 export function eventRegistrationId(driverId){return String(driverId||"").replace(/[^a-zA-Z0-9_-]/g,"").slice(0,64)}
 export function registeredVehicleId(driverId,vehicleName){return `${eventRegistrationId(driverId)}-${slugify(vehicleName)}`.slice(0,64)}
 
@@ -49,30 +49,31 @@ export function buildMutualSpottingArchive(state, options) {
  const trial = state.trial;
  const sides = ["a", "b"];
  const heats = Object.entries(trial.results || {}).sort((a, b) => Number(a[0]) - Number(b[0]));
- if (trial.phase !== "complete" || heats.length < 2 || heats.length % 2 !== 0 ||
+ if (state.event?.activeInvestigation || trial.phase !== "complete" || (!trial.endedByDecision && (heats.length < 2 || heats.length % 2 !== 0)) ||
      heats.some(([number, result], index) => number !== String(index + 1) || !["a", "b", "draw"].includes(result)) ||
      sides.some(side => !trial.entrants?.[side]?.vehicleId || !trial.entrants[side].driverId)) return;
  const scores = {a: 0, b: 0};
  const sessionResults = heats.map(([number, result]) => ({
   number: Number(number), winnerSide: result === "draw" ? null : result,
   entrants: sides.map(side => {
-   const outcome = result === "draw" ? "draw" : side === result ? "winner" : "classified";
-   const points = outcome === "draw" ? 1.5 : outcome === "winner" ? 2 : 1;
+   const outcome = trial.heatOutcomes?.[number]?.[side] || (result === "draw" ? "draw" : side === result ? "winner" : "classified");
+   const points = ["dq","no-result"].includes(outcome) ? 0 : outcome === "draw" ? 1.5 : outcome === "winner" ? 2 : 1;
    scores[side] += points;
    return {...trial.entrants[side], side, outcome, position: outcome === "classified" ? 2 : 1, points};
   })
  }));
- const tied = scores.a === scores.b;
- const classification = sides.sort((a, b) => scores[b] - scores[a]).map((side, index) => {
-  const eventPoints = tied ? 3.5 : index === 0 ? 4 : 3;
+ const dq = state.event?.enforcementOutcomes || {};
+ const tied = scores.a === scores.b && !sides.some(side=>dq[side]==="dq");
+ const classification = sides.sort((a, b) => Number(dq[a]==="dq")-Number(dq[b]==="dq") || scores[b] - scores[a]).map((side, index) => {
+  const eventPoints = dq[side]==="dq" ? 0 : Math.max(0,(tied ? 3.5 : index === 0 ? 4 : 3) + Number(state.event?.pointAdjustments?.[side]||0));
   return {...trial.entrants[side], side, position: tied ? 1 : index + 1,
-   outcome: tied ? "draw" : index === 0 ? "winner" : "classified",
-   points: eventPoints, eventPoints, heatPoints: scores[side]};
+   outcome: dq[side]==="dq" ? "dq" : tied ? "draw" : index === 0 ? "winner" : "classified",
+   points: eventPoints, eventPoints, heatPoints: dq[side]==="dq" ? 0 : scores[side]};
  });
  const {event} = state;
  return {name: event.name, eventFormat: "mutual-spotting", seasonId: options.seasonId,
   pointsEvent: event.pointsEvent !== false, date: options.date, endedAt: options.endedAt,
-  classification, sessionResults, sessionCount: heats.length,
+  classification, sessionResults, sessionCount: heats.length, enforcement: event.violations || {}, stewardNotices: event.stewardNotices || {},
   scoringPolicy: {sessionPoints: [2, 1], eventPoints: [4, 3], heatDrawPoints: 1.5, eventDrawPoints: 3.5}};
 }
 
@@ -85,7 +86,7 @@ export function buildEventArchive(state,competition={},options={}){
   const explicitTeamId=event.teamIds?.[entry.side],team=explicitTeamId&&competition?.teams?.[explicitTeamId]?[explicitTeamId,competition.teams[explicitTeamId]]:matchingTeam(competition?.teams,entry.teamName),teamId=team?.[0]||null;
   const report=reports[entry.vehicleId]||Object.values(reports).find(item=>item?.teamId===teamId||item?.teamName===entry.teamName)||{},requestedDriverId=event.scoringDrivers?.[teamId]||report.driverId||null,requestedDriver=competition?.drivers?.[requestedDriverId]||{},selectedDriverId=isScoringDriverEligible(requestedDriverId,requestedDriver)?requestedDriverId:null,participant=event.driverParticipants?.[selectedDriverId]||{},driver=competition?.drivers?.[selectedDriverId]||{};
   const outcome=options.finalOutcomes?.[entry.side]||(position===1?"winner":"classified"),awarded=outcome==="winner"?Number(points[0])||0:outcome==="classified"?Number(points[1])||0:outcome==="dnf"?1:0;
-  return {...entry,position,outcome,points:awarded,eventPoints:awarded,vehicleName:competition?.vehicles?.[entry.vehicleId]?.name||LEGACY_VEHICLES[entry.vehicleId]?.name||entry.vehicleId,driverId:selectedDriverId,driverName:driver.name||participant.driverName||report.driverName||null,mraNumber:driver.mraNumber||participant.mraNumber||report.mraNumber||null,teamId:teamId||driver.teamId||report.teamId||null,teamName:formatTeamName(team?.[1]?.name||driver.teamName||report.teamName||entry.teamName)};
+  return {...entry,position,outcome,points:(outcome==="dq"?0:Math.max(0,awarded+Number(event.pointAdjustments?.[entry.side]||0))),eventPoints:(outcome==="dq"?0:Math.max(0,awarded+Number(event.pointAdjustments?.[entry.side]||0))),vehicleName:competition?.vehicles?.[entry.vehicleId]?.name||LEGACY_VEHICLES[entry.vehicleId]?.name||entry.vehicleId,driverId:selectedDriverId,driverName:driver.name||participant.driverName||report.driverName||null,mraNumber:driver.mraNumber||participant.mraNumber||report.mraNumber||null,teamId:teamId||driver.teamId||report.teamId||null,teamName:formatTeamName(team?.[1]?.name||driver.teamName||report.teamName||entry.teamName)};
  });
  const sessionResults=(event.sessionResults||[]).map(result=>({...result,entrants:(result.entrants||[]).map(entry=>{const driver=competition?.drivers?.[entry.driverId]||{},teamId=driver.teamId||entry.teamId;return {...entry,teamId,teamName:formatTeamName(driver.teamName||competition?.teams?.[teamId]?.name||entry.teamName),vehicleName:competition?.vehicles?.[entry.vehicleId]?.name||LEGACY_VEHICLES[entry.vehicleId]?.name||entry.vehicleId,points:entry.outcome==="winner"?Number(sessionPoints[0])||0:entry.outcome==="classified"?Number(sessionPoints[1])||0:entry.outcome==="dnf"?1:0}})}));
  const scoringDriverIds=new Set(classification.map(row=>row.driverId).filter(Boolean)),participationByDriver={};

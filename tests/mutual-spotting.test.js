@@ -163,3 +163,14 @@ test("Mutual Spotting display distinguishes start holds, caution, and Safety Car
  state = changeTrial(state, "red", 28000);
  assert.equal(trialDisplay(state, 28000)[2], "STOP SAFELY • AWAIT RACE DIRECTOR");
 });
+test("runoff clocks and official spot fallbacks enforce eligibility and clear it for the next heat",()=>{
+ let state=open();state.trial.runoff={againstTeam:'a',eligibleTeam:'b',seconds:15,caseId:'MRA-1'};
+ state=startHeat(state,1000);const now=state.trial.deadline-1000;
+ assert.equal(trialRemaining(state.trial,state.trial.deadline-15000),15000);
+ assert.equal(changeTrial(state,'spot-a',now),undefined);
+ state=changeTrial(state,'spot-b',now);assert.equal(state.trial.spot.source,'race-control');
+ state=changeTrial(state,'ack',now+1);state=changeTrial(state,'advance',now+2);
+ assert.equal(state.trial.phase,'reset');assert.equal(state.trial.results[1],'b');
+ assert.equal(state.trial.heatOutcomes[1].a,'no-result');
+ state=changeTrial(state,'formation',now+3);assert.equal(state.trial.runoff,null);
+});

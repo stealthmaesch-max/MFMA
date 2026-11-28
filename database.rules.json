@@ -3,6 +3,8 @@
     ".read": false,
     ".write": false,
     "mfma": {
+      ".read": "auth != null && auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1'",
+      ".write": "auth != null && auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1'",
       "competition": {
         ".read": true,
         ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
@@ -64,7 +66,7 @@
         ".write": "auth != null && (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' || auth.uid === 'UqAXXX1tq9d5I34QTF3USu3vaUb2')",
         "trial": {
           "spot": {
-            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && root.child('mfma').child('state').child('systemState').val() === 'mutual-spotting' && data.parent().child('phase').val() === 'live' && (root.child('mfma').child('state').child('activeFlag').val() === 'green' || root.child('mfma').child('state').child('activeFlag').val() === 'yellow') && !data.exists() && newData.exists() && (newData.child('teamId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() || newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val()) && (newData.child('teamId').val() === data.parent().child('teams').child('a').val() || newData.child('teamId').val() === data.parent().child('teams').child('b').val()) && newData.child('attempt').val() === data.parent().child('attempt').val() && newData.child('trialId').val() === root.child('mfma').child('state').child('event').child('createdAt').val() && data.parent().child('deadline').val() > now",
+            ".write": "auth != null && auth.token.firebase.sign_in_provider === 'anonymous' && root.child('mfma').child('driverAccess').child(auth.uid).child('status').val() === 'approved' && root.child('mfma').child('state').child('systemState').val() === 'mutual-spotting' && data.parent().child('phase').val() === 'live' && (root.child('mfma').child('state').child('activeFlag').val() === 'green' || root.child('mfma').child('state').child('activeFlag').val() === 'yellow') && root.child('mfma').child('competition').child('teams').child(newData.child('teamId').val()).child('status').val() !== 'removed' && !data.exists() && newData.exists() && (newData.child('teamId').val() === root.child('mfma').child('driverAccess').child(auth.uid).child('teamId').val() || newData.child('teamId').val() === root.child('mfma').child('competition').child('drivers').child(root.child('mfma').child('driverAccess').child(auth.uid).child('driverId').val()).child('teamId').val()) && (newData.child('teamId').val() === data.parent().child('teams').child('a').val() || newData.child('teamId').val() === data.parent().child('teams').child('b').val()) && newData.child('attempt').val() === data.parent().child('attempt').val() && newData.child('trialId').val() === root.child('mfma').child('state').child('event').child('createdAt').val() && data.parent().child('deadline').val() > now && (!data.parent().child('runoff').exists() || newData.child('teamId').val() === data.parent().child('teams').child(data.parent().child('runoff').child('eligibleTeam').val()).val())",
             ".validate": "newData.hasChildren(['teamId','attempt','trialId','at'])",
             "teamId": {
               ".validate": "newData.isString()"
@@ -76,8 +78,9 @@
               ".validate": "newData.isNumber()"
             },
             "at": {
-              ".validate": "newData.isNumber() && newData.val() === now || (data.exists() && newData.val() === data.val())"
+              ".validate": "newData.isNumber() && (newData.val() === now || (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' && newData.val() >= now - 60000 && newData.val() <= now + 60000) || (data.exists() && newData.val() === data.val()))"
             },
+            "source": {".validate": "auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' && newData.val() === 'race-control'"},
             "$other": {
               ".validate": false
             }
@@ -95,8 +98,9 @@
               ".validate": "newData.isNumber()"
             },
             "at": {
-              ".validate": "newData.isNumber() && newData.val() === now || (data.exists() && newData.val() === data.val())"
+              ".validate": "newData.isNumber() && (newData.val() === now || (auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' && newData.val() >= now - 60000 && newData.val() <= now + 60000) || (data.exists() && newData.val() === data.val()))"
             },
+            "source": {".validate": "auth.uid === '2DCyQB0Js1UpWGI0LkEQtnOhGPl1' && newData.val() === 'race-control'"},
             "$other": {
               ".validate": false
             }

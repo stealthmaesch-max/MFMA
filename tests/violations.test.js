@@ -79,6 +79,54 @@ test("an event disqualification is retained for event classification",async()=>{
 test("No Result corrects a finalized session victory without duplicating roles",async()=>{
  const {applyOfficialSessionResult}=await import("../circuit-model.js"),m=await model;let root=eventState();root.session.provisionalWinner="a";root=applyOfficialSessionResult(root);const roles=structuredClone(root.event.circuit.roles),next=m.decideInvestigation(await openCase(root),decision("no-result"),5000);assert.equal(next.systemState,"session-complete");assert.equal(next.event.scores.a,0);assert.equal(next.event.sessionResults[0].winnerSide,null);assert(next.event.sessionResults[0].entrants.every(e=>e.outcome==="no-result"));assert.deepEqual(next.event.circuit.roles,roles);
 });
-test("administrative penalties remain explicit follow-up work rather than silent eligibility changes",async()=>{
- const m=await model,next=m.decideInvestigation(await openCase(),decision("point-adjustment"),5000);assert.equal(next.event.activePenalty.followUpRequired,true);assert.deepEqual(next.event.scores,{a:0,b:0});assert.equal(next.systemState,"session-live");
+test("point adjustments apply once and participation rulings require explicit administration action",async()=>{
+ const m=await model,next=m.decideInvestigation(await openCase(),decision("point-adjustment",{points:-2}),5000);assert.equal(next.event.activePenalty.followUpRequired,false);assert.equal(next.event.pointAdjustments.a,-2);assert.deepEqual(next.event.scores,{a:0,b:0});assert.equal(next.systemState,"session-live");
+ const restriction=m.decideInvestigation(await openCase(),decision("participation-restriction"),5000);assert.equal(restriction.event.activePenalty.followUpRequired,true);
+});
+test("Mutual Spotting investigations pause and restore both clock rates without losing a spot",async()=>{
+ const {openInvestigation,decideInvestigation}=await model;
+ for(const rate of [1,.5]){
+  const state={systemState:'mutual-spotting',activeFlag:rate===1?'green':'yellow',event:{eventFormat:'mutual-spotting'},trial:{phase:'live',heat:1,teams:{a:'Monarch',b:'Parakeet'},deadline:11000,clockRate:rate,attempt:1}};
+  const opened=openInvestigation(state,{id:'v1',team:'a',reason:'Reported pass'},2000);
+  assert.equal(opened.trial.deadline,null);assert.equal(opened.trial.remainingMs,9000*rate);
+  const next=decideInvestigation(opened,decision('warning'),5000);
+  assert.equal(next.systemState,'mutual-spotting');assert.equal(next.trial.deadline,14000);
+  const red=decideInvestigation({...opened,activeFlag:'red'},decision('no-action'),5000);
+  assert.equal(red.activeFlag,'red');assert.equal(red.trial.deadline,null);
+ }
+});
+
+test("Mutual Spotting DQ affects heat scoring and event DQ cannot retain championship points",async()=>{
+ const {buildMutualSpottingArchive}=await import('../competition-model.js');
+ const state={systemState:'mutual-spotting',activeFlag:'green',event:{eventFormat:'mutual-spotting'},trial:{phase:'live',heat:2,teams:{a:'Monarch',b:'Parakeet'},deadline:11000,clockRate:1,attempt:1,results:{1:'a'},entrants:{a:{teamId:'Monarch',teamName:'Monarch',driverId:'a',vehicleId:'ranger'},b:{teamId:'Parakeet',teamName:'Parakeet',driverId:'b',vehicleId:'shelly'}}}};
+ const opened=await openCase(state),{decideInvestigation}=await model;
+ let next=decideInvestigation(opened,decision('disqualification'),3000);
+ assert.equal(next.trial.phase,'reset');assert.equal(next.activeFlag,'disqualification');assert.equal(next.trial.heatOutcomes[2].a,'dq');
+ next.trial.phase='complete';let archive=buildMutualSpottingArchive(next,{});
+ assert.equal(archive.sessionResults[1].entrants[0].points,0);
+ next=decideInvestigation(opened,decision('event-disqualification'),3000);
+ archive=buildMutualSpottingArchive(next,{});const dq=archive.classification.find(x=>x.side==='a');
+ assert.equal(dq.outcome,'dq');assert.equal(dq.points,0);assert.equal(dq.heatPoints,0);assert(archive.enforcement.v1);
+ assert.throws(()=>decideInvestigation(next,decision('warning'),4000),/changed/);
+});
+
+test("Mutual Spotting time remedy creates an opposing eligibility runoff and rejects a concurrent DQ",async()=>{
+ const state={systemState:'mutual-spotting',activeFlag:'green',event:{eventFormat:'mutual-spotting'},trial:{phase:'live',heat:1,teams:{a:'Monarch',b:'Parakeet'},deadline:11000,clockRate:1,attempt:1}};
+ const opened=await openCase(state),{decideInvestigation}=await model;
+ const remedy={benefitingTeam:'b',remedy:'eligibility-runoff',seconds:15};
+ const next=decideInvestigation(opened,decision('time-remedy',{timeRemedy:remedy}),4000);
+ assert.equal(next.trial.replay,true);assert.equal(next.trial.runoff.eligibleTeam,'b');assert.equal(next.trial.deadline,null);
+ assert.throws(()=>decideInvestigation(opened,decision('disqualification',{timeRemedy:remedy}),4000),/concurrent/);
+ for(const name of ['restart','no-result']){const replay=decideInvestigation(opened,decision(name),4000);assert.equal(replay.trial.replay,true);assert.equal(replay.trial.phase,'reset')}
+});
+test("explicit participation ruling is atomic, scoped, audited, and cannot be applied twice",async()=>{
+ const m=await model,state={systemState:'mutual-spotting',activeFlag:'green',event:{eventFormat:'mutual-spotting'},trial:{phase:'live',heat:1,teams:{a:'Monarch',b:'Parakeet'},deadline:11000,clockRate:1,attempt:1}};
+ for(const name of ['participation-restriction','removal-event','removal-mfma']){
+  const decided=m.decideInvestigation(await openCase(state),decision(name),3000);
+  const database={state:decided,competition:{teams:{Monarch:{name:'Monarch',status:'approved'}},drivers:{a:{teamId:'Monarch',status:'approved'},b:{teamId:'Parakeet',status:'approved'}}}};
+  const next=m.applyParticipationRuling(database,'v1','steward',4000);
+  assert.equal(next.state.event.violations.v1.followUpRequired,false);assert.equal(next.state.event.enforcementOutcomes.a,'dq');assert.equal(next.state.trial.endedByDecision,true);
+  assert.equal(next.competition.drivers.a.status,name==='removal-mfma'?'removed':'approved');assert.equal(next.competition.drivers.b.status,'approved');
+  assert.throws(()=>m.applyParticipationRuling(next,'v1','steward',5000),/no longer pending/);
+ }
 });

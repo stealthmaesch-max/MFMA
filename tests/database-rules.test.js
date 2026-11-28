@@ -207,3 +207,33 @@ test("Mutual Spotting accepts a timely spot once and only the other team can ack
  await set(ref(rd, "mfma/state/trial"), {...trial, deadline: trialId - 1});
  await assertFails(set(ref(driver, "mfma/state/trial/spot"), spot));
 });
+test("eligibility runoff blocks the penalized team's spot and preserves the opponent's acknowledgment",async()=>{
+ await authorizeDriver();const opponent=env.authenticatedContext('opponent',{firebase:{sign_in_provider:'anonymous'}}).database();
+ await set(ref(rd,'mfma/driverAccess/opponent'),{teamId:'team-two',status:'approved'});
+ const trialId=Date.now(),trial={phase:'live',attempt:1,deadline:trialId+120000,teams:{a:'team-one',b:'team-two'},runoff:{againstTeam:'a',eligibleTeam:'b',seconds:15}};
+ await set(ref(rd,'mfma/state'),{systemState:'mutual-spotting',activeFlag:'green',event:{createdAt:trialId},trial});
+ const spot={teamId:'team-one',attempt:1,trialId,at:require('firebase/database').serverTimestamp()};
+ await assertFails(set(ref(driver,'mfma/state/trial/spot'),spot));
+ await assertSucceeds(set(ref(opponent,'mfma/state/trial/spot'),{...spot,teamId:'team-two'}));
+ await assertSucceeds(set(ref(driver,'mfma/state/trial/ack'),spot));
+});
+
+test("Race Control can record an audited radio spot and acknowledgment without allowing Driver impersonation",async()=>{
+ await authorizeDriver();const trialId=Date.now();
+ const root={systemState:'mutual-spotting',activeFlag:'green',event:{createdAt:trialId},trial:{phase:'live',attempt:1,deadline:trialId+120000,teams:{a:'team-one',b:'team-two'}}};
+ await set(ref(rd,'mfma/state'),root);
+ const spot={teamId:'team-one',attempt:1,trialId,at:Date.now(),source:'race-control'};
+ await assertFails(set(ref(driver,'mfma/state/trial/spot'),spot));
+ await assertSucceeds(set(ref(rd,'mfma/state/trial/spot'),spot));
+ await assertSucceeds(set(ref(rd,'mfma/state/trial/ack'),{...spot,teamId:'team-two',at:Date.now()}));
+ await set(ref(rd,'mfma/competition/teams/team-one/status'),'removed');
+ await set(ref(rd,'mfma/state'),root);
+ await assertFails(set(ref(driver,'mfma/state/trial/spot'),{teamId:'team-one',attempt:1,trialId,at:require('firebase/database').serverTimestamp()}));
+});
+test("only the Race Director can transact an event ruling with registry eligibility",async()=>{
+ await authorizeDriver();const {runTransaction}=require('firebase/database');
+ await assertFails(get(ref(driver,'mfma')));
+ await assertFails(runTransaction(ref(driver,'mfma'),root=>({...root,state:{systemState:'no-event'}})));
+ await assertSucceeds(runTransaction(ref(rd,'mfma'),root=>({...root,state:{systemState:'no-event',activeFlag:'clear'},competition:{...root?.competition,teams:{'team-one':{name:'Team One',status:'removed'}}}})));
+ assert.equal((await get(ref(rd,'mfma/competition/teams/team-one/status'))).val(),'removed');
+});

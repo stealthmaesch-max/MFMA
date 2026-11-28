@@ -2225,3 +2225,70 @@ body[data-mode="test-mode"] #quick-flag-panel.track-only{display:block!important
  .display-body .instrument-context{height:24px!important;min-height:24px!important}
  .display-body .instrument-panel .signal-symbol[data-signal="under-review"] span{font-size:18px!important}
 }
+/* Mutual Spotting follows the approved proposal rather than inherited flag cards. */
+.race-control-page.mutual-workspace-active{--page:#0a1015;--panel:#111a22;--raised:#19242e;--line:#2c3a46;--muted:#a4b2be;--signal:#36df8d;--signal-soft:#103126}
+.race-control-page .mutual-workspace{font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;font-size:13px;color:#eaf0f4;background:#0a1015!important;border:1px solid #2c3a46!important;border-radius:14px!important;padding:20px!important;box-shadow:none!important}
+.race-control-page .mutual-workspace *{box-sizing:border-box}
+.race-control-page .mutual-workspace button,.race-control-page .mutual-workspace input,.race-control-page .mutual-workspace select{font-family:inherit!important;box-shadow:none!important;text-shadow:none!important;letter-spacing:0!important;transform:none!important}
+.race-control-page .mutual-workspace button{font-size:12px!important;line-height:1.3!important;min-height:44px;border-radius:7px!important;transition:background .15s}
+.race-control-page .mutual-workspace h2{font:600 21px/1.25 Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif!important;letter-spacing:-.04em!important;margin:3px 0!important}
+.race-control-page .mutual-workspace .eyebrow,.race-control-page #mutual-trial-heat{font-size:11px!important;color:#a4b2be!important;font-weight:400!important;letter-spacing:0!important;margin:4px 0!important}
+.race-control-page .mutual-workspace .section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.mutual-workspace .phase-label{font-size:10px;letter-spacing:.09em;color:var(--signal);font-weight:700}
+.mutual-workspace[data-signal="yellow"],.mutual-workspace[data-signal="safety-car"]{--signal:#ffd447;--signal-soft:#332b11}
+.mutual-workspace[data-signal="red"],.mutual-workspace[data-signal="disqualification"]{--signal:#ff4c59;--signal-soft:#35171e}
+.mutual-workspace[data-signal="under-review"]{--signal:#edf3f7;--signal-soft:#26323c}
+.race-control-page .mutual-workspace-grid{gap:15px 20px;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+.race-control-page .mutual-timing{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;padding:13px 0 16px!important;margin:0!important;background:transparent!important;border:0!important;border-top:2px solid var(--signal)!important;border-bottom:1px solid #2c3a46!important;border-radius:0!important;box-shadow:none!important;align-items:center}
+.mutual-timing .clock-column>span,.mutual-timing .current-signal>span{font-size:11px;color:#a4b2be}
+.race-control-page #mutual-trial-timer{font-family:"Arial Narrow",Arial,sans-serif!important;font-size:clamp(40px,6vw,72px)!important;font-weight:500!important;letter-spacing:-.04em!important;line-height:1.1!important;margin:4px 0 0!important;overflow-wrap:normal!important}
+.mutual-timing .current-signal{display:grid;gap:5px;padding-left:18px;border-left:1px solid #2c3a46}
+.mutual-timing .current-signal strong{font-size:21px;font-weight:600;color:var(--signal);line-height:1.2;overflow-wrap:normal}
+.mutual-timing .current-signal small{font-size:10px;line-height:1.45;color:#a4b2be}
+.race-control-page .mutual-signals{gap:7px;align-self:start}
+.race-control-page .mutual-signals .flag{display:flex!important;flex-direction:column;align-items:flex-start;justify-content:center;gap:5px;text-align:left;min-height:80px!important;padding:10px 8px!important;border:1px solid #2c3a46!important;background:#111a22!important;color:#edf3f7!important;opacity:1}
+.race-control-page .mutual-signals .flag:disabled{opacity:.35}
+.race-control-page .mutual-signals .flag[aria-pressed="true"]{border-color:var(--signal)!important;background:var(--signal-soft)!important}
+.race-control-page .mutual-signals .flag strong{font-size:12px!important;font-weight:600!important;white-space:normal}
+.race-control-page .mutual-signals .flag small{font-size:10px!important;color:#a4b2be!important}
+.mutual-signals .signal-swatch{display:block;width:22px;height:3px;border-radius:2px;background:#36df8d}
+.mutual-signals .yellow .signal-swatch{background:#ffd447}.mutual-signals .red .signal-swatch{background:#ff4c59}.mutual-signals .safety-car .signal-swatch{background:linear-gradient(90deg,#ffd447 50%,#ff4c59 50%)}
+.race-control-page .mutual-next-action{grid-column:2;grid-row:1;align-self:start;border:1px solid #2c3a46!important;border-radius:10px!important;background:#111a22!important;padding:14px!important}
+.race-control-page .mutual-next-action>p:first-child{font-size:13px!important;line-height:1.5;color:#a4b2be;margin:0 0 12px}
+.race-control-page .mutual-next-action .action{font-size:12px!important;font-weight:600;background:#edf3f7!important;color:#13212b!important;border:0!important;min-height:44px!important}
+.race-control-page .mutual-next-action .secondary-btn{background:#19242e!important;color:#edf3f7!important;border:1px solid #2c3a46!important}
+#mutual-trial-status{font-size:10px;color:#a4b2be;margin:8px 0 0}#mutual-trial-status:empty{display:none}
+.race-control-page .mutual-settings{grid-column:2;grid-row:2;align-self:start}
+.race-control-page .mutual-settings,.race-control-page .mutual-results,.race-control-page .mutual-event-actions,.race-control-page .mutual-crew,.race-control-page #mutual-report-area{border:0!important;border-bottom:1px solid #2c3a46!important;border-radius:0!important;background:transparent!important;padding:0!important}
+.race-control-page .mutual-workspace summary{display:flex;justify-content:space-between;align-items:center;gap:10px;list-style:none;min-height:44px;padding:10px 0;font-size:12px!important;font-weight:500}
+.mutual-workspace summary::-webkit-details-marker{display:none}.mutual-workspace summary::after{content:"+";color:#a4b2be}.mutual-workspace details[open]>summary::after{content:"−"}
+.race-control-page .mutual-workspace summary span{font-size:10px;float:none;color:#a4b2be}
+.race-control-page .mutual-settings fieldset{padding:0 0 14px;gap:12px}
+.race-control-page .mutual-settings input,.race-control-page .mutual-settings select{font-size:13px!important;border:1px solid #2c3a46!important;border-radius:6px!important;padding:7px 8px!important;background:#19242e!important;color:#edf3f7!important}
+.race-control-page .mutual-settings label{font-size:11px!important;font-weight:400;color:#a4b2be}
+.race-control-page .mutual-crew{grid-column:1;grid-row:3;padding:12px 0!important;font-size:12px;line-height:1.5}.mutual-crew h3{font-size:11px;font-weight:500;color:#a4b2be}
+.race-control-page #mutual-report-area{grid-column:2;grid-row:auto}
+.race-control-page .mutual-results{grid-column:1;grid-row:4}
+.race-control-page .mutual-event-actions{grid-column:1 / -1}
+.race-control-page .mutual-event-actions .button-row{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:8px 0 16px}
+.race-control-page .mutual-event-actions button{background:#19242e!important;color:#edf3f7!important;border:1px solid #2c3a46!important;min-height:44px!important;font-weight:500!important}
+.race-control-page .mutual-case{grid-column:1 / -1;padding:16px;border:1px solid #5e7182;border-radius:10px;background:#111a22}
+.mutual-case h3{font-size:14px;margin:0 0 8px}.mutual-case p{font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+.mutual-workspace-active .topbar{box-shadow:none!important;border:0!important;border-bottom:1px solid #2c3a46!important;background:#0a1015!important;border-radius:0!important}
+.mutual-workspace-active .control-workspace-nav{position:static;border:0;border-bottom:1px solid #2c3a46;border-radius:0;padding:7px 0;margin:0 auto 16px;background:transparent;box-shadow:none;max-width:none;display:flex;justify-content:flex-start}
+.mutual-workspace-active .control-workspace-nav button{font-size:12px;font-weight:500;border-radius:7px;padding:8px 13px}
+@media(max-width:699px){.race-control-page .mutual-workspace{padding:16px!important}.race-control-page .mutual-workspace-grid{grid-template-columns:1fr;gap:14px}.race-control-page .mutual-timing{grid-column:1;grid-row:1}.race-control-page .mutual-signals{grid-column:1;grid-row:2}.race-control-page .mutual-next-action{grid-column:1;grid-row:3}.race-control-page .mutual-settings{grid-column:1;grid-row:4}.race-control-page .mutual-crew,.race-control-page .mutual-results,.race-control-page #mutual-report-area,.race-control-page .mutual-case{grid-column:1;grid-row:auto}.race-control-page .mutual-event-actions .button-row{grid-template-columns:1fr 1fr}.race-control-page .mutual-signals .flag{min-height:78px!important}.mutual-timing .current-signal strong{font-size:18px}}
+.mutual-shell-title,.mutual-crew-nav{display:none}
+.mutual-workspace-active .mutual-shell-title{display:block;color:#edf3f7;font:600 14px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}
+.mutual-workspace-active .mutual-crew-nav{display:block}
+.mutual-workspace-active .control-toolbar{position:relative!important;top:0!important;display:flex!important;justify-content:space-between!important;align-items:center!important;gap:12px!important;padding:12px 0!important;min-height:64px!important}
+.mutual-workspace-active .control-toolbar .brand-row{display:flex!important;align-items:center!important;gap:12px!important;min-width:0!important;flex:0 1 auto!important}
+.mutual-workspace-active .control-toolbar .toolbar-logo{width:78px!important;height:30px!important;max-width:none!important}
+.mutual-workspace-active .control-toolbar .brand-row>div,.mutual-workspace-active .toolbar-telemetry{display:none!important}
+.mutual-workspace-active .control-toolbar .header-account{display:flex!important;flex-wrap:wrap;justify-content:flex-end;gap:6px!important}
+.mutual-workspace-active .control-toolbar button{background:#111a22!important;border:1px solid #2c3a46!important;border-radius:7px!important;font-family:inherit!important;font-size:11px!important;font-weight:500!important;box-shadow:none!important;min-height:44px!important;color:#edf3f7!important}
+.mutual-workspace-active .control-toolbar #connection{border:0!important;background:transparent!important;box-shadow:none!important;font-size:11px!important}
+.race-control-page .mutual-event-actions .action b{display:none}.race-control-page .mutual-event-actions .action strong{font-size:12px!important}.race-control-page .mutual-event-actions .action small{display:block;font-size:10px!important;color:#a4b2be}
+@media(max-width:699px){.mutual-workspace-active .control-toolbar{flex-wrap:wrap!important}.mutual-workspace-active .control-toolbar .header-account{width:100%;justify-content:flex-start!important}.mutual-workspace-active .control-toolbar .header-account button{flex:1}.mutual-workspace-active .control-toolbar #account-pill{flex:1 0 100%}}
+.mutual-emergency{display:none}.mutual-workspace-active{padding-bottom:80px!important}.mutual-workspace-active .mutual-emergency{position:fixed;z-index:45;bottom:max(12px,env(safe-area-inset-bottom));right:max(12px,env(safe-area-inset-right));display:flex;gap:8px;padding:6px;border:1px solid #2c3a46;border-radius:10px;background:#0a1015;box-shadow:0 6px 20px #0005}.mutual-emergency button{min-height:44px;padding:8px 14px;border:1px solid #2c3a46;border-radius:7px;background:#111a22;color:#edf3f7;font:500 12px Arial,sans-serif}#mutual-emergency-red{border-color:#ff4c59;background:#35171e;color:#ff9ca5}
+#mutual-case-copy{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:14px 0}#mutual-case-copy>div{min-width:0}#mutual-case-copy dt{font-size:10px;color:#a4b2be;text-transform:uppercase;letter-spacing:.07em}#mutual-case-copy dd{margin:5px 0 0;font-size:13px;line-height:1.5;overflow-wrap:anywhere}.race-control-page .penalty-dialog,.race-control-page #white-review-overlay{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#111a22!important;border:1px solid #40505e!important;border-radius:14px!important;box-shadow:0 20px 70px #0008!important}.race-control-page .penalty-dialog .dialog-mra-logo{width:90px;height:30px;object-fit:contain}.race-control-page .penalty-dialog h2,.race-control-page #white-review-overlay h2{font:600 22px/1.2 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif}.race-control-page .penalty-dialog input,.race-control-page .penalty-dialog select,.race-control-page .penalty-dialog textarea{font:400 14px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;background:#19242e;border:1px solid #40505e;border-radius:7px}.race-control-page .penalty-dialog button,.race-control-page #white-review-overlay button{font-family:inherit;font-size:13px;font-weight:600;background:#edf3f7;color:#13212b;box-shadow:none;border-radius:7px}
